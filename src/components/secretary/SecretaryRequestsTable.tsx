@@ -1,18 +1,18 @@
-import type { SecretaryInboxRequest } from '../../types/request'
-import {
-  formatRequestDate,
-  translateRequestStatus,
-  translateRequestType,
-} from '../../utils/requests'
+import type { RequestStatus, SecretaryInboxRequest } from '../../types/request'
+import { formatRequestDate, REQUEST_STATUS_OPTIONS, translateRequestType } from '../../utils/requests'
 
 type SecretaryRequestsTableProps = {
   requests: SecretaryInboxRequest[]
   emptyMessage: string
+  updatingRequestId: string | null
+  onStatusChange: (requestId: string, status: RequestStatus) => void
 }
 
 export function SecretaryRequestsTable({
   requests,
   emptyMessage,
+  updatingRequestId,
+  onStatusChange,
 }: SecretaryRequestsTableProps) {
   if (requests.length === 0) {
     return (
@@ -40,7 +40,23 @@ export function SecretaryRequestsTable({
               <td>{request.teacher_full_name}</td>
               <td>{translateRequestType(request.request_type)}</td>
               <td>{request.description}</td>
-              <td>{translateRequestStatus(request.status)}</td>
+              <td>
+                <select
+                  className="secretary-dashboard__input secretary-dashboard__status-select"
+                  value={request.status}
+                  onChange={(e) =>
+                    onStatusChange(request.id, e.target.value as RequestStatus)
+                  }
+                  disabled={updatingRequestId === request.id}
+                  aria-label={`סטטוס בקשה של ${request.teacher_full_name}`}
+                >
+                  {REQUEST_STATUS_OPTIONS.map((option) => (
+                    <option key={option.value} value={option.value}>
+                      {option.label}
+                    </option>
+                  ))}
+                </select>
+              </td>
               <td>{formatRequestDate(request.created_at)}</td>
             </tr>
           ))}

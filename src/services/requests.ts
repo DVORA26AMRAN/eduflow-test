@@ -1,5 +1,6 @@
 import type {
   CreateRequestInput,
+  RequestStatus,
   SecretaryInboxRequest,
   TeacherRequest,
 } from '../types/request'
@@ -16,6 +17,10 @@ export type CreateTeacherRequestResult =
 
 export type LoadSecretaryRequestsResult =
   | { ok: true; requests: SecretaryInboxRequest[] }
+  | { ok: false; errorMessage: string }
+
+export type UpdateRequestStatusResult =
+  | { ok: true }
   | { ok: false; errorMessage: string }
 
 async function loadCurrentUserInstitutionId(
@@ -148,6 +153,23 @@ export async function loadSecretaryRequests(): Promise<LoadSecretaryRequestsResu
     .filter((request): request is SecretaryInboxRequest => request !== null)
 
   return { ok: true, requests }
+}
+
+export async function updateRequestStatus(
+  requestId: string,
+  status: RequestStatus,
+): Promise<UpdateRequestStatusResult> {
+  const { error } = await supabase.from('requests').update({ status }).eq('id', requestId)
+
+  if (error) {
+    console.error('[requests] failed to update request status', error)
+    return {
+      ok: false,
+      errorMessage: 'עדכון סטטוס הבקשה נכשל.',
+    }
+  }
+
+  return { ok: true }
 }
 
 export async function createTeacherRequest(

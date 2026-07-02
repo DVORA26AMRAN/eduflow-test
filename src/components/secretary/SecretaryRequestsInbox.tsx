@@ -1,6 +1,10 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import type { SecretaryInboxFilters, SecretaryInboxRequest } from '../../types/request'
-import { loadSecretaryRequests } from '../../services/requests'
+import type {
+  RequestStatus,
+  SecretaryInboxFilters,
+  SecretaryInboxRequest,
+} from '../../types/request'
+import { loadSecretaryRequests, updateRequestStatus } from '../../services/requests'
 import { filterSecretaryInboxRequests } from '../../utils/requests'
 import { SecretaryRequestsFilters } from './SecretaryRequestsFilters'
 import { SecretaryRequestsTable } from './SecretaryRequestsTable'
@@ -16,6 +20,9 @@ export function SecretaryRequestsInbox() {
   const [filters, setFilters] = useState<SecretaryInboxFilters>(defaultFilters)
   const [isLoading, setIsLoading] = useState(true)
   const [loadError, setLoadError] = useState('')
+  const [updatingRequestId, setUpdatingRequestId] = useState<string | null>(null)
+  const [statusMessage, setStatusMessage] = useState('')
+  const [statusMessageIsError, setStatusMessageIsError] = useState(false)
 
   const fetchRequests = useCallback(async () => {
     setIsLoading(true)
@@ -47,11 +54,51 @@ export function SecretaryRequestsInbox() {
       ? 'אין בקשות להצגה.'
       : 'לא נמצאו בקשות התואמות לחיפוש.'
 
+  async function handleStatusChange(requestId: string, status: RequestStatus) {
+    const currentRequest = requests.find((request) => request.id === requestId)
+    if (!currentRequest || currentRequest.status === status) {
+      return
+    }
+
+    setStatusMessage('')
+    setUpdatingRequestId(requestId)
+
+    const result = await updateRequestStatus(requestId, status)
+
+    setUpdatingRequestId(null)
+
+    if (!result.ok) {
+      setStatusMessage(result.errorMessage)
+      setStatusMessageIsError(true)
+      return
+    }
+
+    setRequests((currentRequests) =>
+      currentRequests.map((request) =>
+        request.id === requestId ? { ...request, status } : request,
+      ),
+    )
+    setStatusMessage('סטטוס הבקשה עודכן בהצלחה.')
+    setStatusMessageIsError(false)
+  }
+
   return (
     <section className="secretary-dashboard__inbox">
       <h2 className="secretary-dashboard__section-title">תיבת בקשות</h2>
 
       <SecretaryRequestsFilters filters={filters} onFiltersChange={setFilters} />
+
+      {statusMessage && (
+        <p
+          className={
+            statusMessageIsError
+              ? 'secretary-dashboard__status secretary-dashboard__status--error'
+              : 'secretary-dashboard__status secretary-dashboard__status--success'
+          }
+        >
+          {statusMessage}
+        </p>
+      )}
 
       {isLoading && (
         <p className="secretary-dashboard__status">טוען בקשות...</p>
@@ -67,6 +114,8 @@ export function SecretaryRequestsInbox() {
         <SecretaryRequestsTable
           requests={filteredRequests}
           emptyMessage={emptyMessage}
+          updatingRequestId={updatingRequestId}
+          onStatusChange={handleStatusChange}
         />
       )}
     </section>

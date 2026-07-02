@@ -19,6 +19,13 @@ const requestStatusLabels: Record<RequestStatus, string> = {
   rejected: 'נדחה',
 }
 
+export const REQUEST_STATUS_OPTIONS: { value: RequestStatus; label: string }[] = [
+  { value: 'new', label: requestStatusLabels.new },
+  { value: 'in_progress', label: requestStatusLabels.in_progress },
+  { value: 'completed', label: requestStatusLabels.completed },
+  { value: 'rejected', label: requestStatusLabels.rejected },
+]
+
 export function translateRequestType(type: RequestType): string {
   return requestTypeLabels[type]
 }
