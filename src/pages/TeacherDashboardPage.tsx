@@ -1,4 +1,5 @@
 import { TeacherDashboardHeader } from '../components/teacher/TeacherDashboardHeader'
+import { TeacherNotificationsSection } from '../components/teacher/TeacherNotificationsSection'
 import { TeacherRequestsSection } from '../components/teacher/TeacherRequestsSection'
 import './TeacherDashboardPage.css'
 
@@ -10,6 +11,7 @@ export function TeacherDashboardPage({ onLogout }: TeacherDashboardPageProps) {
   return (
     <main dir="rtl" className="teacher-dashboard">
       <TeacherDashboardHeader onLogout={onLogout} />
+      <TeacherNotificationsSection />
       <TeacherRequestsSection />
     </main>
   )
