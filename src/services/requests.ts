@@ -1,6 +1,7 @@
 import type {
   CreateRequestInput,
   RequestStatus,
+  RequestStatusHistoryEntry,
   SecretaryInboxRequest,
   TeacherRequest,
 } from '../types/request'
@@ -21,6 +22,10 @@ export type LoadSecretaryRequestsResult =
 
 export type UpdateRequestStatusResult =
   | { ok: true }
+  | { ok: false; errorMessage: string }
+
+export type LoadRequestStatusHistoryResult =
+  | { ok: true; entries: RequestStatusHistoryEntry[] }
   | { ok: false; errorMessage: string }
 
 async function loadCurrentUserInstitutionId(
@@ -170,6 +175,71 @@ export async function updateRequestStatus(
   }
 
   return { ok: true }
+}
+
+function extractUserFullName(users: unknown): string | null {
+  if (Array.isArray(users)) {
+    const first = users[0] as { full_name?: unknown } | undefined
+    return typeof first?.full_name === 'string' ? first.full_name : null
+  }
+
+  if (users && typeof users === 'object' && 'full_name' in users) {
+    const fullName = (users as { full_name: unknown }).full_name
+    return typeof fullName === 'string' ? fullName : null
+  }
+
+  return null
+}
+
+function parseRequestStatusHistoryEntry(row: {
+  id: unknown
+  previous_status: unknown
+  new_status: unknown
+  created_at: unknown
+  users: unknown
+}): RequestStatusHistoryEntry | null {
+  if (
+    typeof row.id !== 'string' ||
+    typeof row.created_at !== 'string' ||
+    !isRequestStatus(row.previous_status) ||
+    !isRequestStatus(row.new_status)
+  ) {
+    return null
+  }
+
+  return {
+    id: row.id,
+    previous_status: row.previous_status,
+    new_status: row.new_status,
+    created_at: row.created_at,
+    changed_by_full_name: extractUserFullName(row.users),
+  }
+}
+
+export async function loadRequestStatusHistory(
+  requestId: string,
+): Promise<LoadRequestStatusHistoryResult> {
+  const { data, error } = await supabase
+    .from('request_status_history')
+    .select(
+      'id, previous_status, new_status, created_at, users!changed_by_user_id(full_name)',
+    )
+    .eq('request_id', requestId)
+    .order('created_at', { ascending: false })
+
+  if (error) {
+    console.error('[requests] failed to load request status history', error)
+    return {
+      ok: false,
+      errorMessage: 'טעינת היסטוריית הסטטוסים נכשלה.',
+    }
+  }
+
+  const entries = (data ?? [])
+    .map(parseRequestStatusHistoryEntry)
+    .filter((entry): entry is RequestStatusHistoryEntry => entry !== null)
+
+  return { ok: true, entries }
 }
 
 export async function createTeacherRequest(

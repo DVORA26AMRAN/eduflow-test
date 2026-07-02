@@ -1,11 +1,16 @@
 import type { RequestStatus, SecretaryInboxRequest } from '../../types/request'
-import { formatRequestDate, REQUEST_STATUS_OPTIONS, translateRequestType } from '../../utils/requests'
+import {
+  formatRequestDate,
+  REQUEST_STATUS_OPTIONS,
+  translateRequestType,
+} from '../../utils/requests'
 
 type SecretaryRequestsTableProps = {
   requests: SecretaryInboxRequest[]
   emptyMessage: string
   updatingRequestId: string | null
   onStatusChange: (requestId: string, status: RequestStatus) => void
+  onShowHistory: (requestId: string) => void
 }
 
 export function SecretaryRequestsTable({
@@ -13,6 +18,7 @@ export function SecretaryRequestsTable({
   emptyMessage,
   updatingRequestId,
   onStatusChange,
+  onShowHistory,
 }: SecretaryRequestsTableProps) {
   if (requests.length === 0) {
     return (
@@ -32,6 +38,7 @@ export function SecretaryRequestsTable({
             <th>תיאור</th>
             <th>סטטוס</th>
             <th>תאריך</th>
+            <th>פעולות</th>
           </tr>
         </thead>
         <tbody>
@@ -58,6 +65,15 @@ export function SecretaryRequestsTable({
                 </select>
               </td>
               <td>{formatRequestDate(request.created_at)}</td>
+              <td>
+                <button
+                  type="button"
+                  className="ds-btn ds-btn--secondary secretary-dashboard__history-button"
+                  onClick={() => onShowHistory(request.id)}
+                >
+                  היסטוריה
+                </button>
+              </td>
             </tr>
           ))}
         </tbody>

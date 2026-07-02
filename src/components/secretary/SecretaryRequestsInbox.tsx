@@ -1,11 +1,17 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import type {
   RequestStatus,
+  RequestStatusHistoryEntry,
   SecretaryInboxFilters,
   SecretaryInboxRequest,
 } from '../../types/request'
-import { loadSecretaryRequests, updateRequestStatus } from '../../services/requests'
+import {
+  loadRequestStatusHistory,
+  loadSecretaryRequests,
+  updateRequestStatus,
+} from '../../services/requests'
 import { filterSecretaryInboxRequests } from '../../utils/requests'
+import { RequestStatusHistoryPanel } from './RequestStatusHistoryPanel'
 import { SecretaryRequestsFilters } from './SecretaryRequestsFilters'
 import { SecretaryRequestsTable } from './SecretaryRequestsTable'
 
@@ -23,6 +29,10 @@ export function SecretaryRequestsInbox() {
   const [updatingRequestId, setUpdatingRequestId] = useState<string | null>(null)
   const [statusMessage, setStatusMessage] = useState('')
   const [statusMessageIsError, setStatusMessageIsError] = useState(false)
+  const [historyRequestId, setHistoryRequestId] = useState<string | null>(null)
+  const [historyEntries, setHistoryEntries] = useState<RequestStatusHistoryEntry[]>([])
+  const [isHistoryLoading, setIsHistoryLoading] = useState(false)
+  const [historyError, setHistoryError] = useState('')
 
   const fetchRequests = useCallback(async () => {
     setIsLoading(true)
@@ -82,6 +92,31 @@ export function SecretaryRequestsInbox() {
     setStatusMessageIsError(false)
   }
 
+  function handleCloseHistory() {
+    setHistoryRequestId(null)
+    setHistoryEntries([])
+    setHistoryError('')
+    setIsHistoryLoading(false)
+  }
+
+  async function handleShowHistory(requestId: string) {
+    setHistoryRequestId(requestId)
+    setHistoryEntries([])
+    setHistoryError('')
+    setIsHistoryLoading(true)
+
+    const result = await loadRequestStatusHistory(requestId)
+
+    setIsHistoryLoading(false)
+
+    if (!result.ok) {
+      setHistoryError(result.errorMessage)
+      return
+    }
+
+    setHistoryEntries(result.entries)
+  }
+
   return (
     <section className="secretary-dashboard__inbox">
       <h2 className="secretary-dashboard__section-title">תיבת בקשות</h2>
@@ -116,8 +151,17 @@ export function SecretaryRequestsInbox() {
           emptyMessage={emptyMessage}
           updatingRequestId={updatingRequestId}
           onStatusChange={handleStatusChange}
+          onShowHistory={handleShowHistory}
         />
       )}
+
+      <RequestStatusHistoryPanel
+        isOpen={historyRequestId !== null}
+        isLoading={isHistoryLoading}
+        errorMessage={historyError}
+        entries={historyEntries}
+        onClose={handleCloseHistory}
+      />
     </section>
   )
 }

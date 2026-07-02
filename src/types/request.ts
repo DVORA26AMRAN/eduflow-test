@@ -29,3 +29,11 @@ export type SecretaryInboxFilters = {
   requestType: RequestType | 'all'
   requestStatus: RequestStatus | 'all'
 }
+
+export type RequestStatusHistoryEntry = {
+  id: string
+  previous_status: RequestStatus
+  new_status: RequestStatus
+  created_at: string
+  changed_by_full_name: string | null
+}

@@ -47,6 +47,21 @@ export function formatRequestDate(isoDate: string): string {
   })
 }
 
+export function formatRequestDateTime(isoDate: string): string {
+  const date = new Date(isoDate)
+  if (Number.isNaN(date.getTime())) {
+    return isoDate
+  }
+
+  return date.toLocaleString('he-IL', {
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+  })
+}
+
 export function isRequestType(value: string): value is RequestType {
   return (
     value === 'equipment' ||
