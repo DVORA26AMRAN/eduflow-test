@@ -1,0 +1,83 @@
+/* EduFlow Design System — forms */
+
+.ds-field {
+  display: block;
+  margin-bottom: var(--ds-space-4);
+}
+
+.ds-label {
+  display: block;
+  margin-bottom: var(--ds-space-2);
+  font-size: var(--ds-font-size-sm);
+  font-weight: var(--ds-font-weight-medium);
+  color: var(--ds-color-text-secondary);
+}
+
+.ds-input,
+.ds-select,
+.ds-textarea {
+  display: block;
+  width: 100%;
+  box-sizing: border-box;
+  padding: var(--ds-space-3) var(--ds-space-4);
+  border: 1px solid var(--ds-color-border);
+  border-radius: var(--ds-radius-md);
+  background: var(--ds-color-surface);
+  color: var(--ds-color-text-primary);
+  font: inherit;
+  transition:
+    border-color var(--ds-transition-base),
+    box-shadow var(--ds-transition-base),
+    background var(--ds-transition-base);
+}
+
+.ds-input::placeholder,
+.ds-textarea::placeholder {
+  color: var(--ds-color-text-muted);
+}
+
+.ds-textarea {
+  min-height: 120px;
+  resize: vertical;
+  line-height: var(--ds-line-height-relaxed);
+}
+
+.ds-input:hover,
+.ds-select:hover,
+.ds-textarea:hover {
+  border-color: var(--ds-color-border-strong);
+}
+
+.ds-input:focus,
+.ds-select:focus,
+.ds-textarea:focus {
+  outline: none;
+  border-color: var(--ds-color-primary-light);
+  box-shadow: var(--ds-shadow-focus);
+}
+
+.ds-input:disabled,
+.ds-select:disabled,
+.ds-textarea:disabled {
+  opacity: 0.65;
+  cursor: not-allowed;
+  background: var(--ds-color-surface-muted);
+}
+
+.ds-form-message {
+  margin-top: var(--ds-space-2);
+  font-size: var(--ds-font-size-sm);
+  color: var(--ds-color-text-secondary);
+}
+
+.ds-form-message--success {
+  color: var(--ds-color-success);
+}
+
+.ds-form-message--warning {
+  color: var(--ds-color-warning);
+}
+
+.ds-form-message--error {
+  color: var(--ds-color-error);
+}

@@ -1,0 +1,56 @@
+/* EduFlow Design System — tables */
+
+.ds-table-wrapper {
+  overflow-x: auto;
+  border: 1px solid var(--ds-color-border);
+  border-radius: var(--ds-radius-lg);
+  background: var(--ds-color-surface-translucent);
+  box-shadow: var(--ds-shadow-sm);
+}
+
+.ds-table {
+  width: 100%;
+  border-collapse: collapse;
+  text-align: inherit;
+}
+
+.ds-table th,
+.ds-table td {
+  padding: var(--ds-space-3) var(--ds-space-4);
+  border-bottom: 1px solid var(--ds-color-border);
+  vertical-align: top;
+  color: var(--ds-color-text-primary);
+}
+
+.ds-table th {
+  font-size: var(--ds-font-size-sm);
+  font-weight: var(--ds-font-weight-semibold);
+  color: var(--ds-color-text-secondary);
+  background: rgba(245, 240, 255, 0.65);
+}
+
+.ds-table tbody tr:nth-child(even) {
+  background: rgba(255, 255, 255, 0.55);
+}
+
+.ds-table tbody tr:hover {
+  background: rgba(143, 111, 232, 0.08);
+}
+
+.ds-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+[dir='rtl'] .ds-table {
+  text-align: right;
+}
+
+[dir='ltr'] .ds-table {
+  text-align: left;
+}
+
+.ds-table__empty {
+  padding: var(--ds-space-8);
+  text-align: center;
+  color: var(--ds-color-text-secondary);
+}

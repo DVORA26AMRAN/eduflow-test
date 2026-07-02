@@ -1,0 +1,192 @@
+import type {
+  CreateRequestInput,
+  SecretaryInboxRequest,
+  TeacherRequest,
+} from '../types/request'
+import { isRequestStatus, isRequestType } from '../utils/requests'
+import { supabase } from './supabase'
+
+export type LoadTeacherRequestsResult =
+  | { ok: true; requests: TeacherRequest[] }
+  | { ok: false; errorMessage: string }
+
+export type CreateTeacherRequestResult =
+  | { ok: true }
+  | { ok: false; errorMessage: string }
+
+export type LoadSecretaryRequestsResult =
+  | { ok: true; requests: SecretaryInboxRequest[] }
+  | { ok: false; errorMessage: string }
+
+async function loadCurrentUserInstitutionId(
+  userId: string,
+): Promise<{ ok: true; institutionId: string } | { ok: false }> {
+  const { data, error } = await supabase
+    .from('users')
+    .select('institution_id')
+    .eq('id', userId)
+    .single()
+
+  if (error || typeof data?.institution_id !== 'string') {
+    console.error('[requests] failed to load institution_id', error)
+    return { ok: false }
+  }
+
+  return { ok: true, institutionId: data.institution_id }
+}
+
+function parseTeacherRequest(row: {
+  id: unknown
+  request_type: unknown
+  description: unknown
+  status: unknown
+  created_at: unknown
+}): TeacherRequest | null {
+  if (
+    typeof row.id !== 'string' ||
+    typeof row.description !== 'string' ||
+    typeof row.created_at !== 'string' ||
+    !isRequestType(row.request_type) ||
+    !isRequestStatus(row.status)
+  ) {
+    return null
+  }
+
+  return {
+    id: row.id,
+    request_type: row.request_type,
+    description: row.description,
+    status: row.status,
+    created_at: row.created_at,
+  }
+}
+
+export async function loadTeacherRequests(): Promise<LoadTeacherRequestsResult> {
+  const { data, error } = await supabase
+    .from('requests')
+    .select('id, request_type, description, status, created_at')
+    .order('created_at', { ascending: false })
+
+  if (error) {
+    console.error('[requests] failed to load teacher requests', error)
+    return {
+      ok: false,
+      errorMessage: 'לא ניתן לטעון את הבקשות.',
+    }
+  }
+
+  const requests = (data ?? [])
+    .map(parseTeacherRequest)
+    .filter((request): request is TeacherRequest => request !== null)
+
+  return { ok: true, requests }
+}
+
+function extractTeacherFullName(users: unknown): string | null {
+  if (Array.isArray(users)) {
+    const first = users[0] as { full_name?: unknown } | undefined
+    return typeof first?.full_name === 'string' ? first.full_name : null
+  }
+
+  if (users && typeof users === 'object' && 'full_name' in users) {
+    const fullName = (users as { full_name: unknown }).full_name
+    return typeof fullName === 'string' ? fullName : null
+  }
+
+  return null
+}
+
+function parseSecretaryInboxRequest(row: {
+  id: unknown
+  request_type: unknown
+  description: unknown
+  status: unknown
+  created_at: unknown
+  users: unknown
+}): SecretaryInboxRequest | null {
+  const teacherFullName = extractTeacherFullName(row.users)
+
+  if (
+    typeof row.id !== 'string' ||
+    typeof row.description !== 'string' ||
+    typeof row.created_at !== 'string' ||
+    teacherFullName === null ||
+    !isRequestType(row.request_type) ||
+    !isRequestStatus(row.status)
+  ) {
+    return null
+  }
+
+  return {
+    id: row.id,
+    request_type: row.request_type,
+    description: row.description,
+    status: row.status,
+    created_at: row.created_at,
+    teacher_full_name: teacherFullName,
+  }
+}
+
+export async function loadSecretaryRequests(): Promise<LoadSecretaryRequestsResult> {
+  const { data, error } = await supabase
+    .from('requests')
+    .select(
+      'id, request_type, description, status, created_at, users!created_by_user_id(full_name)',
+    )
+    .order('created_at', { ascending: false })
+
+  if (error) {
+    console.error('[requests] failed to load secretary inbox requests', error)
+    return {
+      ok: false,
+      errorMessage: 'לא ניתן לטעון את הבקשות.',
+    }
+  }
+
+  const requests = (data ?? [])
+    .map(parseSecretaryInboxRequest)
+    .filter((request): request is SecretaryInboxRequest => request !== null)
+
+  return { ok: true, requests }
+}
+
+export async function createTeacherRequest(
+  input: CreateRequestInput,
+): Promise<CreateTeacherRequestResult> {
+  const { data: sessionData, error: sessionError } = await supabase.auth.getSession()
+
+  if (sessionError || !sessionData.session?.user) {
+    console.error('[requests] no authenticated session for create', sessionError)
+    return {
+      ok: false,
+      errorMessage: 'שליחת הבקשה נכשלה.',
+    }
+  }
+
+  const userId = sessionData.session.user.id
+  const institutionResult = await loadCurrentUserInstitutionId(userId)
+
+  if (!institutionResult.ok) {
+    return {
+      ok: false,
+      errorMessage: 'שליחת הבקשה נכשלה.',
+    }
+  }
+
+  const { error } = await supabase.from('requests').insert({
+    institution_id: institutionResult.institutionId,
+    created_by_user_id: userId,
+    request_type: input.requestType,
+    description: input.description.trim(),
+  })
+
+  if (error) {
+    console.error('[requests] failed to create request', error)
+    return {
+      ok: false,
+      errorMessage: 'שליחת הבקשה נכשלה.',
+    }
+  }
+
+  return { ok: true }
+}

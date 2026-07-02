@@ -1,0 +1,71 @@
+/* EduFlow Design System — buttons */
+
+.ds-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--ds-space-2);
+  min-height: 44px;
+  padding: var(--ds-space-3) var(--ds-space-6);
+  border: 1px solid transparent;
+  border-radius: var(--ds-radius-pill);
+  font: inherit;
+  font-weight: var(--ds-font-weight-medium);
+  line-height: 1;
+  text-align: center;
+  white-space: nowrap;
+  cursor: pointer;
+  transition:
+    transform var(--ds-transition-base),
+    box-shadow var(--ds-transition-base),
+    background var(--ds-transition-base),
+    border-color var(--ds-transition-base),
+    opacity var(--ds-transition-base);
+}
+
+.ds-btn--primary {
+  background: var(--ds-gradient-primary);
+  color: var(--ds-color-text-inverse);
+  box-shadow: var(--ds-shadow-button);
+}
+
+.ds-btn--primary:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: 0 10px 24px rgba(118, 88, 212, 0.34);
+}
+
+.ds-btn--primary:active:not(:disabled) {
+  transform: translateY(0);
+  box-shadow: var(--ds-shadow-sm);
+}
+
+.ds-btn--secondary {
+  background: var(--ds-color-surface);
+  color: var(--ds-color-primary);
+  border-color: var(--ds-color-border-strong);
+  box-shadow: var(--ds-shadow-xs);
+}
+
+.ds-btn--secondary:hover:not(:disabled) {
+  background: var(--ds-color-primary-50);
+  border-color: var(--ds-color-primary);
+  box-shadow: var(--ds-shadow-sm);
+}
+
+.ds-btn:disabled,
+.ds-btn--disabled,
+.ds-btn[disabled] {
+  opacity: 0.55;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+
+.ds-btn:focus-visible {
+  outline: none;
+  box-shadow: var(--ds-shadow-focus);
+}
+
+.ds-btn--primary:focus-visible {
+  box-shadow: var(--ds-shadow-focus), var(--ds-shadow-button);
+}

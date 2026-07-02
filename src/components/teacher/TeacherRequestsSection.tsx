@@ -1,0 +1,86 @@
+import { useCallback, useEffect, useState } from 'react'
+import type { RequestType, TeacherRequest } from '../../types/request'
+import { createTeacherRequest, loadTeacherRequests } from '../../services/requests'
+import { CreateRequestForm } from './CreateRequestForm'
+import { TeacherRequestsList } from './TeacherRequestsList'
+
+export function TeacherRequestsSection() {
+  const [requests, setRequests] = useState<TeacherRequest[]>([])
+  const [isLoading, setIsLoading] = useState(true)
+  const [loadError, setLoadError] = useState('')
+  const [isSubmitting, setIsSubmitting] = useState(false)
+  const [submitMessage, setSubmitMessage] = useState('')
+  const [requestsListVersion, setRequestsListVersion] = useState(0)
+  const [formKey, setFormKey] = useState(0)
+
+  const fetchRequests = useCallback(async () => {
+    setIsLoading(true)
+    setLoadError('')
+
+    const result = await loadTeacherRequests()
+
+    if (!result.ok) {
+      setRequests([])
+      setLoadError(result.errorMessage)
+    } else {
+      setRequests(result.requests)
+    }
+
+    setIsLoading(false)
+  }, [])
+
+  useEffect(() => {
+    void fetchRequests()
+  }, [fetchRequests, requestsListVersion])
+
+  async function handleCreateRequest(input: {
+    requestType: RequestType
+    description: string
+  }) {
+    setSubmitMessage('')
+    setIsSubmitting(true)
+
+    const result = await createTeacherRequest({
+      requestType: input.requestType,
+      description: input.description,
+    })
+
+    setIsSubmitting(false)
+
+    if (!result.ok) {
+      setSubmitMessage(result.errorMessage)
+      return
+    }
+
+    setSubmitMessage('בקשה נשלחה בהצלחה.')
+    setFormKey((key) => key + 1)
+    setRequestsListVersion((version) => version + 1)
+  }
+
+  return (
+    <section className="teacher-dashboard__requests">
+      <h2 className="teacher-dashboard__section-title">הבקשות שלי</h2>
+
+      <div className="ds-card ds-card--accent teacher-dashboard__create-card">
+        <CreateRequestForm
+          key={formKey}
+          isSubmitting={isSubmitting}
+          submitMessage={submitMessage}
+          onSubmit={handleCreateRequest}
+        />
+      </div>
+
+      <div className="ds-card teacher-dashboard__list-card">
+        <h3 className="teacher-dashboard__subsection-title">רשימת בקשות</h3>
+
+        {isLoading && <p className="ds-form-message">טוען בקשות...</p>}
+
+        {!isLoading && loadError && (
+          <p className="ds-form-message ds-form-message--error">{loadError}</p>
+        )}
+
+        {!isLoading && !loadError && <TeacherRequestsList requests={requests} />}
+      </div>
+    </section>
+  )
+}
