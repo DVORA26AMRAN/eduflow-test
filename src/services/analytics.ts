@@ -1,10 +1,89 @@
-import type { ManagerAnalytics } from '../types/analytics'
-import { isRequestStatus } from '../utils/requests'
+import type {
+  ManagerAnalytics,
+  ManagerRecentActivityEntry,
+  ManagerRecentRequest,
+} from '../types/analytics'
+import { isRequestStatus, isRequestType } from '../utils/requests'
 import { supabase } from './supabase'
 
 export type LoadManagerAnalyticsResult =
   | { ok: true; analytics: ManagerAnalytics }
   | { ok: false; errorMessage: string }
+
+export type LoadRecentRequestsResult =
+  | { ok: true; requests: ManagerRecentRequest[] }
+  | { ok: false; errorMessage: string }
+
+export type LoadRecentRequestActivityResult =
+  | { ok: true; entries: ManagerRecentActivityEntry[] }
+  | { ok: false; errorMessage: string }
+
+const ANALYTICS_ERROR_MESSAGE = 'טעינת הנתונים נכשלה.'
+
+function extractTeacherFullName(users: unknown): string | null {
+  if (Array.isArray(users)) {
+    const first = users[0] as { full_name?: unknown } | undefined
+    return typeof first?.full_name === 'string' ? first.full_name : null
+  }
+
+  if (users && typeof users === 'object' && 'full_name' in users) {
+    const fullName = (users as { full_name: unknown }).full_name
+    return typeof fullName === 'string' ? fullName : null
+  }
+
+  return null
+}
+
+function parseManagerRecentRequest(row: {
+  id: unknown
+  request_type: unknown
+  status: unknown
+  created_at: unknown
+  users: unknown
+}): ManagerRecentRequest | null {
+  const teacherFullName = extractTeacherFullName(row.users)
+
+  if (
+    typeof row.id !== 'string' ||
+    typeof row.created_at !== 'string' ||
+    teacherFullName === null ||
+    !isRequestType(row.request_type) ||
+    !isRequestStatus(row.status)
+  ) {
+    return null
+  }
+
+  return {
+    id: row.id,
+    teacher_full_name: teacherFullName,
+    request_type: row.request_type,
+    status: row.status,
+    created_at: row.created_at,
+  }
+}
+
+function parseManagerRecentActivityEntry(row: {
+  id: unknown
+  previous_status: unknown
+  new_status: unknown
+  created_at: unknown
+}): ManagerRecentActivityEntry | null {
+  if (
+    typeof row.id !== 'string' ||
+    typeof row.created_at !== 'string' ||
+    !isRequestStatus(row.previous_status) ||
+    !isRequestStatus(row.new_status)
+  ) {
+    return null
+  }
+
+  return {
+    id: row.id,
+    previous_status: row.previous_status,
+    new_status: row.new_status,
+    created_at: row.created_at,
+  }
+}
 
 function createEmptyAnalytics(): ManagerAnalytics {
   return {
@@ -28,7 +107,7 @@ export async function loadManagerAnalytics(): Promise<LoadManagerAnalyticsResult
     console.error('[analytics] failed to load users', usersResult.error)
     return {
       ok: false,
-      errorMessage: 'טעינת הנתונים נכשלה.',
+      errorMessage: ANALYTICS_ERROR_MESSAGE,
     }
   }
 
@@ -36,7 +115,7 @@ export async function loadManagerAnalytics(): Promise<LoadManagerAnalyticsResult
     console.error('[analytics] failed to load requests', requestsResult.error)
     return {
       ok: false,
-      errorMessage: 'טעינת הנתונים נכשלה.',
+      errorMessage: ANALYTICS_ERROR_MESSAGE,
     }
   }
 
@@ -80,4 +159,50 @@ export async function loadManagerAnalytics(): Promise<LoadManagerAnalyticsResult
   }
 
   return { ok: true, analytics }
+}
+
+export async function loadRecentRequests(): Promise<LoadRecentRequestsResult> {
+  const { data, error } = await supabase
+    .from('requests')
+    .select(
+      'id, request_type, status, created_at, users!created_by_user_id(full_name)',
+    )
+    .order('created_at', { ascending: false })
+    .limit(5)
+
+  if (error) {
+    console.error('[analytics] failed to load recent requests', error)
+    return {
+      ok: false,
+      errorMessage: ANALYTICS_ERROR_MESSAGE,
+    }
+  }
+
+  const requests = (data ?? [])
+    .map(parseManagerRecentRequest)
+    .filter((request): request is ManagerRecentRequest => request !== null)
+
+  return { ok: true, requests }
+}
+
+export async function loadRecentRequestActivity(): Promise<LoadRecentRequestActivityResult> {
+  const { data, error } = await supabase
+    .from('request_status_history')
+    .select('id, previous_status, new_status, created_at')
+    .order('created_at', { ascending: false })
+    .limit(5)
+
+  if (error) {
+    console.error('[analytics] failed to load recent request activity', error)
+    return {
+      ok: false,
+      errorMessage: ANALYTICS_ERROR_MESSAGE,
+    }
+  }
+
+  const entries = (data ?? [])
+    .map(parseManagerRecentActivityEntry)
+    .filter((entry): entry is ManagerRecentActivityEntry => entry !== null)
+
+  return { ok: true, entries }
 }

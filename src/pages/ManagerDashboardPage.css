@@ -45,6 +45,54 @@
   color: var(--ds-color-text-secondary);
 }
 
+.manager-dashboard__insights {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--ds-space-6);
+  margin-bottom: var(--ds-space-8);
+}
+
+.manager-dashboard__insight-card {
+  padding: var(--ds-space-6);
+}
+
+.manager-dashboard__insight-status {
+  margin: 0;
+  color: var(--ds-color-text-secondary);
+}
+
+.manager-dashboard__activity-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.manager-dashboard__activity-item {
+  padding: var(--ds-space-4) 0;
+  border-bottom: 1px solid var(--ds-color-border);
+}
+
+.manager-dashboard__activity-item:first-child {
+  padding-top: 0;
+}
+
+.manager-dashboard__activity-item:last-child {
+  padding-bottom: 0;
+  border-bottom: none;
+}
+
+.manager-dashboard__activity-transition {
+  margin: 0 0 var(--ds-space-1);
+  font-weight: var(--ds-font-weight-medium);
+  color: var(--ds-color-text-primary);
+}
+
+.manager-dashboard__activity-meta {
+  margin: 0;
+  font-size: var(--ds-font-size-sm);
+  color: var(--ds-color-text-secondary);
+}
+
 .manager-dashboard__stat-card {
   text-align: right;
 }
@@ -120,6 +168,10 @@
 
   .manager-dashboard__stats {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .manager-dashboard__insights {
+    grid-template-columns: 1fr;
   }
 
   .manager-dashboard__search-field {
