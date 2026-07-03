@@ -4,11 +4,13 @@ import {
   REQUEST_STATUS_OPTIONS,
   translateRequestType,
 } from '../../utils/requests'
+import { SecretaryRequestAttachmentCell } from './SecretaryRequestAttachmentCell'
 
 type SecretaryRequestsTableProps = {
   requests: SecretaryInboxRequest[]
   emptyMessage: string
   updatingRequestId: string | null
+  requestIdsWithAttachments: ReadonlySet<string>
   onStatusChange: (requestId: string, status: RequestStatus) => void
   onShowHistory: (requestId: string) => void
 }
@@ -17,6 +19,7 @@ export function SecretaryRequestsTable({
   requests,
   emptyMessage,
   updatingRequestId,
+  requestIdsWithAttachments,
   onStatusChange,
   onShowHistory,
 }: SecretaryRequestsTableProps) {
@@ -38,6 +41,7 @@ export function SecretaryRequestsTable({
             <th>תיאור</th>
             <th>סטטוס</th>
             <th>תאריך</th>
+            <th>קובץ מצורף</th>
             <th>פעולות</th>
           </tr>
         </thead>
@@ -65,6 +69,12 @@ export function SecretaryRequestsTable({
                 </select>
               </td>
               <td>{formatRequestDate(request.created_at)}</td>
+              <td>
+                <SecretaryRequestAttachmentCell
+                  requestId={request.id}
+                  hasAttachment={requestIdsWithAttachments.has(request.id)}
+                />
+              </td>
               <td>
                 <button
                   type="button"

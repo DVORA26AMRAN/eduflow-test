@@ -1,11 +1,17 @@
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import type { RequestType } from '../../types/request'
+import { REQUEST_ATTACHMENT_ACCEPT } from '../../types/attachment'
+import { validateRequestAttachment } from '../../services/attachments'
 import { isRequestType } from '../../utils/requests'
 
 type CreateRequestFormProps = {
   isSubmitting: boolean
   submitMessage: string
-  onSubmit: (input: { requestType: RequestType; description: string }) => void
+  onSubmit: (input: {
+    requestType: RequestType
+    description: string
+    attachmentFile: File | null
+  }) => void
 }
 
 function getSubmitMessageClassName(message: string): string {
@@ -31,7 +37,9 @@ export function CreateRequestForm({
 }: CreateRequestFormProps) {
   const [requestType, setRequestType] = useState('')
   const [description, setDescription] = useState('')
+  const [attachmentFile, setAttachmentFile] = useState<File | null>(null)
   const [validationMessage, setValidationMessage] = useState('')
+  const fileInputRef = useRef<HTMLInputElement>(null)
 
   function handleSubmit() {
     setValidationMessage('')
@@ -46,9 +54,18 @@ export function CreateRequestForm({
       return
     }
 
+    if (attachmentFile) {
+      const attachmentValidation = validateRequestAttachment(attachmentFile)
+      if (!attachmentValidation.ok) {
+        setValidationMessage(attachmentValidation.errorMessage)
+        return
+      }
+    }
+
     onSubmit({
       requestType,
       description: description.trim(),
+      attachmentFile,
     })
   }
 
@@ -60,6 +77,27 @@ export function CreateRequestForm({
   function handleDescriptionChange(value: string) {
     setDescription(value)
     setValidationMessage('')
+  }
+
+  function handleAttachmentChange(file: File | null) {
+    setValidationMessage('')
+
+    if (!file) {
+      setAttachmentFile(null)
+      return
+    }
+
+    const attachmentValidation = validateRequestAttachment(file)
+    if (!attachmentValidation.ok) {
+      setAttachmentFile(null)
+      setValidationMessage(attachmentValidation.errorMessage)
+      if (fileInputRef.current) {
+        fileInputRef.current.value = ''
+      }
+      return
+    }
+
+    setAttachmentFile(file)
   }
 
   return (
@@ -93,6 +131,19 @@ export function CreateRequestForm({
           onChange={(e) => handleDescriptionChange(e.target.value)}
           disabled={isSubmitting}
           placeholder="פרטי הבקשה"
+        />
+      </label>
+
+      <label className="ds-field" htmlFor="request-attachment">
+        <span className="ds-label">קובץ מצורף</span>
+        <input
+          ref={fileInputRef}
+          id="request-attachment"
+          type="file"
+          className="ds-input teacher-dashboard__file-input"
+          accept={REQUEST_ATTACHMENT_ACCEPT}
+          onChange={(e) => handleAttachmentChange(e.target.files?.[0] ?? null)}
+          disabled={isSubmitting}
         />
       </label>
 

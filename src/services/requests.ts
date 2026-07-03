@@ -13,7 +13,7 @@ export type LoadTeacherRequestsResult =
   | { ok: false; errorMessage: string }
 
 export type CreateTeacherRequestResult =
-  | { ok: true }
+  | { ok: true; requestId: string }
   | { ok: false; errorMessage: string }
 
 export type LoadSecretaryRequestsResult =
@@ -265,14 +265,18 @@ export async function createTeacherRequest(
     }
   }
 
-  const { error } = await supabase.from('requests').insert({
-    institution_id: institutionResult.institutionId,
-    created_by_user_id: userId,
-    request_type: input.requestType,
-    description: input.description.trim(),
-  })
+  const { data, error } = await supabase
+    .from('requests')
+    .insert({
+      institution_id: institutionResult.institutionId,
+      created_by_user_id: userId,
+      request_type: input.requestType,
+      description: input.description.trim(),
+    })
+    .select('id')
+    .single()
 
-  if (error) {
+  if (error || typeof data?.id !== 'string') {
     console.error('[requests] failed to create request', error)
     return {
       ok: false,
@@ -280,5 +284,5 @@ export async function createTeacherRequest(
     }
   }
 
-  return { ok: true }
+  return { ok: true, requestId: data.id }
 }

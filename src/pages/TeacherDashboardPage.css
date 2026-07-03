@@ -164,6 +164,10 @@
   margin-top: var(--ds-space-2);
 }
 
+.teacher-dashboard__file-input {
+  padding: var(--ds-space-2) var(--ds-space-3);
+}
+
 .teacher-dashboard__empty-state {
   padding: var(--ds-space-8) var(--ds-space-6);
   border: 1px dashed var(--ds-color-border);

@@ -10,6 +10,7 @@ import {
   loadSecretaryRequests,
   updateRequestStatus,
 } from '../../services/requests'
+import { loadRequestAttachmentRequestIds } from '../../services/attachments'
 import { filterSecretaryInboxRequests } from '../../utils/requests'
 import { RequestStatusHistoryPanel } from './RequestStatusHistoryPanel'
 import { SecretaryRequestsFilters } from './SecretaryRequestsFilters'
@@ -33,18 +34,30 @@ export function SecretaryRequestsInbox() {
   const [historyEntries, setHistoryEntries] = useState<RequestStatusHistoryEntry[]>([])
   const [isHistoryLoading, setIsHistoryLoading] = useState(false)
   const [historyError, setHistoryError] = useState('')
+  const [requestIdsWithAttachments, setRequestIdsWithAttachments] = useState<
+    ReadonlySet<string>
+  >(new Set())
 
   const fetchRequests = useCallback(async () => {
     setIsLoading(true)
     setLoadError('')
 
-    const result = await loadSecretaryRequests()
+    const [requestsResult, attachmentIdsResult] = await Promise.all([
+      loadSecretaryRequests(),
+      loadRequestAttachmentRequestIds(),
+    ])
 
-    if (!result.ok) {
+    if (!requestsResult.ok) {
       setRequests([])
-      setLoadError(result.errorMessage)
+      setLoadError(requestsResult.errorMessage)
     } else {
-      setRequests(result.requests)
+      setRequests(requestsResult.requests)
+    }
+
+    if (attachmentIdsResult.ok) {
+      setRequestIdsWithAttachments(attachmentIdsResult.requestIds)
+    } else {
+      setRequestIdsWithAttachments(new Set())
     }
 
     setIsLoading(false)
@@ -150,6 +163,7 @@ export function SecretaryRequestsInbox() {
           requests={filteredRequests}
           emptyMessage={emptyMessage}
           updatingRequestId={updatingRequestId}
+          requestIdsWithAttachments={requestIdsWithAttachments}
           onStatusChange={handleStatusChange}
           onShowHistory={handleShowHistory}
         />

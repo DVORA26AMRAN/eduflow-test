@@ -1,5 +1,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import type { RequestType, TeacherRequest } from '../../types/request'
+import { REQUEST_CREATED_ATTACHMENT_UPLOAD_FAILED_MESSAGE } from '../../types/attachment'
+import { uploadRequestAttachment } from '../../services/attachments'
 import { createTeacherRequest, loadTeacherRequests } from '../../services/requests'
 import { CreateRequestForm } from './CreateRequestForm'
 import { TeacherRequestsList } from './TeacherRequestsList'
@@ -36,6 +38,7 @@ export function TeacherRequestsSection() {
   async function handleCreateRequest(input: {
     requestType: RequestType
     description: string
+    attachmentFile: File | null
   }) {
     setSubmitMessage('')
     setIsSubmitting(true)
@@ -45,11 +48,28 @@ export function TeacherRequestsSection() {
       description: input.description,
     })
 
-    setIsSubmitting(false)
-
     if (!result.ok) {
+      setIsSubmitting(false)
       setSubmitMessage(result.errorMessage)
       return
+    }
+
+    if (input.attachmentFile) {
+      const uploadResult = await uploadRequestAttachment({
+        requestId: result.requestId,
+        file: input.attachmentFile,
+      })
+
+      setIsSubmitting(false)
+
+      if (!uploadResult.ok) {
+        setSubmitMessage(REQUEST_CREATED_ATTACHMENT_UPLOAD_FAILED_MESSAGE)
+        setFormKey((key) => key + 1)
+        setRequestsListVersion((version) => version + 1)
+        return
+      }
+    } else {
+      setIsSubmitting(false)
     }
 
     setSubmitMessage('בקשה נשלחה בהצלחה.')
