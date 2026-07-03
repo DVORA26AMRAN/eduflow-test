@@ -1,4 +1,5 @@
 import type { RequestStatus, RequestType, SecretaryInboxFilters } from '../../types/request'
+import { REQUEST_TYPE_OPTIONS } from '../../utils/requests'
 
 type SecretaryRequestsFiltersProps = {
   filters: SecretaryInboxFilters
@@ -41,10 +42,11 @@ export function SecretaryRequestsFilters({
           }
         >
           <option value="all">כל הסוגים</option>
-          <option value="equipment">ציוד</option>
-          <option value="maintenance">תחזוקה</option>
-          <option value="pedagogical">פדגוגי</option>
-          <option value="other">אחר</option>
+          {REQUEST_TYPE_OPTIONS.map((option) => (
+            <option key={option.value} value={option.value}>
+              {option.label}
+            </option>
+          ))}
         </select>
       </label>
 

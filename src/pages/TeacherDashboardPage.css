@@ -155,6 +155,76 @@
   color: var(--ds-color-text-primary);
 }
 
+.teacher-dashboard__category-fieldset {
+  margin: 0 0 var(--ds-space-5);
+  padding: 0;
+  border: none;
+}
+
+.teacher-dashboard__category-legend {
+  margin-bottom: var(--ds-space-3);
+}
+
+.teacher-dashboard__category-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--ds-space-4);
+}
+
+.teacher-dashboard__category-card {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--ds-space-2);
+  width: 100%;
+  min-height: 148px;
+  padding: var(--ds-space-5);
+  border: 2px solid var(--ds-color-border);
+  border-radius: var(--ds-radius-lg);
+  background: var(--ds-color-surface);
+  color: var(--ds-color-text-primary);
+  text-align: right;
+  cursor: pointer;
+  transition:
+    border-color var(--ds-transition-base),
+    box-shadow var(--ds-transition-base),
+    background var(--ds-transition-base),
+    transform var(--ds-transition-base);
+}
+
+.teacher-dashboard__category-card:hover:not(:disabled) {
+  border-color: var(--ds-color-primary-light);
+  box-shadow: var(--ds-shadow-sm);
+}
+
+.teacher-dashboard__category-card--selected {
+  border-color: var(--ds-color-primary);
+  background: rgba(123, 104, 238, 0.08);
+  box-shadow: var(--ds-shadow-md);
+}
+
+.teacher-dashboard__category-card:disabled {
+  opacity: 0.65;
+  cursor: not-allowed;
+}
+
+.teacher-dashboard__category-icon {
+  font-size: 1.75rem;
+  line-height: 1;
+}
+
+.teacher-dashboard__category-title {
+  font-size: var(--ds-font-size-lg);
+  font-weight: var(--ds-font-weight-semibold);
+  color: var(--ds-color-primary-dark);
+}
+
+.teacher-dashboard__category-description {
+  font-size: var(--ds-font-size-sm);
+  line-height: var(--ds-line-height-relaxed);
+  color: var(--ds-color-text-secondary);
+}
+
 .teacher-dashboard__create-card,
 .teacher-dashboard__list-card {
   padding: var(--ds-space-6);
@@ -211,5 +281,9 @@
 
   .teacher-dashboard__empty-state {
     padding: var(--ds-space-6) var(--ds-space-4);
+  }
+
+  .teacher-dashboard__category-grid {
+    grid-template-columns: 1fr;
   }
 }

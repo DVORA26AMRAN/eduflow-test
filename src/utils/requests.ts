@@ -6,11 +6,44 @@ import type {
 } from '../types/request'
 
 const requestTypeLabels: Record<RequestType, string> = {
-  equipment: 'ציוד',
-  maintenance: 'תחזוקה',
-  pedagogical: 'פדגוגי',
-  other: 'אחר',
+  absence: 'היעדרויות',
+  budget_or_equipment: 'בקשת תקציב / ציוד',
+  substitute_teacher: 'מילוי מקום',
 }
+
+export type TeacherRequestCategory = {
+  value: RequestType
+  title: string
+  description: string
+  icon: string
+}
+
+export const TEACHER_REQUEST_CATEGORIES: TeacherRequestCategory[] = [
+  {
+    value: 'absence',
+    title: 'היעדרויות',
+    description: 'דיווח על היעדרות או חופשה',
+    icon: '📅',
+  },
+  {
+    value: 'budget_or_equipment',
+    title: 'בקשת תקציב / ציוד',
+    description: 'בקשת ציוד, תקציב או משאבים',
+    icon: '📦',
+  },
+  {
+    value: 'substitute_teacher',
+    title: 'מילוי מקום',
+    description: 'בקשה למורה מחליף',
+    icon: '👩‍🏫',
+  },
+]
+
+export const REQUEST_TYPE_OPTIONS: { value: RequestType; label: string }[] = [
+  { value: 'absence', label: requestTypeLabels.absence },
+  { value: 'budget_or_equipment', label: requestTypeLabels.budget_or_equipment },
+  { value: 'substitute_teacher', label: requestTypeLabels.substitute_teacher },
+]
 
 const requestStatusLabels: Record<RequestStatus, string> = {
   new: 'חדש',
@@ -64,10 +97,9 @@ export function formatRequestDateTime(isoDate: string): string {
 
 export function isRequestType(value: string): value is RequestType {
   return (
-    value === 'equipment' ||
-    value === 'maintenance' ||
-    value === 'pedagogical' ||
-    value === 'other'
+    value === 'absence' ||
+    value === 'budget_or_equipment' ||
+    value === 'substitute_teacher'
   )
 }
 

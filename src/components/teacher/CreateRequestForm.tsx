@@ -3,6 +3,7 @@ import type { RequestType } from '../../types/request'
 import { REQUEST_ATTACHMENT_ACCEPT } from '../../types/attachment'
 import { validateRequestAttachment } from '../../services/attachments'
 import { isRequestType } from '../../utils/requests'
+import { TeacherRequestCategorySelector } from './TeacherRequestCategorySelector'
 
 type CreateRequestFormProps = {
   isSubmitting: boolean
@@ -35,7 +36,7 @@ export function CreateRequestForm({
   submitMessage,
   onSubmit,
 }: CreateRequestFormProps) {
-  const [requestType, setRequestType] = useState('')
+  const [requestType, setRequestType] = useState<RequestType | ''>('')
   const [description, setDescription] = useState('')
   const [attachmentFile, setAttachmentFile] = useState<File | null>(null)
   const [validationMessage, setValidationMessage] = useState('')
@@ -69,7 +70,7 @@ export function CreateRequestForm({
     })
   }
 
-  function handleRequestTypeChange(value: string) {
+  function handleRequestTypeSelect(value: RequestType) {
     setRequestType(value)
     setValidationMessage('')
   }
@@ -104,22 +105,11 @@ export function CreateRequestForm({
     <>
       <h3 className="teacher-dashboard__subsection-title">פתיחת בקשה חדשה</h3>
 
-      <label className="ds-field" htmlFor="request-type">
-        <span className="ds-label">סוג בקשה</span>
-        <select
-          id="request-type"
-          className="ds-select"
-          value={requestType}
-          onChange={(e) => handleRequestTypeChange(e.target.value)}
-          disabled={isSubmitting}
-        >
-          <option value="">בחרי סוג בקשה</option>
-          <option value="equipment">ציוד</option>
-          <option value="maintenance">תחזוקה</option>
-          <option value="pedagogical">פדגוגי</option>
-          <option value="other">אחר</option>
-        </select>
-      </label>
+      <TeacherRequestCategorySelector
+        selectedType={requestType}
+        isDisabled={isSubmitting}
+        onSelect={handleRequestTypeSelect}
+      />
 
       <label className="ds-field" htmlFor="request-description">
         <span className="ds-label">תיאור הבקשה</span>

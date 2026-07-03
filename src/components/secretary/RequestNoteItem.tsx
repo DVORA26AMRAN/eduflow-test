@@ -52,7 +52,7 @@ export function RequestNoteItem({
           <div className="secretary-dashboard__note-actions">
             <button
               type="button"
-              className="ds-btn ds-btn--primary secretary-dashboard__note-action-button"
+              className="secretary-dashboard__note-soft-button secretary-dashboard__note-soft-button--primary"
               onClick={() => void handleSaveEdit()}
               disabled={isSaving}
             >
@@ -60,7 +60,7 @@ export function RequestNoteItem({
             </button>
             <button
               type="button"
-              className="ds-btn ds-btn--secondary secretary-dashboard__note-action-button"
+              className="secretary-dashboard__note-soft-button"
               onClick={handleCancelEdit}
               disabled={isSaving}
             >
@@ -69,40 +69,46 @@ export function RequestNoteItem({
           </div>
         </div>
       ) : (
-        <>
+        <div className="secretary-dashboard__note-body">
           <p className="secretary-dashboard__note-text">{note.note_text}</p>
-          {note.created_by_full_name && (
+          <div className="secretary-dashboard__note-meta-group">
+            {note.created_by_full_name && (
+              <p className="secretary-dashboard__note-meta">
+                נוצר על ידי: {note.created_by_full_name}
+              </p>
+            )}
             <p className="secretary-dashboard__note-meta">
-              נוצר על ידי: {note.created_by_full_name}
+              נוצר: {formatRequestDateTime(note.created_at)}
             </p>
-          )}
-          <p className="secretary-dashboard__note-meta">
-            נוצר: {formatRequestDateTime(note.created_at)}
-          </p>
-          {wasNoteUpdated(note) && (
-            <p className="secretary-dashboard__note-meta">
-              עודכן: {formatRequestDateTime(note.updated_at)}
-            </p>
-          )}
+            {wasNoteUpdated(note) && (
+              <p className="secretary-dashboard__note-meta">
+                עודכן: {formatRequestDateTime(note.updated_at)}
+              </p>
+            )}
+          </div>
           <div className="secretary-dashboard__note-actions">
             <button
               type="button"
-              className="ds-btn ds-btn--secondary secretary-dashboard__note-action-button"
+              className="secretary-dashboard__note-icon-button secretary-dashboard__note-icon-button--edit"
               onClick={() => setIsEditing(true)}
               disabled={isSaving}
+              aria-label="עריכה"
+              title="עריכה"
             >
-              עריכה
+              ✎
             </button>
             <button
               type="button"
-              className="ds-btn ds-btn--secondary secretary-dashboard__note-action-button"
+              className="secretary-dashboard__note-icon-button secretary-dashboard__note-icon-button--delete"
               onClick={() => void handleDelete()}
               disabled={isSaving}
+              aria-label="מחיקה"
+              title="מחיקה"
             >
-              מחיקה
+              🗑
             </button>
           </div>
-        </>
+        </div>
       )}
     </li>
   )

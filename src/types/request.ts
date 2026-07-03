@@ -1,4 +1,4 @@
-export type RequestType = 'equipment' | 'maintenance' | 'pedagogical' | 'other'
+export type RequestType = 'absence' | 'budget_or_equipment' | 'substitute_teacher'
 
 export type RequestStatus = 'new' | 'in_progress' | 'completed' | 'rejected'
 

@@ -162,6 +162,9 @@ export function RequestNotesPanel({ isOpen, requestId, onClose }: RequestNotesPa
       >
         <header className="secretary-dashboard__notes-header">
           <h3 id="request-notes-title" className="secretary-dashboard__notes-title">
+            <span className="secretary-dashboard__notes-title-icon" aria-hidden="true">
+              📝
+            </span>
             הערות פנימיות
           </h3>
           <button
@@ -185,7 +188,7 @@ export function RequestNotesPanel({ isOpen, requestId, onClose }: RequestNotesPa
           )}
 
           {!isLoading && !loadError && notes.length === 0 && (
-            <p className="secretary-dashboard__notes-status">{NOTES_EMPTY_MESSAGE}</p>
+            <p className="secretary-dashboard__notes-empty">{NOTES_EMPTY_MESSAGE}</p>
           )}
 
           {!isLoading && !loadError && notes.length > 0 && (
@@ -205,7 +208,7 @@ export function RequestNotesPanel({ isOpen, requestId, onClose }: RequestNotesPa
           {!isLoading && !loadError && (
             <div className="secretary-dashboard__notes-compose">
               <textarea
-                className="secretary-dashboard__notes-textarea"
+                className="secretary-dashboard__notes-textarea secretary-dashboard__notes-textarea--compose"
                 rows={4}
                 value={newNoteText}
                 onChange={(event) => setNewNoteText(event.target.value)}
