@@ -2,10 +2,9 @@ import { useEffect, useState } from 'react'
 import { ManagerDashboardHeader } from '../components/manager/ManagerDashboardHeader'
 import { ManagerStatsCards } from '../components/manager/ManagerStatsCards'
 import { TeamManagementSection } from '../components/manager/TeamManagementSection'
-import {
-  countUsersByRole,
-  loadInstitutionUsers,
-} from '../services/institutionUsers'
+import { loadManagerAnalytics } from '../services/analytics'
+import { loadInstitutionUsers } from '../services/institutionUsers'
+import type { ManagerAnalytics } from '../types/analytics'
 import type { InstitutionUser, UserRole } from '../types/user'
 import './ManagerDashboardPage.css'
 
@@ -37,6 +36,9 @@ export function ManagerDashboardPage({
   const [users, setUsers] = useState<InstitutionUser[]>([])
   const [isUsersLoading, setIsUsersLoading] = useState(true)
   const [usersError, setUsersError] = useState('')
+  const [analytics, setAnalytics] = useState<ManagerAnalytics | null>(null)
+  const [isAnalyticsLoading, setIsAnalyticsLoading] = useState(true)
+  const [analyticsError, setAnalyticsError] = useState('')
 
   useEffect(() => {
     let isCancelled = false
@@ -68,18 +70,44 @@ export function ManagerDashboardPage({
     }
   }, [usersListVersion])
 
-  const teachersCount = countUsersByRole(users, 'teacher')
-  const secretariesCount = countUsersByRole(users, 'secretary')
-  const activeRequestsCount = 0
+  useEffect(() => {
+    let isCancelled = false
+
+    async function fetchAnalytics() {
+      setIsAnalyticsLoading(true)
+      setAnalyticsError('')
+
+      const result = await loadManagerAnalytics()
+
+      if (isCancelled) {
+        return
+      }
+
+      if (!result.ok) {
+        setAnalytics(null)
+        setAnalyticsError(result.errorMessage)
+      } else {
+        setAnalytics(result.analytics)
+      }
+
+      setIsAnalyticsLoading(false)
+    }
+
+    void fetchAnalytics()
+
+    return () => {
+      isCancelled = true
+    }
+  }, [usersListVersion])
 
   return (
     <main dir="rtl" className="manager-dashboard">
       <ManagerDashboardHeader onLogout={onLogout} />
 
       <ManagerStatsCards
-        teachersCount={teachersCount}
-        secretariesCount={secretariesCount}
-        activeRequestsCount={activeRequestsCount}
+        analytics={analytics}
+        isLoading={isAnalyticsLoading}
+        errorMessage={analyticsError}
       />
 
       <TeamManagementSection

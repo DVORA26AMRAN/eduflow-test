@@ -35,9 +35,14 @@
 
 .manager-dashboard__stats {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: var(--ds-space-4);
   margin-bottom: var(--ds-space-8);
+}
+
+.manager-dashboard__analytics-status {
+  margin: 0 0 var(--ds-space-8);
+  color: var(--ds-color-text-secondary);
 }
 
 .manager-dashboard__stat-card {
@@ -114,7 +119,7 @@
   }
 
   .manager-dashboard__stats {
-    grid-template-columns: 1fr;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
   .manager-dashboard__search-field {
