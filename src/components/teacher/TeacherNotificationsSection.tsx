@@ -1,10 +1,25 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
+import type { RealtimeChannel } from '@supabase/supabase-js'
 import type { TeacherNotification } from '../../types/notification'
 import {
   loadNotifications,
   markNotificationAsRead,
+  subscribeToTeacherNotifications,
+  unsubscribeFromTeacherNotifications,
 } from '../../services/notifications'
+import { supabase } from '../../services/supabase'
 import { TeacherNotificationsList } from './TeacherNotificationsList'
+
+function prependNotificationIfNew(
+  currentNotifications: TeacherNotification[],
+  notification: TeacherNotification,
+): TeacherNotification[] {
+  if (currentNotifications.some((item) => item.id === notification.id)) {
+    return currentNotifications
+  }
+
+  return [notification, ...currentNotifications]
+}
 
 export function TeacherNotificationsSection() {
   const [notifications, setNotifications] = useState<TeacherNotification[]>([])
@@ -35,6 +50,48 @@ export function TeacherNotificationsSection() {
   useEffect(() => {
     void fetchNotifications()
   }, [fetchNotifications])
+
+  useEffect(() => {
+    let channel: RealtimeChannel | null = null
+    let isCancelled = false
+
+    async function setupRealtimeSubscription() {
+      const { data, error } = await supabase.auth.getSession()
+
+      if (error) {
+        console.error('[notifications] failed to load session for realtime', error)
+        return
+      }
+
+      const userId = data.session?.user?.id
+      if (!userId || isCancelled) {
+        return
+      }
+
+      const subscribedChannel = subscribeToTeacherNotifications(userId, (notification) => {
+        setNotifications((currentNotifications) =>
+          prependNotificationIfNew(currentNotifications, notification),
+        )
+      })
+
+      if (isCancelled) {
+        void unsubscribeFromTeacherNotifications(subscribedChannel)
+        return
+      }
+
+      channel = subscribedChannel
+    }
+
+    void setupRealtimeSubscription()
+
+    return () => {
+      isCancelled = true
+
+      if (channel) {
+        void unsubscribeFromTeacherNotifications(channel)
+      }
+    }
+  }, [])
 
   async function handleNotificationClick(notificationId: string) {
     const notification = notifications.find((item) => item.id === notificationId)

@@ -1,3 +1,4 @@
+import type { RealtimeChannel } from '@supabase/supabase-js'
 import type { TeacherNotification } from '../types/notification'
 import { supabase } from './supabase'
 
@@ -78,4 +79,42 @@ export async function markNotificationAsRead(
   }
 
   return { ok: true }
+}
+
+export type TeacherNotificationInsertHandler = (notification: TeacherNotification) => void
+
+export function subscribeToTeacherNotifications(
+  userId: string,
+  onInsert: TeacherNotificationInsertHandler,
+): RealtimeChannel {
+  const channel = supabase
+    .channel(`teacher-notifications:${userId}`)
+    .on(
+      'postgres_changes',
+      {
+        event: 'INSERT',
+        schema: 'public',
+        table: 'notifications',
+        filter: `user_id=eq.${userId}`,
+      },
+      (payload) => {
+        const notification = parseNotification(payload.new)
+        if (notification) {
+          onInsert(notification)
+        }
+      },
+    )
+    .subscribe((status) => {
+      if (status === 'CHANNEL_ERROR') {
+        console.error('[notifications] realtime subscription failed', { userId })
+      }
+    })
+
+  return channel
+}
+
+export async function unsubscribeFromTeacherNotifications(
+  channel: RealtimeChannel,
+): Promise<void> {
+  await supabase.removeChannel(channel)
 }

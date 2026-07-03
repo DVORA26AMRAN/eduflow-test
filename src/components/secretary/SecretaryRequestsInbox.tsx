@@ -13,6 +13,7 @@ import {
 import { loadRequestAttachmentRequestIds } from '../../services/attachments'
 import { filterSecretaryInboxRequests } from '../../utils/requests'
 import { RequestStatusHistoryPanel } from './RequestStatusHistoryPanel'
+import { RequestNotesPanel } from './RequestNotesPanel'
 import { SecretaryRequestsFilters } from './SecretaryRequestsFilters'
 import { SecretaryRequestsTable } from './SecretaryRequestsTable'
 
@@ -37,6 +38,7 @@ export function SecretaryRequestsInbox() {
   const [requestIdsWithAttachments, setRequestIdsWithAttachments] = useState<
     ReadonlySet<string>
   >(new Set())
+  const [notesRequestId, setNotesRequestId] = useState<string | null>(null)
 
   const fetchRequests = useCallback(async () => {
     setIsLoading(true)
@@ -130,6 +132,14 @@ export function SecretaryRequestsInbox() {
     setHistoryEntries(result.entries)
   }
 
+  function handleCloseNotes() {
+    setNotesRequestId(null)
+  }
+
+  function handleShowNotes(requestId: string) {
+    setNotesRequestId(requestId)
+  }
+
   return (
     <section className="secretary-dashboard__inbox">
       <h2 className="secretary-dashboard__section-title">תיבת בקשות</h2>
@@ -166,6 +176,7 @@ export function SecretaryRequestsInbox() {
           requestIdsWithAttachments={requestIdsWithAttachments}
           onStatusChange={handleStatusChange}
           onShowHistory={handleShowHistory}
+          onShowNotes={handleShowNotes}
         />
       )}
 
@@ -175,6 +186,12 @@ export function SecretaryRequestsInbox() {
         errorMessage={historyError}
         entries={historyEntries}
         onClose={handleCloseHistory}
+      />
+
+      <RequestNotesPanel
+        isOpen={notesRequestId !== null}
+        requestId={notesRequestId}
+        onClose={handleCloseNotes}
       />
     </section>
   )

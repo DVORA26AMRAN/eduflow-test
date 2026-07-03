@@ -13,6 +13,7 @@ type SecretaryRequestsTableProps = {
   requestIdsWithAttachments: ReadonlySet<string>
   onStatusChange: (requestId: string, status: RequestStatus) => void
   onShowHistory: (requestId: string) => void
+  onShowNotes: (requestId: string) => void
 }
 
 export function SecretaryRequestsTable({
@@ -22,6 +23,7 @@ export function SecretaryRequestsTable({
   requestIdsWithAttachments,
   onStatusChange,
   onShowHistory,
+  onShowNotes,
 }: SecretaryRequestsTableProps) {
   if (requests.length === 0) {
     return (
@@ -76,13 +78,22 @@ export function SecretaryRequestsTable({
                 />
               </td>
               <td>
-                <button
-                  type="button"
-                  className="ds-btn ds-btn--secondary secretary-dashboard__history-button"
-                  onClick={() => onShowHistory(request.id)}
-                >
-                  היסטוריה
-                </button>
+                <div className="secretary-dashboard__row-actions">
+                  <button
+                    type="button"
+                    className="ds-btn ds-btn--secondary secretary-dashboard__history-button"
+                    onClick={() => onShowHistory(request.id)}
+                  >
+                    היסטוריה
+                  </button>
+                  <button
+                    type="button"
+                    className="ds-btn ds-btn--secondary secretary-dashboard__notes-button"
+                    onClick={() => onShowNotes(request.id)}
+                  >
+                    הערות
+                  </button>
+                </div>
               </td>
             </tr>
           ))}
