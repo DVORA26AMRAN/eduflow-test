@@ -1,4 +1,13 @@
-# EduFlow
+# EduFlow  
+## Project Status
+
+
+
+- Version: EduFlow MVP v1
+
+- Status: Feature Complete
+
+- Date: July 2026
 
 EduFlow is a multi-tenant school operations web application for managing institutional service requests. Each school (institution) operates in an isolated tenant boundary. Users authenticate through Supabase Auth and interact with role-specific dashboards in Hebrew with right-to-left (RTL) layout.
 
@@ -19,7 +28,11 @@ EduFlow supports the full lifecycle of internal school requests—from a teacher
 
 ---
 
+
+
 ## Main user roles
+
+
 
 ### Institution Manager
 
@@ -28,12 +41,16 @@ EduFlow supports the full lifecycle of internal school requests—from a teacher
 - Manages the institution team: search users, invite teachers and secretaries.
 - Read-only access to institution requests (no request status updates from the manager dashboard).
 
+
+
 ### Teacher
 
 - Creates service requests (equipment, maintenance, pedagogical, other).
 - Views their own submitted requests and current statuses.
 - Receives in-app notifications when a secretary updates request status.
 - Marks notifications as read.
+
+
 
 ### Secretary
 
@@ -44,13 +61,19 @@ EduFlow supports the full lifecycle of internal school requests—from a teacher
 
 ---
 
+
+
 ## Core workflows
+
+
 
 ### User invitation
 
 1. An institution manager fills out the create-user form (name, email, role).
 2. The frontend calls the `clever-processor` Supabase Edge Function with the manager's session token.
 3. The Edge Function invites the user by email and creates a corresponding row in `public.users` for the manager's institution.
+
+
 
 ### Password setup
 
@@ -59,12 +82,16 @@ EduFlow supports the full lifecycle of internal school requests—from a teacher
 3. The user sets a password; `password_setup_complete` is stored in user metadata.
 4. After setup, the app loads the user profile and routes to the role-appropriate dashboard.
 
+
+
 ### Teacher creates request
 
 1. The teacher opens the create-request form on their dashboard.
 2. They select a request type and enter a description.
 3. `createTeacherRequest()` inserts a row into `requests` with the teacher's `institution_id` and `created_by_user_id`.
 4. RLS ensures teachers can only create requests for their own institution and read their own submissions.
+
+
 
 ### Secretary processes request
 
@@ -73,17 +100,23 @@ EduFlow supports the full lifecycle of internal school requests—from a teacher
 3. They change status via an inline dropdown; `updateRequestStatus()` persists the change.
 4. RLS allows secretaries to read and update status for requests in their institution only.
 
+
+
 ### Request status history
 
 1. On every `requests.status` update, a database trigger appends a row to `request_status_history` (previous status, new status, actor, timestamp).
 2. Secretaries open **היסטוריה** on a request to view the full timeline.
 3. Managers see the five most recent status changes institution-wide on their dashboard.
 
+
+
 ### Teacher notifications
 
 1. On status change, a database trigger inserts a Hebrew notification into `notifications` for the request creator.
 2. Teachers see unread/read notifications on their dashboard.
 3. Clicking an unread notification marks it as read (`is_read = true`).
+
+
 
 ### Manager analytics
 
@@ -94,20 +127,26 @@ EduFlow supports the full lifecycle of internal school requests—from a teacher
 
 ---
 
+
+
 ## Tech stack
 
-| Layer | Technology |
-|-------|------------|
-| UI | React 19, TypeScript |
-| Build | Vite |
-| Styling | Custom design system (`src/design-system/`), component-scoped CSS |
-| Auth | Supabase Auth (email / invite flow) |
-| Database | Supabase PostgreSQL |
-| Access control | Supabase Row Level Security (RLS) |
-| Server logic | Supabase Edge Functions (`clever-processor` for user creation) |
-| Client SDK | `@supabase/supabase-js` |
+
+| Layer          | Technology                                                        |
+| -------------- | ----------------------------------------------------------------- |
+| UI             | React 19, TypeScript                                              |
+| Build          | Vite                                                              |
+| Styling        | Custom design system (`src/design-system/`), component-scoped CSS |
+| Auth           | Supabase Auth (email / invite flow)                               |
+| Database       | Supabase PostgreSQL                                               |
+| Access control | Supabase Row Level Security (RLS)                                 |
+| Server logic   | Supabase Edge Functions (`clever-processor` for user creation)    |
+| Client SDK     | `@supabase/supabase-js`                                           |
+
 
 ---
+
+
 
 ## Project structure
 
@@ -147,12 +186,18 @@ eduflow-test/
 
 ---
 
+
+
 ## Security model
+
+
 
 ### Tenant isolation
 
 - Every user row references one `institution_id`.
 - Tenant-owned tables (`requests`, `notifications`, `request_status_history`, etc.) carry `institution_id` for scoped policies and indexing.
+
+
 
 ### Row Level Security (RLS)
 
@@ -166,22 +211,28 @@ RLS is enabled on sensitive tables. Policies typically verify:
 
 ### Role capabilities (summary)
 
-| Role | Requests | Status history | Notifications | Team / analytics |
-|------|----------|----------------|---------------|------------------|
-| Teacher | Create own; read own | Read own requests | Read/update own | — |
-| Secretary | Read institution; update status | Read institution | — | — |
-| Manager | Read institution | Read institution (via RLS) | — | Read users; analytics |
+
+| Role      | Requests                        | Status history             | Notifications   | Team / analytics      |
+| --------- | ------------------------------- | -------------------------- | --------------- | --------------------- |
+| Teacher   | Create own; read own            | Read own requests          | Read/update own | —                     |
+| Secretary | Read institution; update status | Read institution           | —               | —                     |
+| Manager   | Read institution                | Read institution (via RLS) | —               | Read users; analytics |
+
+
+
 
 ### Triggers (server-side, not client)
 
-- **`requests_write_status_history`** — Appends to `request_status_history` on status change.
-- **`requests_create_status_notification`** — Creates a teacher notification on status change.
+- `requests_write_status_history` — Appends to `request_status_history` on status change.
+- `requests_create_status_notification` — Creates a teacher notification on status change.
 
 Writes from triggers use `SECURITY DEFINER` so clients do not need broad INSERT policies.
 
 ### Edge Functions
 
-- **`clever-processor`** — Privileged user invitation and `public.users` provisioning. Called only with a valid manager session Bearer token.
+- `clever-processor` — Privileged user invitation and `public.users` provisioning. Called only with a valid manager session Bearer token.
+
+
 
 ### Frontend
 
@@ -189,13 +240,19 @@ Writes from triggers use `SECURITY DEFINER` so clients do not need broad INSERT 
 
 ---
 
+
+
 ## Local development
+
+
 
 ### Prerequisites
 
 - Node.js (LTS recommended)
 - npm
 - A Supabase project with migrations applied and the `clever-processor` Edge Function deployed
+
+
 
 ### Setup
 
@@ -214,28 +271,34 @@ npm run preview  # Preview production build
 npm run lint     # ESLint
 ```
 
+
+
 ### Environment
 
 Supabase URL and anon key are configured in `src/services/supabase.ts`. For a different Supabase project, update those values and ensure migrations are applied.
 
 ---
 
+
+
 ## Current project status
 
 **Completed (Phase 1):**
 
-| Area | Status |
-|------|--------|
-| Multi-tenant schema (institutions, users, capabilities, audit logs) | Done |
-| Supabase Auth login and invite / password setup flow | Done |
-| Manager dashboard (team management, analytics cards, recent requests & activity) | Done |
-| Teacher dashboard (create request, list requests, notifications) | Done |
-| Secretary dashboard (inbox, filters, status updates, history panel) | Done |
-| `requests` table with teacher/secretary/manager RLS (in repo + production) | Done |
-| `request_status_history` with auto-write trigger | Done |
-| `notifications` with auto-create trigger on status change | Done |
-| Design system applied to Login, Manager, and Teacher dashboards | Done |
-| Hebrew UI and RTL across implemented dashboards | Done |
+
+| Area                                                                             | Status |
+| -------------------------------------------------------------------------------- | ------ |
+| Multi-tenant schema (institutions, users, capabilities, audit logs)              | Done   |
+| Supabase Auth login and invite / password setup flow                             | Done   |
+| Manager dashboard (team management, analytics cards, recent requests & activity) | Done   |
+| Teacher dashboard (create request, list requests, notifications)                 | Done   |
+| Secretary dashboard (inbox, filters, status updates, history panel)              | Done   |
+| `requests` table with teacher/secretary/manager RLS (in repo + production)       | Done   |
+| `request_status_history` with auto-write trigger                                 | Done   |
+| `notifications` with auto-create trigger on status change                        | Done   |
+| Design system applied to Login, Manager, and Teacher dashboards                  | Done   |
+| Hebrew UI and RTL across implemented dashboards                                  | Done   |
+
 
 **Known gaps / in progress:**
 
@@ -245,6 +308,8 @@ Supabase URL and anon key are configured in `src/services/supabase.ts`. For a di
 - Some early migrations may exist only in the Supabase SQL Editor history; see `supabase/migrations/README.md`.
 
 ---
+
+
 
 ## Future roadmap
 
@@ -260,6 +325,8 @@ Planned or deferred enhancements:
 - **Edge Function hardening** — Improved error handling and observability for user provisioning.
 
 ---
+
+
 
 ## License
 
