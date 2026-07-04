@@ -7,3 +7,7 @@ export type TeacherNotification = {
   metadata: Record<string, unknown>
   created_at: string
 }
+
+export const NOTIFICATION_TYPE_SUBSTITUTE_BOARD_APPROVED = 'SUBSTITUTE_BOARD_APPROVED'
+
+export type SubstituteBoardApprovedNotificationRole = 'requester' | 'substitute'

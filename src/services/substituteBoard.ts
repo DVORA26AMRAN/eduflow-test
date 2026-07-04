@@ -11,10 +11,21 @@ import {
 import {
   isSubstituteBoardPostStatus,
   isSubstituteBoardPostType,
+  formatSubstituteBoardDate,
   normalizeOptionalText,
   normalizeOptionalTime,
 } from '../utils/substituteBoard'
+import type { SubstituteBoardApprovedNotificationRole } from '../types/notification'
+import { NOTIFICATION_TYPE_SUBSTITUTE_BOARD_APPROVED } from '../types/notification'
 import { supabase } from './supabase'
+
+type SubstituteBoardPostApprovalDetails = {
+  id: string
+  institution_id: string
+  created_by_user_id: string
+  selected_teacher_user_id: string
+  date: string
+}
 
 export type LoadSubstituteBoardPostsResult =
   | { ok: true; posts: SubstituteBoardPost[]; currentUserId: string }
@@ -442,6 +453,140 @@ export async function loadPendingSubstituteBoardApprovals(): Promise<LoadPending
   return { ok: true, approvals }
 }
 
+function parseSubstituteBoardPostApprovalDetails(row: {
+  id: unknown
+  institution_id: unknown
+  created_by_user_id: unknown
+  selected_teacher_user_id: unknown
+  date: unknown
+}): SubstituteBoardPostApprovalDetails | null {
+  if (
+    typeof row.id !== 'string' ||
+    typeof row.institution_id !== 'string' ||
+    typeof row.created_by_user_id !== 'string' ||
+    typeof row.selected_teacher_user_id !== 'string' ||
+    typeof row.date !== 'string'
+  ) {
+    return null
+  }
+
+  return {
+    id: row.id,
+    institution_id: row.institution_id,
+    created_by_user_id: row.created_by_user_id,
+    selected_teacher_user_id: row.selected_teacher_user_id,
+    date: row.date,
+  }
+}
+
+async function loadSubstituteBoardPostApprovalDetails(
+  postId: string,
+): Promise<
+  | { ok: true; post: SubstituteBoardPostApprovalDetails }
+  | { ok: false; errorMessage: string }
+> {
+  const { data, error } = await supabase
+    .from('substitute_board_posts')
+    .select('id, institution_id, created_by_user_id, selected_teacher_user_id, date')
+    .eq('id', postId)
+    .eq('status', 'pending_secretary_approval')
+    .maybeSingle()
+
+  if (error) {
+    console.error('[substituteBoard] failed to load post for approval notifications', error)
+    return {
+      ok: false,
+      errorMessage: SECRETARY_SUBSTITUTE_APPROVAL_FAILURE_MESSAGE,
+    }
+  }
+
+  const post = parseSubstituteBoardPostApprovalDetails(data ?? {})
+
+  if (!post) {
+    return {
+      ok: false,
+      errorMessage: SECRETARY_SUBSTITUTE_APPROVAL_FAILURE_MESSAGE,
+    }
+  }
+
+  return { ok: true, post }
+}
+
+function buildSubstituteBoardApprovalNotificationContent(
+  date: string,
+  role: SubstituteBoardApprovedNotificationRole,
+): { title: string; message: string } {
+  const formattedDate = formatSubstituteBoardDate(date)
+
+  if (role === 'requester') {
+    return {
+      title: 'מילוי המקום אושר',
+      message: `מילוי המקום שלך ליום ${formattedDate} אושר.`,
+    }
+  }
+
+  return {
+    title: 'אושרת כמחליפה',
+    message: `אושרת כמחליפה ליום ${formattedDate}.`,
+  }
+}
+
+async function insertSubstituteBoardApprovalNotification(input: {
+  institutionId: string
+  userId: string
+  postId: string
+  date: string
+  role: SubstituteBoardApprovedNotificationRole
+}): Promise<void> {
+  const { title, message } = buildSubstituteBoardApprovalNotificationContent(
+    input.date,
+    input.role,
+  )
+
+  const { error } = await supabase.from('notifications').insert({
+    institution_id: input.institutionId,
+    user_id: input.userId,
+    notification_type: NOTIFICATION_TYPE_SUBSTITUTE_BOARD_APPROVED,
+    title,
+    message,
+    metadata: {
+      substitute_board_post_id: input.postId,
+      notification_role: input.role,
+    },
+  })
+
+  if (error) {
+    console.error('[substituteBoard] failed to create approval notification', {
+      error,
+      postId: input.postId,
+      userId: input.userId,
+      role: input.role,
+    })
+  }
+}
+
+async function createSubstituteBoardApprovalNotifications(
+  post: SubstituteBoardPostApprovalDetails,
+): Promise<void> {
+  await insertSubstituteBoardApprovalNotification({
+    institutionId: post.institution_id,
+    userId: post.created_by_user_id,
+    postId: post.id,
+    date: post.date,
+    role: 'requester',
+  })
+
+  if (post.selected_teacher_user_id !== post.created_by_user_id) {
+    await insertSubstituteBoardApprovalNotification({
+      institutionId: post.institution_id,
+      userId: post.selected_teacher_user_id,
+      postId: post.id,
+      date: post.date,
+      role: 'substitute',
+    })
+  }
+}
+
 export async function approveSubstituteBoardPost(
   postId: string,
 ): Promise<ApproveSubstituteBoardPostResult> {
@@ -455,9 +600,18 @@ export async function approveSubstituteBoardPost(
     }
   }
 
+  const postDetailsResult = await loadSubstituteBoardPostApprovalDetails(postId)
+
+  if (!postDetailsResult.ok) {
+    return {
+      ok: false,
+      errorMessage: postDetailsResult.errorMessage,
+    }
+  }
+
   const currentUserId = sessionData.session.user.id
 
-  const { error } = await supabase
+  const { data: updatedPost, error } = await supabase
     .from('substitute_board_posts')
     .update({
       status: 'approved',
@@ -466,6 +620,8 @@ export async function approveSubstituteBoardPost(
     })
     .eq('id', postId)
     .eq('status', 'pending_secretary_approval')
+    .select('id')
+    .maybeSingle()
 
   if (error) {
     console.error('[substituteBoard] failed to approve post', error)
@@ -474,6 +630,16 @@ export async function approveSubstituteBoardPost(
       errorMessage: SECRETARY_SUBSTITUTE_APPROVAL_FAILURE_MESSAGE,
     }
   }
+
+  if (!updatedPost) {
+    console.error('[substituteBoard] approval update did not match a pending post', { postId })
+    return {
+      ok: false,
+      errorMessage: SECRETARY_SUBSTITUTE_APPROVAL_FAILURE_MESSAGE,
+    }
+  }
+
+  await createSubstituteBoardApprovalNotifications(postDetailsResult.post)
 
   return { ok: true }
 }
