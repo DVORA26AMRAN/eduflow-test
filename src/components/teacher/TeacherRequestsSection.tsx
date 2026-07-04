@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react'
-import type { RequestType, TeacherRequest } from '../../types/request'
+import type { RequestPayload, RequestType, TeacherRequest } from '../../types/request'
 import { REQUEST_CREATED_ATTACHMENT_UPLOAD_FAILED_MESSAGE } from '../../types/attachment'
 import { uploadRequestAttachment } from '../../services/attachments'
 import { createTeacherRequest, loadTeacherRequests } from '../../services/requests'
@@ -38,6 +38,7 @@ export function TeacherRequestsSection() {
   async function handleCreateRequest(input: {
     requestType: RequestType
     description: string
+    requestPayload?: RequestPayload
     attachmentFile: File | null
   }) {
     setSubmitMessage('')
@@ -46,6 +47,7 @@ export function TeacherRequestsSection() {
     const result = await createTeacherRequest({
       requestType: input.requestType,
       description: input.description,
+      requestPayload: input.requestPayload,
     })
 
     if (!result.ok) {

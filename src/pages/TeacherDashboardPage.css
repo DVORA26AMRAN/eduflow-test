@@ -225,6 +225,28 @@
   color: var(--ds-color-text-secondary);
 }
 
+.teacher-dashboard__absence-form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ds-space-1);
+  margin-bottom: var(--ds-space-4);
+}
+
+.teacher-dashboard__date-input {
+  max-width: 280px;
+}
+
+.teacher-dashboard__budget-form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ds-space-1);
+  margin-bottom: var(--ds-space-4);
+}
+
+.teacher-dashboard__amount-input {
+  max-width: 280px;
+}
+
 .teacher-dashboard__create-card,
 .teacher-dashboard__list-card {
   padding: var(--ds-space-6);

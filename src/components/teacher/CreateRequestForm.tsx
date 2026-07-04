@@ -1,8 +1,20 @@
 import { useRef, useState } from 'react'
-import type { RequestType } from '../../types/request'
+import type { RequestPayload, RequestType } from '../../types/request'
 import { REQUEST_ATTACHMENT_ACCEPT } from '../../types/attachment'
 import { validateRequestAttachment } from '../../services/attachments'
+import {
+  buildAbsenceDescription,
+  validateAbsenceForm,
+  type AbsenceFormFields,
+} from '../../utils/absence'
+import {
+  buildBudgetDescription,
+  validateBudgetForm,
+  type BudgetFormFields,
+} from '../../utils/budget'
 import { isRequestType } from '../../utils/requests'
+import { TeacherAbsenceRequestFields } from './TeacherAbsenceRequestFields'
+import { TeacherBudgetRequestFields } from './TeacherBudgetRequestFields'
 import { TeacherRequestCategorySelector } from './TeacherRequestCategorySelector'
 
 type CreateRequestFormProps = {
@@ -11,8 +23,22 @@ type CreateRequestFormProps = {
   onSubmit: (input: {
     requestType: RequestType
     description: string
+    requestPayload?: RequestPayload
     attachmentFile: File | null
   }) => void
+}
+
+const emptyAbsenceFields: AbsenceFormFields = {
+  absenceDate: '',
+  absenceReason: '',
+  absenceReasonOther: '',
+  replacedBy: '',
+}
+
+const emptyBudgetFields: BudgetFormFields = {
+  budgetDetails: '',
+  requestedAmount: '',
+  bankAccountDetails: '',
 }
 
 function getSubmitMessageClassName(message: string): string {
@@ -38,6 +64,8 @@ export function CreateRequestForm({
 }: CreateRequestFormProps) {
   const [requestType, setRequestType] = useState<RequestType | ''>('')
   const [description, setDescription] = useState('')
+  const [absenceFields, setAbsenceFields] = useState<AbsenceFormFields>(emptyAbsenceFields)
+  const [budgetFields, setBudgetFields] = useState<BudgetFormFields>(emptyBudgetFields)
   const [attachmentFile, setAttachmentFile] = useState<File | null>(null)
   const [validationMessage, setValidationMessage] = useState('')
   const fileInputRef = useRef<HTMLInputElement>(null)
@@ -50,17 +78,49 @@ export function CreateRequestForm({
       return
     }
 
-    if (!description.trim()) {
-      setValidationMessage('נא להזין תיאור בקשה.')
-      return
-    }
-
     if (attachmentFile) {
       const attachmentValidation = validateRequestAttachment(attachmentFile)
       if (!attachmentValidation.ok) {
         setValidationMessage(attachmentValidation.errorMessage)
         return
       }
+    }
+
+    if (requestType === 'absence') {
+      const absenceValidation = validateAbsenceForm(absenceFields)
+      if (!absenceValidation.ok) {
+        setValidationMessage(absenceValidation.errorMessage)
+        return
+      }
+
+      onSubmit({
+        requestType,
+        description: buildAbsenceDescription(absenceValidation.payload),
+        requestPayload: absenceValidation.payload,
+        attachmentFile,
+      })
+      return
+    }
+
+    if (requestType === 'budget_or_equipment') {
+      const budgetValidation = validateBudgetForm(budgetFields)
+      if (!budgetValidation.ok) {
+        setValidationMessage(budgetValidation.errorMessage)
+        return
+      }
+
+      onSubmit({
+        requestType,
+        description: buildBudgetDescription(budgetValidation.payload),
+        requestPayload: budgetValidation.payload,
+        attachmentFile,
+      })
+      return
+    }
+
+    if (!description.trim()) {
+      setValidationMessage('נא להזין תיאור בקשה.')
+      return
     }
 
     onSubmit({
@@ -72,6 +132,44 @@ export function CreateRequestForm({
 
   function handleRequestTypeSelect(value: RequestType) {
     setRequestType(value)
+    setValidationMessage('')
+
+    if (value !== 'absence') {
+      setAbsenceFields(emptyAbsenceFields)
+    }
+
+    if (value !== 'budget_or_equipment') {
+      setBudgetFields(emptyBudgetFields)
+    }
+  }
+
+  function updateAbsenceField<K extends keyof AbsenceFormFields>(
+    key: K,
+    value: AbsenceFormFields[K],
+  ) {
+    setAbsenceFields((currentFields) => {
+      const nextFields = {
+        ...currentFields,
+        [key]: value,
+      }
+
+      if (key === 'absenceReason' && value !== 'other') {
+        nextFields.absenceReasonOther = ''
+      }
+
+      return nextFields
+    })
+    setValidationMessage('')
+  }
+
+  function updateBudgetField<K extends keyof BudgetFormFields>(
+    key: K,
+    value: BudgetFormFields[K],
+  ) {
+    setBudgetFields((currentFields) => ({
+      ...currentFields,
+      [key]: value,
+    }))
     setValidationMessage('')
   }
 
@@ -111,40 +209,76 @@ export function CreateRequestForm({
         onSelect={handleRequestTypeSelect}
       />
 
-      <label className="ds-field" htmlFor="request-description">
-        <span className="ds-label">תיאור הבקשה</span>
-        <textarea
-          id="request-description"
-          className="ds-textarea"
-          rows={4}
-          value={description}
-          onChange={(e) => handleDescriptionChange(e.target.value)}
-          disabled={isSubmitting}
-          placeholder="פרטי הבקשה"
+      {requestType === 'absence' && (
+        <TeacherAbsenceRequestFields
+          absenceDate={absenceFields.absenceDate}
+          absenceReason={absenceFields.absenceReason}
+          absenceReasonOther={absenceFields.absenceReasonOther}
+          replacedBy={absenceFields.replacedBy}
+          isDisabled={isSubmitting}
+          onAbsenceDateChange={(value) => updateAbsenceField('absenceDate', value)}
+          onAbsenceReasonChange={(value) => updateAbsenceField('absenceReason', value)}
+          onAbsenceReasonOtherChange={(value) =>
+            updateAbsenceField('absenceReasonOther', value)
+          }
+          onReplacedByChange={(value) => updateAbsenceField('replacedBy', value)}
         />
-      </label>
+      )}
 
-      <label className="ds-field" htmlFor="request-attachment">
-        <span className="ds-label">קובץ מצורף</span>
-        <input
-          ref={fileInputRef}
-          id="request-attachment"
-          type="file"
-          className="ds-input teacher-dashboard__file-input"
-          accept={REQUEST_ATTACHMENT_ACCEPT}
-          onChange={(e) => handleAttachmentChange(e.target.files?.[0] ?? null)}
-          disabled={isSubmitting}
+      {requestType === 'budget_or_equipment' && (
+        <TeacherBudgetRequestFields
+          budgetDetails={budgetFields.budgetDetails}
+          requestedAmount={budgetFields.requestedAmount}
+          bankAccountDetails={budgetFields.bankAccountDetails}
+          isDisabled={isSubmitting}
+          onBudgetDetailsChange={(value) => updateBudgetField('budgetDetails', value)}
+          onRequestedAmountChange={(value) => updateBudgetField('requestedAmount', value)}
+          onBankAccountDetailsChange={(value) =>
+            updateBudgetField('bankAccountDetails', value)
+          }
         />
-      </label>
+      )}
 
-      <button
-        type="button"
-        className="ds-btn ds-btn--primary teacher-dashboard__submit"
-        onClick={handleSubmit}
-        disabled={isSubmitting}
-      >
-        שליחת בקשה
-      </button>
+      {requestType === 'substitute_teacher' && (
+        <label className="ds-field" htmlFor="request-description">
+          <span className="ds-label">תיאור הבקשה</span>
+          <textarea
+            id="request-description"
+            className="ds-textarea"
+            rows={4}
+            value={description}
+            onChange={(e) => handleDescriptionChange(e.target.value)}
+            disabled={isSubmitting}
+            placeholder="פרטי הבקשה"
+          />
+        </label>
+      )}
+
+      {requestType !== '' && (
+        <label className="ds-field" htmlFor="request-attachment">
+          <span className="ds-label">קובץ מצורף</span>
+          <input
+            ref={fileInputRef}
+            id="request-attachment"
+            type="file"
+            className="ds-input teacher-dashboard__file-input"
+            accept={REQUEST_ATTACHMENT_ACCEPT}
+            onChange={(e) => handleAttachmentChange(e.target.files?.[0] ?? null)}
+            disabled={isSubmitting}
+          />
+        </label>
+      )}
+
+      {requestType !== '' && (
+        <button
+          type="button"
+          className="ds-btn ds-btn--primary teacher-dashboard__submit"
+          onClick={handleSubmit}
+          disabled={isSubmitting}
+        >
+          שליחת בקשה
+        </button>
+      )}
 
       {validationMessage && (
         <p className="ds-form-message ds-form-message--error">{validationMessage}</p>

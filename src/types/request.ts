@@ -1,5 +1,29 @@
 export type RequestType = 'absence' | 'budget_or_equipment' | 'substitute_teacher'
 
+export type AbsenceReason =
+  | 'sick_leave'
+  | 'child_sickness'
+  | 'pregnancy_hours'
+  | 'other'
+
+export type AbsenceRequestPayload = {
+  absence_date: string
+  absence_reason: AbsenceReason
+  absence_reason_other: string | null
+  replaced_by: string | null
+}
+
+export type BudgetOrEquipmentRequestPayload = {
+  budget_details: string
+  requested_amount: number | null
+  bank_account_details: string | null
+}
+
+export type RequestPayload =
+  | AbsenceRequestPayload
+  | BudgetOrEquipmentRequestPayload
+  | Record<string, never>
+
 export type RequestStatus = 'new' | 'in_progress' | 'completed' | 'rejected'
 
 export type TeacherRequest = {
@@ -13,6 +37,7 @@ export type TeacherRequest = {
 export type CreateRequestInput = {
   requestType: RequestType
   description: string
+  requestPayload?: RequestPayload
 }
 
 export type SecretaryInboxRequest = {

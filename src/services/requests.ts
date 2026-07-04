@@ -272,6 +272,7 @@ export async function createTeacherRequest(
       created_by_user_id: userId,
       request_type: input.requestType,
       description: input.description.trim(),
+      request_payload: input.requestPayload ?? {},
     })
     .select('id')
     .single()
