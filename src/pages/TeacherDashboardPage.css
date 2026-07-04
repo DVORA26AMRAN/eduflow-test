@@ -37,6 +37,77 @@
   display: flex;
   flex-direction: column;
   gap: var(--ds-space-6);
+  margin-bottom: var(--ds-space-8);
+}
+
+.teacher-dashboard__substitute-board {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ds-space-6);
+}
+
+.teacher-dashboard__substitute-create-card,
+.teacher-dashboard__substitute-list-card {
+  padding: var(--ds-space-6);
+}
+
+.teacher-dashboard__substitute-time-row {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--ds-space-4);
+}
+
+.teacher-dashboard__substitute-respond-button {
+  white-space: nowrap;
+}
+
+.teacher-dashboard__substitute-own-label,
+.teacher-dashboard__substitute-responded-label {
+  font-size: var(--ds-font-size-sm);
+  color: var(--ds-color-text-secondary);
+}
+
+.teacher-dashboard__substitute-selection-panel {
+  padding: var(--ds-space-4);
+  border: 1px solid var(--ds-color-border);
+  border-radius: var(--ds-radius-md);
+  background: rgba(245, 240, 255, 0.35);
+  text-align: right;
+}
+
+.teacher-dashboard__substitute-selection-title {
+  margin: 0 0 var(--ds-space-3);
+  font-size: var(--ds-font-size-md);
+  font-weight: var(--ds-font-weight-semibold);
+  color: var(--ds-color-text-primary);
+}
+
+.teacher-dashboard__substitute-selection-status {
+  margin: 0;
+  font-size: var(--ds-font-size-sm);
+  color: var(--ds-color-text-secondary);
+}
+
+.teacher-dashboard__substitute-selection-list {
+  margin: 0 0 var(--ds-space-4);
+  padding: 0;
+  list-style: none;
+}
+
+.teacher-dashboard__substitute-selection-option {
+  display: flex;
+  align-items: center;
+  gap: var(--ds-space-2);
+  padding: var(--ds-space-2) 0;
+  cursor: pointer;
+}
+
+.teacher-dashboard__substitute-selection-option input {
+  flex-shrink: 0;
+}
+
+.teacher-dashboard__substitute-approval-button {
+  margin-top: var(--ds-space-2);
 }
 
 .teacher-dashboard__notifications {
@@ -293,8 +364,14 @@
 
   .teacher-dashboard__create-card,
   .teacher-dashboard__list-card,
-  .teacher-dashboard__notifications-card {
+  .teacher-dashboard__notifications-card,
+  .teacher-dashboard__substitute-create-card,
+  .teacher-dashboard__substitute-list-card {
     padding: var(--ds-space-5);
+  }
+
+  .teacher-dashboard__substitute-time-row {
+    grid-template-columns: 1fr;
   }
 
   .teacher-dashboard__brand {
