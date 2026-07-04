@@ -1,9 +1,13 @@
 import type {
   CreateSubstituteBoardPostInput,
+  SubstituteBoardPendingApproval,
   SubstituteBoardPost,
   SubstituteBoardResponse,
 } from '../types/substituteBoard'
-import { SUBSTITUTE_BOARD_APPROVAL_FAILURE_MESSAGE } from '../types/substituteBoard'
+import {
+  SECRETARY_SUBSTITUTE_APPROVAL_FAILURE_MESSAGE,
+  SUBSTITUTE_BOARD_APPROVAL_FAILURE_MESSAGE,
+} from '../types/substituteBoard'
 import {
   isSubstituteBoardPostStatus,
   isSubstituteBoardPostType,
@@ -33,6 +37,14 @@ export type LoadSubstituteBoardPostResponsesResult =
   | { ok: false; errorMessage: string }
 
 export type SubmitSubstituteBoardPostForApprovalResult =
+  | { ok: true }
+  | { ok: false; errorMessage: string }
+
+export type LoadPendingSubstituteBoardApprovalsResult =
+  | { ok: true; approvals: SubstituteBoardPendingApproval[] }
+  | { ok: false; errorMessage: string }
+
+export type ApproveSubstituteBoardPostResult =
   | { ok: true }
   | { ok: false; errorMessage: string }
 
@@ -363,6 +375,103 @@ export async function submitSubstituteBoardPostForApproval(input: {
     return {
       ok: false,
       errorMessage: SUBSTITUTE_BOARD_APPROVAL_FAILURE_MESSAGE,
+    }
+  }
+
+  return { ok: true }
+}
+
+function parseSubstituteBoardPendingApproval(row: {
+  id: unknown
+  date: unknown
+  start_time: unknown
+  end_time: unknown
+  class_name: unknown
+  subject: unknown
+  description: unknown
+  created_by_user: unknown
+  selected_teacher_user: unknown
+}): SubstituteBoardPendingApproval | null {
+  const createdByFullName = extractTeacherFullName(row.created_by_user)
+  const selectedTeacherFullName = extractTeacherFullName(row.selected_teacher_user)
+
+  if (
+    typeof row.id !== 'string' ||
+    typeof row.date !== 'string' ||
+    createdByFullName === null ||
+    selectedTeacherFullName === null
+  ) {
+    return null
+  }
+
+  return {
+    id: row.id,
+    date: row.date,
+    start_time: typeof row.start_time === 'string' ? row.start_time : null,
+    end_time: typeof row.end_time === 'string' ? row.end_time : null,
+    class_name: typeof row.class_name === 'string' ? row.class_name : null,
+    subject: typeof row.subject === 'string' ? row.subject : null,
+    description: typeof row.description === 'string' ? row.description : null,
+    created_by_full_name: createdByFullName,
+    selected_teacher_full_name: selectedTeacherFullName,
+  }
+}
+
+export async function loadPendingSubstituteBoardApprovals(): Promise<LoadPendingSubstituteBoardApprovalsResult> {
+  const { data, error } = await supabase
+    .from('substitute_board_posts')
+    .select(
+      'id, date, start_time, end_time, class_name, subject, description, created_by_user:users!created_by_user_id(full_name), selected_teacher_user:users!selected_teacher_user_id(full_name)',
+    )
+    .eq('status', 'pending_secretary_approval')
+    .order('date', { ascending: true })
+    .order('created_at', { ascending: true })
+
+  if (error) {
+    console.error('[substituteBoard] failed to load pending approvals', error)
+    return {
+      ok: false,
+      errorMessage: SECRETARY_SUBSTITUTE_APPROVAL_FAILURE_MESSAGE,
+    }
+  }
+
+  const approvals = (data ?? [])
+    .map(parseSubstituteBoardPendingApproval)
+    .filter((approval): approval is SubstituteBoardPendingApproval => approval !== null)
+
+  return { ok: true, approvals }
+}
+
+export async function approveSubstituteBoardPost(
+  postId: string,
+): Promise<ApproveSubstituteBoardPostResult> {
+  const { data: sessionData, error: sessionError } = await supabase.auth.getSession()
+
+  if (sessionError || !sessionData.session?.user) {
+    console.error('[substituteBoard] no authenticated session for secretary approval', sessionError)
+    return {
+      ok: false,
+      errorMessage: SECRETARY_SUBSTITUTE_APPROVAL_FAILURE_MESSAGE,
+    }
+  }
+
+  const currentUserId = sessionData.session.user.id
+
+  const { error } = await supabase
+    .from('substitute_board_posts')
+    .update({
+      status: 'approved',
+      approved_by_user_id: currentUserId,
+      approved_at: new Date().toISOString(),
+    })
+    .eq('id', postId)
+    .eq('status', 'pending_secretary_approval')
+
+  if (error) {
+    console.error('[substituteBoard] failed to approve post', error)
+    return {
+      ok: false,
+      errorMessage: SECRETARY_SUBSTITUTE_APPROVAL_FAILURE_MESSAGE,
     }
   }
 

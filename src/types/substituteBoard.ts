@@ -49,3 +49,24 @@ export const SUBSTITUTE_BOARD_NO_RESPONSES_MESSAGE = 'עדיין אין מורו
 export const SUBSTITUTE_BOARD_APPROVAL_SUCCESS_MESSAGE = 'נשלח לאישור מזכירה.'
 
 export const SUBSTITUTE_BOARD_APPROVAL_FAILURE_MESSAGE = 'שליחה לאישור נכשלה.'
+
+export type SubstituteBoardPendingApproval = {
+  id: string
+  date: string
+  start_time: string | null
+  end_time: string | null
+  class_name: string | null
+  subject: string | null
+  description: string | null
+  created_by_full_name: string
+  selected_teacher_full_name: string
+}
+
+export const SECRETARY_SUBSTITUTE_APPROVALS_LOADING_MESSAGE = 'טוען מילויי מקום...'
+
+export const SECRETARY_SUBSTITUTE_APPROVALS_EMPTY_MESSAGE =
+  'אין מילויי מקום שממתינים לאישור.'
+
+export const SECRETARY_SUBSTITUTE_APPROVAL_SUCCESS_MESSAGE = 'מילוי המקום אושר.'
+
+export const SECRETARY_SUBSTITUTE_APPROVAL_FAILURE_MESSAGE = 'אישור מילוי המקום נכשל.'
