@@ -47,6 +47,7 @@
   --ds-color-surface: #ffffff;
   --ds-color-surface-translucent: rgba(255, 255, 255, 0.88);
   --ds-color-surface-muted: rgba(255, 255, 255, 0.72);
+  --ds-color-surface-soft: rgba(245, 240, 255, 0.52);
   --ds-color-background: #faf9fc;
 
   /* Text */
@@ -67,6 +68,8 @@
   --ds-color-warning-bg: rgba(217, 119, 6, 0.12);
   --ds-color-error: #c53030;
   --ds-color-error-bg: rgba(197, 48, 48, 0.1);
+  --ds-color-info: #2b6cb0;
+  --ds-color-info-bg: rgba(43, 108, 176, 0.1);
 
   /* Watercolor background blobs */
   --ds-gradient-watercolor-pink: radial-gradient(
@@ -113,6 +116,7 @@
   --ds-shadow-md: 0 10px 24px rgba(56, 41, 111, 0.1);
   --ds-shadow-lg: 0 16px 40px rgba(56, 41, 111, 0.12);
   --ds-shadow-card: 0 8px 28px rgba(118, 88, 212, 0.1);
+  --ds-shadow-card-hover: 0 12px 30px rgba(118, 88, 212, 0.14);
   --ds-shadow-button: 0 6px 18px rgba(118, 88, 212, 0.28);
   --ds-shadow-focus: 0 0 0 3px rgba(143, 111, 232, 0.22);
 
@@ -125,6 +129,7 @@
   --ds-font-family: 'Heebo', 'Assistant', 'Rubik', system-ui, sans-serif;
   --ds-font-size-xs: 0.8125rem;
   --ds-font-size-sm: 0.9375rem;
+  --ds-font-size-md: 1.0625rem;
   --ds-font-size-base: 1rem;
   --ds-font-size-lg: 1.125rem;
   --ds-font-size-xl: 1.375rem;

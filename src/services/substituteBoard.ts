@@ -111,6 +111,8 @@ function parseSubstituteBoardPost(row: {
     typeof row.date !== 'string' ||
     typeof row.created_by_user_id !== 'string' ||
     typeof row.created_at !== 'string' ||
+    typeof row.post_type !== 'string' ||
+    typeof row.status !== 'string' ||
     teacherFullName === null ||
     !isSubstituteBoardPostType(row.post_type) ||
     !isSubstituteBoardPostStatus(row.status)
@@ -453,29 +455,37 @@ export async function loadPendingSubstituteBoardApprovals(): Promise<LoadPending
   return { ok: true, approvals }
 }
 
-function parseSubstituteBoardPostApprovalDetails(row: {
-  id: unknown
-  institution_id: unknown
-  created_by_user_id: unknown
-  selected_teacher_user_id: unknown
-  date: unknown
-}): SubstituteBoardPostApprovalDetails | null {
+function parseSubstituteBoardPostApprovalDetails(
+  row: unknown,
+): SubstituteBoardPostApprovalDetails | null {
+  if (!row || typeof row !== 'object') {
+    return null
+  }
+
+  const candidate = row as {
+    id?: unknown
+    institution_id?: unknown
+    created_by_user_id?: unknown
+    selected_teacher_user_id?: unknown
+    date?: unknown
+  }
+
   if (
-    typeof row.id !== 'string' ||
-    typeof row.institution_id !== 'string' ||
-    typeof row.created_by_user_id !== 'string' ||
-    typeof row.selected_teacher_user_id !== 'string' ||
-    typeof row.date !== 'string'
+    typeof candidate.id !== 'string' ||
+    typeof candidate.institution_id !== 'string' ||
+    typeof candidate.created_by_user_id !== 'string' ||
+    typeof candidate.selected_teacher_user_id !== 'string' ||
+    typeof candidate.date !== 'string'
   ) {
     return null
   }
 
   return {
-    id: row.id,
-    institution_id: row.institution_id,
-    created_by_user_id: row.created_by_user_id,
-    selected_teacher_user_id: row.selected_teacher_user_id,
-    date: row.date,
+    id: candidate.id,
+    institution_id: candidate.institution_id,
+    created_by_user_id: candidate.created_by_user_id,
+    selected_teacher_user_id: candidate.selected_teacher_user_id,
+    date: candidate.date,
   }
 }
 
@@ -500,7 +510,7 @@ async function loadSubstituteBoardPostApprovalDetails(
     }
   }
 
-  const post = parseSubstituteBoardPostApprovalDetails(data ?? {})
+  const post = parseSubstituteBoardPostApprovalDetails(data)
 
   if (!post) {
     return {

@@ -27,8 +27,11 @@ export function SubstituteBoardPostsList({
 }: SubstituteBoardPostsListProps) {
   if (posts.length === 0) {
     return (
-      <div className="teacher-dashboard__empty-state">
-        <p className="teacher-dashboard__empty-message">אין פרסומים בלוח כרגע.</p>
+      <div className="ds-state teacher-dashboard__empty-state">
+        <span className="ds-state__icon" aria-hidden="true">
+          📌
+        </span>
+        <p className="ds-state__title">אין פרסומים בלוח כרגע.</p>
       </div>
     )
   }
@@ -68,26 +71,32 @@ export function SubstituteBoardPostsList({
                   <td>{post.class_name ?? '—'}</td>
                   <td>{post.subject ?? '—'}</td>
                   <td>{post.description ?? '—'}</td>
-                  <td>{translateSubstituteBoardPostStatus(post.status)}</td>
                   <td>
-                    {isOwnPost && (
-                      <span className="teacher-dashboard__substitute-own-label">הפרסום שלי</span>
-                    )}
-                    {hasResponded && !isOwnPost && (
-                      <span className="teacher-dashboard__substitute-responded-label">
-                        נשלחה תגובה
-                      </span>
-                    )}
-                    {canRespond && (
-                      <button
-                        type="button"
-                        className="ds-btn ds-btn--secondary teacher-dashboard__substitute-respond-button"
-                        onClick={() => onRespond(post.id)}
-                        disabled={respondingPostId === post.id}
-                      >
-                        {respondingPostId === post.id ? 'שולחת...' : 'אני יכולה'}
-                      </button>
-                    )}
+                    <span className={`ds-table__status ds-table__status--${post.status}`}>
+                      {translateSubstituteBoardPostStatus(post.status)}
+                    </span>
+                  </td>
+                  <td>
+                    <div className="ds-table__row-actions">
+                      {isOwnPost && (
+                        <span className="ds-table__status ds-table__status--archived">הפרסום שלי</span>
+                      )}
+                      {hasResponded && !isOwnPost && (
+                        <span className="ds-table__status ds-table__status--approved">
+                          נשלחה תגובה
+                        </span>
+                      )}
+                      {canRespond && (
+                        <button
+                          type="button"
+                          className="ds-btn ds-btn--secondary teacher-dashboard__substitute-respond-button"
+                          onClick={() => onRespond(post.id)}
+                          disabled={respondingPostId === post.id}
+                        >
+                          {respondingPostId === post.id ? 'שולחת...' : 'אני יכולה'}
+                        </button>
+                      )}
+                    </div>
                   </td>
                 </tr>
                 {isOwnPost && post.status === 'open' && (

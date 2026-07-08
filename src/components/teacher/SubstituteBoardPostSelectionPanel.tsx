@@ -99,7 +99,7 @@ export function SubstituteBoardPostSelectionPanel({
   }
 
   return (
-    <div className="teacher-dashboard__substitute-selection-panel">
+    <div className="teacher-dashboard__substitute-selection-panel ds-fieldset">
       <p className="teacher-dashboard__substitute-selection-title">בחירת מורה מחליפה</p>
 
       {isLoading && (
@@ -144,14 +144,16 @@ export function SubstituteBoardPostSelectionPanel({
             ))}
           </ul>
 
-          <button
-            type="button"
-            className="ds-btn ds-btn--primary teacher-dashboard__substitute-approval-button"
-            onClick={() => void handleSubmitForApproval()}
-            disabled={isSubmitting || !selectedTeacherUserId}
-          >
-            {isSubmitting ? 'שולחת...' : 'שליחה לאישור מזכירה'}
-          </button>
+          <div className="ds-form-actions">
+            <button
+              type="button"
+              className="ds-btn ds-btn--primary teacher-dashboard__substitute-approval-button"
+              onClick={() => void handleSubmitForApproval()}
+              disabled={isSubmitting || !selectedTeacherUserId}
+            >
+              {isSubmitting ? 'שולחת...' : 'שליחה לאישור מזכירה'}
+            </button>
+          </div>
         </>
       )}
 

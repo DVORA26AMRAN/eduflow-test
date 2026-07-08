@@ -3,7 +3,6 @@ import type { RequestNote } from '../../types/note'
 import {
   NOTE_CREATE_SUCCESS_MESSAGE,
   NOTE_DELETE_SUCCESS_MESSAGE,
-  NOTE_SAVE_ERROR_MESSAGE,
   NOTE_UPDATE_SUCCESS_MESSAGE,
   NOTES_EMPTY_MESSAGE,
   NOTES_LOADING_MESSAGE,
@@ -57,10 +56,12 @@ export function RequestNotesPanel({ isOpen, requestId, onClose }: RequestNotesPa
       return
     }
 
-    setNewNoteText('')
-    setActionMessage('')
-    setActionMessageIsError(false)
-    void fetchNotes()
+    queueMicrotask(() => {
+      setNewNoteText('')
+      setActionMessage('')
+      setActionMessageIsError(false)
+      void fetchNotes()
+    })
   }, [isOpen, requestId, fetchNotes])
 
   if (!isOpen || !requestId) {
@@ -178,17 +179,22 @@ export function RequestNotesPanel({ isOpen, requestId, onClose }: RequestNotesPa
 
         <div className="secretary-dashboard__notes-paper">
           {isLoading && (
-            <p className="secretary-dashboard__notes-status">{NOTES_LOADING_MESSAGE}</p>
+            <p className="ds-form-message secretary-dashboard__notes-status">{NOTES_LOADING_MESSAGE}</p>
           )}
 
           {!isLoading && loadError && (
-            <p className="secretary-dashboard__notes-status secretary-dashboard__status--error">
+            <p className="ds-form-message ds-form-message--error secretary-dashboard__notes-status">
               {loadError}
             </p>
           )}
 
           {!isLoading && !loadError && notes.length === 0 && (
-            <p className="secretary-dashboard__notes-empty">{NOTES_EMPTY_MESSAGE}</p>
+            <div className="ds-state secretary-dashboard__notes-empty">
+              <span className="ds-state__icon" aria-hidden="true">
+                📝
+              </span>
+              <p className="ds-state__title">{NOTES_EMPTY_MESSAGE}</p>
+            </div>
           )}
 
           {!isLoading && !loadError && notes.length > 0 && (
@@ -208,21 +214,24 @@ export function RequestNotesPanel({ isOpen, requestId, onClose }: RequestNotesPa
           {!isLoading && !loadError && (
             <div className="secretary-dashboard__notes-compose">
               <textarea
-                className="secretary-dashboard__notes-textarea secretary-dashboard__notes-textarea--compose"
+                className="ds-textarea secretary-dashboard__notes-textarea secretary-dashboard__notes-textarea--compose"
                 rows={4}
                 value={newNoteText}
                 onChange={(event) => setNewNoteText(event.target.value)}
                 placeholder="הוספת הערה..."
                 disabled={isSaving}
               />
-              <button
-                type="button"
-                className="ds-btn ds-btn--primary secretary-dashboard__notes-save-button"
-                onClick={() => void handleCreateNote()}
-                disabled={isSaving || !newNoteText.trim()}
-              >
-                שמירת הערה
-              </button>
+              <p className="ds-helper-text">ההערות פנימיות בלבד ומיועדות לצוות המזכירות.</p>
+              <div className="ds-form-actions">
+                <button
+                  type="button"
+                  className="ds-btn ds-btn--primary secretary-dashboard__notes-save-button"
+                  onClick={() => void handleCreateNote()}
+                  disabled={isSaving || !newNoteText.trim()}
+                >
+                  שמירת הערה
+                </button>
+              </div>
             </div>
           )}
         </div>
@@ -231,8 +240,8 @@ export function RequestNotesPanel({ isOpen, requestId, onClose }: RequestNotesPa
           <p
             className={
               actionMessageIsError
-                ? 'secretary-dashboard__notes-feedback secretary-dashboard__status--error'
-                : 'secretary-dashboard__notes-feedback secretary-dashboard__status--success'
+                ? 'secretary-dashboard__notes-feedback ds-form-message ds-form-message--error'
+                : 'secretary-dashboard__notes-feedback ds-form-message ds-form-message--success'
             }
           >
             {actionMessage}

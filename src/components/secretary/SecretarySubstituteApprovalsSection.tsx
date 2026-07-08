@@ -9,6 +9,7 @@ import {
   approveSubstituteBoardPost,
   loadPendingSubstituteBoardApprovals,
 } from '../../services/substituteBoard'
+import { NavUsersIcon } from '../dashboard/dashboardNav'
 import { SecretarySubstituteApprovalsTable } from './SecretarySubstituteApprovalsTable'
 
 export function SecretarySubstituteApprovalsSection() {
@@ -36,7 +37,9 @@ export function SecretarySubstituteApprovalsSection() {
   }, [])
 
   useEffect(() => {
-    void fetchApprovals()
+    queueMicrotask(() => {
+      void fetchApprovals()
+    })
   }, [fetchApprovals])
 
   async function handleApprove(postId: string) {
@@ -61,15 +64,20 @@ export function SecretarySubstituteApprovalsSection() {
   }
 
   return (
-    <section className="secretary-dashboard__substitute-approvals">
-      <h2 className="secretary-dashboard__section-title">מילויי מקום ממתינים לאישור</h2>
+    <section className="ds-card secretary-dashboard__substitute-approvals">
+      <h2 className="secretary-dashboard__section-title">
+        <span className="dashboard-card__title-icon" aria-hidden="true">
+          <NavUsersIcon />
+        </span>
+        מילויי מקום ממתינים לאישור
+      </h2>
 
       {statusMessage && (
         <p
           className={
             statusMessageIsError
-              ? 'secretary-dashboard__status secretary-dashboard__status--error'
-              : 'secretary-dashboard__status secretary-dashboard__status--success'
+              ? 'ds-form-message ds-form-message--error'
+              : 'ds-form-message ds-form-message--success'
           }
         >
           {statusMessage}
@@ -77,15 +85,13 @@ export function SecretarySubstituteApprovalsSection() {
       )}
 
       {isLoading && (
-        <p className="secretary-dashboard__status">
+        <p className="ds-form-message">
           {SECRETARY_SUBSTITUTE_APPROVALS_LOADING_MESSAGE}
         </p>
       )}
 
       {!isLoading && loadError && (
-        <p className="secretary-dashboard__status secretary-dashboard__status--error">
-          {loadError}
-        </p>
+        <p className="ds-form-message ds-form-message--error">{loadError}</p>
       )}
 
       {!isLoading && !loadError && (

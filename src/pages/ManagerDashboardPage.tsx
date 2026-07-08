@@ -1,5 +1,12 @@
 import { useEffect, useState } from 'react'
-import { ManagerDashboardHeader } from '../components/manager/ManagerDashboardHeader'
+import organizationLogo from '../assets/images/logo.png.png'
+import { DashboardShell } from '../components/dashboard/DashboardShell'
+import {
+  NavActivityIcon,
+  NavChartIcon,
+  NavUsersIcon,
+  type DashboardNavItem,
+} from '../components/dashboard/dashboardNav'
 import { ManagerRecentActivitySection } from '../components/manager/ManagerRecentActivitySection'
 import { ManagerRecentRequestsSection } from '../components/manager/ManagerRecentRequestsSection'
 import { ManagerStatsCards } from '../components/manager/ManagerStatsCards'
@@ -31,6 +38,12 @@ type ManagerDashboardPageProps = {
   onLogout: () => void
 }
 
+const managerNavItems: DashboardNavItem[] = [
+  { id: 'stats', label: 'נתונים', icon: <NavChartIcon /> },
+  { id: 'recentActivity', label: 'פעילות אחרונה', icon: <NavActivityIcon /> },
+  { id: 'team', label: 'ניהול צוות', icon: <NavUsersIcon /> },
+]
+
 export function ManagerDashboardPage({
   newUserName,
   newUserEmail,
@@ -55,6 +68,20 @@ export function ManagerDashboardPage({
   const [recentActivity, setRecentActivity] = useState<ManagerRecentActivityEntry[]>([])
   const [isRecentActivityLoading, setIsRecentActivityLoading] = useState(true)
   const [recentActivityError, setRecentActivityError] = useState('')
+  const [activeSectionId, setActiveSectionId] = useState<string>('stats')
+
+  function handleSectionSelect(sectionId: string) {
+    const target = document.querySelector<HTMLElement>(
+      `.manager-dashboard [data-section-id="${sectionId}"]`,
+    )
+    if (!target) {
+      return
+    }
+
+    setActiveSectionId(sectionId)
+    target.scrollIntoView({ behavior: 'smooth', block: 'start' })
+    requestAnimationFrame(() => target.focus({ preventScroll: true }))
+  }
 
   useEffect(() => {
     let isCancelled = false
@@ -159,43 +186,104 @@ export function ManagerDashboardPage({
     }
   }, [usersListVersion])
 
+  useEffect(() => {
+    const sections = Array.from(
+      document.querySelectorAll<HTMLElement>('.manager-dashboard [data-section-id]'),
+    )
+
+    if (sections.length === 0) {
+      return
+    }
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        const visibleEntries = entries.filter((entry) => entry.isIntersecting)
+        if (visibleEntries.length === 0) {
+          return
+        }
+
+        const mostVisible = visibleEntries.sort(
+          (a, b) => b.intersectionRatio - a.intersectionRatio,
+        )[0]
+        const sectionId = mostVisible.target.getAttribute('data-section-id')
+        if (sectionId) {
+          setActiveSectionId(sectionId)
+        }
+      },
+      { threshold: [0.3, 0.6], rootMargin: '-15% 0px -55% 0px' },
+    )
+
+    sections.forEach((section) => observer.observe(section))
+
+    return () => observer.disconnect()
+  }, [])
+
   return (
-    <main dir="rtl" className="manager-dashboard">
-      <ManagerDashboardHeader onLogout={onLogout} />
+    <DashboardShell
+      roleLabel="אזור מנהלת"
+      subtitle="ברוכה הבאה ל־EduFlow."
+      logoSrc={organizationLogo}
+      navItems={managerNavItems}
+      activeSectionId={activeSectionId}
+      onSectionSelect={handleSectionSelect}
+      onLogout={onLogout}
+    >
+      <div dir="rtl" className="manager-dashboard">
+        <section
+          id="manager-stats"
+          data-section-id="stats"
+          className="manager-dashboard__shell-section"
+          tabIndex={-1}
+        >
+          <ManagerStatsCards
+            analytics={analytics}
+            isLoading={isAnalyticsLoading}
+            errorMessage={analyticsError}
+          />
+        </section>
 
-      <ManagerStatsCards
-        analytics={analytics}
-        isLoading={isAnalyticsLoading}
-        errorMessage={analyticsError}
-      />
+        <section
+          id="manager-recent-activity"
+          data-section-id="recentActivity"
+          className="manager-dashboard__shell-section"
+          tabIndex={-1}
+        >
+          <div className="manager-dashboard__insights">
+            <ManagerRecentRequestsSection
+              requests={recentRequests}
+              isLoading={isRecentRequestsLoading}
+              errorMessage={recentRequestsError}
+            />
 
-      <div className="manager-dashboard__insights">
-        <ManagerRecentRequestsSection
-          requests={recentRequests}
-          isLoading={isRecentRequestsLoading}
-          errorMessage={recentRequestsError}
-        />
+            <ManagerRecentActivitySection
+              entries={recentActivity}
+              isLoading={isRecentActivityLoading}
+              errorMessage={recentActivityError}
+            />
+          </div>
+        </section>
 
-        <ManagerRecentActivitySection
-          entries={recentActivity}
-          isLoading={isRecentActivityLoading}
-          errorMessage={recentActivityError}
-        />
+        <section
+          id="manager-team"
+          data-section-id="team"
+          className="manager-dashboard__shell-section"
+          tabIndex={-1}
+        >
+          <TeamManagementSection
+            users={users}
+            isLoading={isUsersLoading}
+            errorMessage={usersError}
+            newUserName={newUserName}
+            newUserEmail={newUserEmail}
+            newUserRole={newUserRole}
+            createUserMessage={message}
+            onNewUserNameChange={onNewUserNameChange}
+            onNewUserEmailChange={onNewUserEmailChange}
+            onNewUserRoleChange={onNewUserRoleChange}
+            onCreateUser={onCreateUser}
+          />
+        </section>
       </div>
-
-      <TeamManagementSection
-        users={users}
-        isLoading={isUsersLoading}
-        errorMessage={usersError}
-        newUserName={newUserName}
-        newUserEmail={newUserEmail}
-        newUserRole={newUserRole}
-        createUserMessage={message}
-        onNewUserNameChange={onNewUserNameChange}
-        onNewUserEmailChange={onNewUserEmailChange}
-        onNewUserRoleChange={onNewUserRoleChange}
-        onCreateUser={onCreateUser}
-      />
-    </main>
+    </DashboardShell>
   )
 }

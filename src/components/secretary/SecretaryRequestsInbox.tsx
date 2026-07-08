@@ -12,6 +12,7 @@ import {
 } from '../../services/requests'
 import { loadRequestAttachmentRequestIds } from '../../services/attachments'
 import { filterSecretaryInboxRequests } from '../../utils/requests'
+import { NavInboxIcon } from '../dashboard/dashboardNav'
 import { RequestStatusHistoryPanel } from './RequestStatusHistoryPanel'
 import { RequestNotesPanel } from './RequestNotesPanel'
 import { SecretaryRequestsFilters } from './SecretaryRequestsFilters'
@@ -66,7 +67,9 @@ export function SecretaryRequestsInbox() {
   }, [])
 
   useEffect(() => {
-    void fetchRequests()
+    queueMicrotask(() => {
+      void fetchRequests()
+    })
   }, [fetchRequests])
 
   const filteredRequests = useMemo(
@@ -141,8 +144,13 @@ export function SecretaryRequestsInbox() {
   }
 
   return (
-    <section className="secretary-dashboard__inbox">
-      <h2 className="secretary-dashboard__section-title">תיבת בקשות</h2>
+    <section className="ds-card secretary-dashboard__inbox">
+      <h2 className="secretary-dashboard__section-title">
+        <span className="dashboard-card__title-icon" aria-hidden="true">
+          <NavInboxIcon />
+        </span>
+        תיבת בקשות
+      </h2>
 
       <SecretaryRequestsFilters filters={filters} onFiltersChange={setFilters} />
 
@@ -150,22 +158,18 @@ export function SecretaryRequestsInbox() {
         <p
           className={
             statusMessageIsError
-              ? 'secretary-dashboard__status secretary-dashboard__status--error'
-              : 'secretary-dashboard__status secretary-dashboard__status--success'
+              ? 'ds-form-message ds-form-message--error'
+              : 'ds-form-message ds-form-message--success'
           }
         >
           {statusMessage}
         </p>
       )}
 
-      {isLoading && (
-        <p className="secretary-dashboard__status">טוען בקשות...</p>
-      )}
+      {isLoading && <p className="ds-form-message">טוען בקשות...</p>}
 
       {!isLoading && loadError && (
-        <p className="secretary-dashboard__status secretary-dashboard__status--error">
-          {loadError}
-        </p>
+        <p className="ds-form-message ds-form-message--error">{loadError}</p>
       )}
 
       {!isLoading && !loadError && (

@@ -32,6 +32,10 @@ body {
   -moz-osx-font-smoothing: grayscale;
 }
 
+#root {
+  isolation: isolate;
+}
+
 [dir='rtl'] {
   direction: rtl;
 }
@@ -55,6 +59,7 @@ h6 {
 
 p {
   margin-block: 0;
+  color: var(--ds-color-text-secondary);
 }
 
 a {
@@ -70,6 +75,13 @@ a:hover {
 :focus-visible {
   outline: 2px solid var(--ds-color-border-focus);
   outline-offset: 2px;
+}
+
+input,
+button,
+select,
+textarea {
+  font: inherit;
 }
 
 ::selection {

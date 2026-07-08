@@ -46,6 +46,8 @@ function parseManagerRecentRequest(row: {
   if (
     typeof row.id !== 'string' ||
     typeof row.created_at !== 'string' ||
+    typeof row.request_type !== 'string' ||
+    typeof row.status !== 'string' ||
     teacherFullName === null ||
     !isRequestType(row.request_type) ||
     !isRequestStatus(row.status)
@@ -71,6 +73,8 @@ function parseManagerRecentActivityEntry(row: {
   if (
     typeof row.id !== 'string' ||
     typeof row.created_at !== 'string' ||
+    typeof row.previous_status !== 'string' ||
+    typeof row.new_status !== 'string' ||
     !isRequestStatus(row.previous_status) ||
     !isRequestStatus(row.new_status)
   ) {

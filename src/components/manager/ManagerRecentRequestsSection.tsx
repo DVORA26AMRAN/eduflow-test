@@ -4,6 +4,7 @@ import {
   translateRequestStatus,
   translateRequestType,
 } from '../../utils/requests'
+import { NavClipboardIcon } from '../dashboard/dashboardNav'
 
 type ManagerRecentRequestsSectionProps = {
   requests: ManagerRecentRequest[]
@@ -18,7 +19,12 @@ export function ManagerRecentRequestsSection({
 }: ManagerRecentRequestsSectionProps) {
   return (
     <section className="ds-card manager-dashboard__insight-card" aria-label="בקשות אחרונות">
-      <h2 className="manager-dashboard__section-title">בקשות אחרונות</h2>
+      <h2 className="manager-dashboard__section-title">
+        <span className="dashboard-card__title-icon" aria-hidden="true">
+          <NavClipboardIcon />
+        </span>
+        בקשות אחרונות
+      </h2>
 
       {isLoading && (
         <p className="manager-dashboard__insight-status">טוען נתונים...</p>
@@ -50,7 +56,11 @@ export function ManagerRecentRequestsSection({
                 <tr key={request.id}>
                   <td>{request.teacher_full_name}</td>
                   <td>{translateRequestType(request.request_type)}</td>
-                  <td>{translateRequestStatus(request.status)}</td>
+                  <td>
+                    <span className={`ds-table__status ds-table__status--${request.status}`}>
+                      {translateRequestStatus(request.status)}
+                    </span>
+                  </td>
                   <td>{formatRequestDate(request.created_at)}</td>
                 </tr>
               ))}

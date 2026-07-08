@@ -1,4 +1,12 @@
 import type { ManagerAnalytics } from '../../types/analytics'
+import type { ReactNode } from 'react'
+import {
+  NavActivityIcon,
+  NavBellIcon,
+  NavChartIcon,
+  NavClipboardIcon,
+  NavUsersIcon,
+} from '../dashboard/dashboardNav'
 
 type ManagerStatsCardsProps = {
   analytics: ManagerAnalytics | null
@@ -9,7 +17,7 @@ type ManagerStatsCardsProps = {
 type StatCard = {
   label: string
   value: number
-  accent?: boolean
+  icon: ReactNode
 }
 
 export function ManagerStatsCards({
@@ -34,27 +42,25 @@ export function ManagerStatsCards({
   }
 
   const cards: StatCard[] = [
-    { label: 'מספר מורים פעילים', value: analytics.activeTeachersCount },
-    { label: 'מספר מזכירות פעילות', value: analytics.activeSecretariesCount },
-    { label: 'סך הבקשות', value: analytics.totalRequestsCount, accent: true },
-    { label: 'בקשות חדשות', value: analytics.newRequestsCount },
-    { label: 'בקשות בטיפול', value: analytics.inProgressRequestsCount },
-    { label: 'בקשות שהושלמו', value: analytics.completedRequestsCount },
-    { label: 'בקשות שנדחו', value: analytics.rejectedRequestsCount },
+    { label: 'מספר מורים פעילים', value: analytics.activeTeachersCount, icon: <NavUsersIcon /> },
+    { label: 'מספר מזכירות פעילות', value: analytics.activeSecretariesCount, icon: <NavUsersIcon /> },
+    { label: 'סך הבקשות', value: analytics.totalRequestsCount, icon: <NavChartIcon /> },
+    { label: 'בקשות חדשות', value: analytics.newRequestsCount, icon: <NavBellIcon /> },
+    { label: 'בקשות בטיפול', value: analytics.inProgressRequestsCount, icon: <NavActivityIcon /> },
+    { label: 'בקשות שהושלמו', value: analytics.completedRequestsCount, icon: <NavClipboardIcon /> },
+    { label: 'בקשות שנדחו', value: analytics.rejectedRequestsCount, icon: <NavClipboardIcon /> },
   ]
 
   return (
     <section className="manager-dashboard__stats" aria-label="סטטיסטיקות">
       {cards.map((card) => (
-        <article
-          key={card.label}
-          className={
-            card.accent
-              ? 'ds-card ds-card--accent manager-dashboard__stat-card'
-              : 'ds-card manager-dashboard__stat-card'
-          }
-        >
-          <p className="manager-dashboard__stat-label">{card.label}</p>
+        <article key={card.label} className="ds-card manager-dashboard__stat-card">
+          <p className="manager-dashboard__stat-label">
+            <span className="dashboard-card__title-icon" aria-hidden="true">
+              {card.icon}
+            </span>
+            {card.label}
+          </p>
           <p className="manager-dashboard__stat-value">{card.value}</p>
         </article>
       ))}

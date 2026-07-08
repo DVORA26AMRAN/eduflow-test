@@ -47,49 +47,53 @@ export function CreateUserForm({
     <div className="manager-dashboard__create-user">
       <h3 className="manager-dashboard__subsection-title">יצירת משתמש חדש</h3>
 
-      <label className="ds-field" htmlFor="create-user-name">
-        <span className="ds-label">שם מלא</span>
-        <input
-          id="create-user-name"
-          className="ds-input"
-          placeholder="שם מלא"
-          value={newUserName}
-          onChange={(e) => onNewUserNameChange(e.target.value)}
-        />
-      </label>
+      <div className="ds-fieldset">
+        <label className="ds-field" htmlFor="create-user-name">
+          <span className="ds-label">שם מלא</span>
+          <input
+            id="create-user-name"
+            className="ds-input"
+            placeholder="שם מלא"
+            value={newUserName}
+            onChange={(e) => onNewUserNameChange(e.target.value)}
+          />
+        </label>
 
-      <label className="ds-field" htmlFor="create-user-email">
-        <span className="ds-label">כתובת מייל</span>
-        <input
-          id="create-user-email"
-          className="ds-input"
-          type="email"
-          placeholder="כתובת מייל"
-          value={newUserEmail}
-          onChange={(e) => onNewUserEmailChange(e.target.value)}
-        />
-      </label>
+        <label className="ds-field" htmlFor="create-user-email">
+          <span className="ds-label">כתובת מייל</span>
+          <input
+            id="create-user-email"
+            className="ds-input"
+            type="email"
+            placeholder="כתובת מייל"
+            value={newUserEmail}
+            onChange={(e) => onNewUserEmailChange(e.target.value)}
+          />
+        </label>
 
-      <label className="ds-field" htmlFor="create-user-role">
-        <span className="ds-label">תפקיד</span>
-        <select
-          id="create-user-role"
-          className="ds-select"
-          value={newUserRole}
-          onChange={(e) => onNewUserRoleChange(e.target.value as UserRole)}
-        >
-          <option value="teacher">מורה</option>
-          <option value="secretary">מזכירה</option>
-        </select>
-      </label>
+        <label className="ds-field" htmlFor="create-user-role">
+          <span className="ds-label">תפקיד</span>
+          <select
+            id="create-user-role"
+            className="ds-select"
+            value={newUserRole}
+            onChange={(e) => onNewUserRoleChange(e.target.value as UserRole)}
+          >
+            <option value="teacher">מורה</option>
+            <option value="secretary">מזכירה</option>
+          </select>
+        </label>
 
-      <button
-        type="button"
-        className="ds-btn ds-btn--primary manager-dashboard__submit"
-        onClick={onCreateUser}
-      >
-        שמירת משתמש
-      </button>
+        <div className="ds-form-actions">
+          <button
+            type="button"
+            className="ds-btn ds-btn--primary manager-dashboard__submit"
+            onClick={onCreateUser}
+          >
+            שמירת משתמש
+          </button>
+        </div>
+      </div>
 
       {message && <p className={getMessageClassName(message)}>{message}</p>}
     </div>

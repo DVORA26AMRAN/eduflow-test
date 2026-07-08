@@ -18,7 +18,7 @@ export function TeacherBudgetRequestFields({
   onBankAccountDetailsChange,
 }: TeacherBudgetRequestFieldsProps) {
   return (
-    <div className="teacher-dashboard__budget-form">
+    <div className="teacher-dashboard__budget-form ds-fieldset">
       <label className="ds-field" htmlFor="budget-details">
         <span className="ds-label">פירוט הבקשה</span>
         <textarea
@@ -45,6 +45,7 @@ export function TeacherBudgetRequestFields({
           disabled={isDisabled}
           placeholder="סכום בש״ח (אופציונלי)"
         />
+        <p className="ds-helper-text">הזיני סכום רק אם קיים אומדן רלוונטי לבקשה.</p>
       </label>
 
       <label className="ds-field" htmlFor="bank-account-details">

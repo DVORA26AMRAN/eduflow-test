@@ -240,44 +240,51 @@ export function CreateRequestForm({
       )}
 
       {requestType === 'substitute_teacher' && (
-        <label className="ds-field" htmlFor="request-description">
-          <span className="ds-label">תיאור הבקשה</span>
-          <textarea
-            id="request-description"
-            className="ds-textarea"
-            rows={4}
-            value={description}
-            onChange={(e) => handleDescriptionChange(e.target.value)}
-            disabled={isSubmitting}
-            placeholder="פרטי הבקשה"
-          />
-        </label>
+        <div className="ds-fieldset">
+          <label className="ds-field" htmlFor="request-description">
+            <span className="ds-label">תיאור הבקשה</span>
+            <textarea
+              id="request-description"
+              className="ds-textarea"
+              rows={4}
+              value={description}
+              onChange={(e) => handleDescriptionChange(e.target.value)}
+              disabled={isSubmitting}
+              placeholder="פרטי הבקשה"
+            />
+          </label>
+        </div>
       )}
 
       {requestType !== '' && (
-        <label className="ds-field" htmlFor="request-attachment">
-          <span className="ds-label">קובץ מצורף</span>
-          <input
-            ref={fileInputRef}
-            id="request-attachment"
-            type="file"
-            className="ds-input teacher-dashboard__file-input"
-            accept={REQUEST_ATTACHMENT_ACCEPT}
-            onChange={(e) => handleAttachmentChange(e.target.files?.[0] ?? null)}
-            disabled={isSubmitting}
-          />
-        </label>
+        <div className="ds-fieldset teacher-dashboard__upload-fieldset">
+          <label className="ds-field" htmlFor="request-attachment">
+            <span className="ds-label">קובץ מצורף</span>
+            <input
+              ref={fileInputRef}
+              id="request-attachment"
+              type="file"
+              className="ds-input teacher-dashboard__file-input"
+              accept={REQUEST_ATTACHMENT_ACCEPT}
+              onChange={(e) => handleAttachmentChange(e.target.files?.[0] ?? null)}
+              disabled={isSubmitting}
+            />
+            <p className="ds-helper-text">אפשר לצרף מסמך תומך אם יש צורך.</p>
+          </label>
+        </div>
       )}
 
       {requestType !== '' && (
-        <button
-          type="button"
-          className="ds-btn ds-btn--primary teacher-dashboard__submit"
-          onClick={handleSubmit}
-          disabled={isSubmitting}
-        >
-          שליחת בקשה
-        </button>
+        <div className="ds-form-actions">
+          <button
+            type="button"
+            className="ds-btn ds-btn--primary teacher-dashboard__submit"
+            onClick={handleSubmit}
+            disabled={isSubmitting}
+          >
+            שליחת בקשה
+          </button>
+        </div>
       )}
 
       {validationMessage && (

@@ -19,15 +19,18 @@ export function SecretarySubstituteApprovalsTable({
 }: SecretarySubstituteApprovalsTableProps) {
   if (approvals.length === 0) {
     return (
-      <div className="secretary-dashboard__empty-state">
-        <p className="secretary-dashboard__empty-message">{emptyMessage}</p>
+      <div className="ds-state secretary-dashboard__empty-state">
+        <span className="ds-state__icon" aria-hidden="true">
+          🗂️
+        </span>
+        <p className="ds-state__title">{emptyMessage}</p>
       </div>
     )
   }
 
   return (
-    <div className="secretary-dashboard__table-wrapper">
-      <table className="secretary-dashboard__table">
+    <div className="ds-table-wrapper secretary-dashboard__table-wrapper">
+      <table className="ds-table">
         <thead>
           <tr>
             <th>מורה מפרסמת</th>
@@ -53,14 +56,16 @@ export function SecretarySubstituteApprovalsTable({
               <td>{approval.subject ?? '—'}</td>
               <td>{approval.description ?? '—'}</td>
               <td>
-                <button
-                  type="button"
-                  className="secretary-dashboard__substitute-approve-button"
-                  onClick={() => onApprove(approval.id)}
-                  disabled={approvingPostId === approval.id}
-                >
-                  {approvingPostId === approval.id ? 'מאשרת...' : 'אישור'}
-                </button>
+                <div className="ds-table__row-actions">
+                  <button
+                    type="button"
+                    className="ds-btn ds-btn--secondary secretary-dashboard__substitute-approve-button"
+                    onClick={() => onApprove(approval.id)}
+                    disabled={approvingPostId === approval.id}
+                  >
+                    {approvingPostId === approval.id ? 'מאשרת...' : 'אישור'}
+                  </button>
+                </div>
               </td>
             </tr>
           ))}

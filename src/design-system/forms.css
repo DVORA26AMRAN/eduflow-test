@@ -5,6 +5,24 @@
   margin-bottom: var(--ds-space-4);
 }
 
+.ds-fieldset {
+  margin: 0;
+  padding: var(--ds-space-5);
+  border: 1px solid var(--ds-color-border);
+  border-radius: var(--ds-radius-lg);
+  background: var(--ds-color-surface-soft);
+}
+
+.ds-fieldset + .ds-fieldset {
+  margin-top: var(--ds-space-4);
+}
+
+.ds-helper-text {
+  margin: var(--ds-space-2) 0 0;
+  font-size: var(--ds-font-size-sm);
+  color: var(--ds-color-text-secondary);
+}
+
 .ds-label {
   display: block;
   margin-bottom: var(--ds-space-2);
@@ -22,13 +40,17 @@
   padding: var(--ds-space-3) var(--ds-space-4);
   border: 1px solid var(--ds-color-border);
   border-radius: var(--ds-radius-md);
-  background: var(--ds-color-surface);
+  background: var(--ds-color-surface-translucent);
   color: var(--ds-color-text-primary);
   font: inherit;
   transition:
     border-color var(--ds-transition-base),
     box-shadow var(--ds-transition-base),
     background var(--ds-transition-base);
+}
+
+.ds-input[type='file'] {
+  padding: var(--ds-space-3);
 }
 
 .ds-input::placeholder,
@@ -64,6 +86,12 @@
   background: var(--ds-color-surface-muted);
 }
 
+.ds-input[type='date'],
+.ds-input[type='time'],
+.ds-input[type='number'] {
+  min-height: 44px;
+}
+
 .ds-form-message {
   margin-top: var(--ds-space-2);
   font-size: var(--ds-font-size-sm);
@@ -80,4 +108,13 @@
 
 .ds-form-message--error {
   color: var(--ds-color-error);
+}
+
+.ds-form-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-start;
+  gap: var(--ds-space-3);
+  margin-top: var(--ds-space-4);
 }

@@ -8,6 +8,7 @@ import {
   unsubscribeFromTeacherNotifications,
 } from '../../services/notifications'
 import { supabase } from '../../services/supabase'
+import { NavBellIcon } from '../dashboard/dashboardNav'
 import { TeacherNotificationsList } from './TeacherNotificationsList'
 
 function prependNotificationIfNew(
@@ -48,7 +49,9 @@ export function TeacherNotificationsSection() {
   }, [])
 
   useEffect(() => {
-    void fetchNotifications()
+    queueMicrotask(() => {
+      void fetchNotifications()
+    })
   }, [fetchNotifications])
 
   useEffect(() => {
@@ -115,7 +118,12 @@ export function TeacherNotificationsSection() {
   return (
     <section className="teacher-dashboard__notifications">
       <div className="teacher-dashboard__notifications-header">
-        <h2 className="teacher-dashboard__section-title">התראות</h2>
+        <h2 className="teacher-dashboard__section-title">
+          <span className="dashboard-card__title-icon" aria-hidden="true">
+            <NavBellIcon />
+          </span>
+          התראות
+        </h2>
         {!isLoading && !loadError && (
           <p className="teacher-dashboard__notifications-count">
             {unreadCount === 0

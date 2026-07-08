@@ -12,8 +12,11 @@ export function TeacherNotificationsList({
 }: TeacherNotificationsListProps) {
   if (notifications.length === 0) {
     return (
-      <div className="teacher-dashboard__empty-state">
-        <p className="teacher-dashboard__empty-message">אין לך התראות.</p>
+      <div className="ds-state teacher-dashboard__empty-state">
+        <span className="ds-state__icon" aria-hidden="true">
+          🔔
+        </span>
+        <p className="ds-state__title">אין לך התראות.</p>
       </div>
     )
   }

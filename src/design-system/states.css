@@ -1,0 +1,71 @@
+/* EduFlow Design System — loading / empty / error states */
+
+.ds-state {
+  padding: var(--ds-space-6);
+  border: 1px dashed var(--ds-color-border);
+  border-radius: var(--ds-radius-lg);
+  background: var(--ds-color-surface-soft);
+  text-align: center;
+}
+
+.ds-state__icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  margin-bottom: var(--ds-space-2);
+  border-radius: var(--ds-radius-pill);
+  background: var(--ds-color-surface);
+  color: var(--ds-color-primary-dark);
+  font-size: 1rem;
+  box-shadow: var(--ds-shadow-xs);
+}
+
+.ds-state__title {
+  margin: 0 0 var(--ds-space-2);
+  font-size: var(--ds-font-size-lg);
+  font-weight: var(--ds-font-weight-semibold);
+  color: var(--ds-color-text-primary);
+}
+
+.ds-state__message {
+  margin: 0;
+  font-size: var(--ds-font-size-sm);
+  color: var(--ds-color-text-secondary);
+}
+
+.ds-state--error {
+  border-style: solid;
+  border-color: rgba(197, 48, 48, 0.28);
+  background: var(--ds-color-error-bg);
+}
+
+.ds-state--error .ds-state__title,
+.ds-state--error .ds-state__message {
+  color: var(--ds-color-error);
+}
+
+.ds-page-shell {
+  width: 100%;
+  max-width: 700px;
+  margin: 0 auto;
+  padding: var(--ds-space-8);
+  text-align: right;
+}
+
+.ds-page-shell--narrow {
+  max-width: 500px;
+}
+
+.ds-debug-panel {
+  margin-top: var(--ds-space-6);
+  padding: var(--ds-space-4);
+  border: 1px solid var(--ds-color-border);
+  border-radius: var(--ds-radius-md);
+  background: var(--ds-color-surface);
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: var(--ds-font-size-sm);
+  line-height: var(--ds-line-height-relaxed);
+  box-shadow: var(--ds-shadow-xs);
+}

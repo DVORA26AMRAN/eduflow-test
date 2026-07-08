@@ -43,7 +43,7 @@ export function RequestNoteItem({
       {isEditing ? (
         <div className="secretary-dashboard__note-edit">
           <textarea
-            className="secretary-dashboard__notes-textarea"
+            className="ds-textarea secretary-dashboard__notes-textarea"
             rows={4}
             value={editText}
             onChange={(event) => setEditText(event.target.value)}
@@ -52,7 +52,7 @@ export function RequestNoteItem({
           <div className="secretary-dashboard__note-actions">
             <button
               type="button"
-              className="secretary-dashboard__note-soft-button secretary-dashboard__note-soft-button--primary"
+              className="ds-btn ds-btn--primary secretary-dashboard__note-soft-button secretary-dashboard__note-soft-button--primary"
               onClick={() => void handleSaveEdit()}
               disabled={isSaving}
             >
@@ -60,7 +60,7 @@ export function RequestNoteItem({
             </button>
             <button
               type="button"
-              className="secretary-dashboard__note-soft-button"
+              className="ds-btn ds-btn--secondary secretary-dashboard__note-soft-button"
               onClick={handleCancelEdit}
               disabled={isSaving}
             >

@@ -2,6 +2,7 @@ import type { RequestStatus, SecretaryInboxRequest } from '../../types/request'
 import {
   formatRequestDate,
   REQUEST_STATUS_OPTIONS,
+  translateRequestStatus,
   translateRequestType,
 } from '../../utils/requests'
 import { SecretaryRequestAttachmentCell } from './SecretaryRequestAttachmentCell'
@@ -27,15 +28,18 @@ export function SecretaryRequestsTable({
 }: SecretaryRequestsTableProps) {
   if (requests.length === 0) {
     return (
-      <div className="secretary-dashboard__empty-state">
-        <p className="secretary-dashboard__empty-message">{emptyMessage}</p>
+      <div className="ds-state secretary-dashboard__empty-state">
+        <span className="ds-state__icon" aria-hidden="true">
+          📥
+        </span>
+        <p className="ds-state__title">{emptyMessage}</p>
       </div>
     )
   }
 
   return (
-    <div className="secretary-dashboard__table-wrapper">
-      <table className="secretary-dashboard__table">
+    <div className="ds-table-wrapper secretary-dashboard__table-wrapper">
+      <table className="ds-table">
         <thead>
           <tr>
             <th>שם מורה</th>
@@ -54,21 +58,26 @@ export function SecretaryRequestsTable({
               <td>{translateRequestType(request.request_type)}</td>
               <td>{request.description}</td>
               <td>
-                <select
-                  className="secretary-dashboard__input secretary-dashboard__status-select"
-                  value={request.status}
-                  onChange={(e) =>
-                    onStatusChange(request.id, e.target.value as RequestStatus)
-                  }
-                  disabled={updatingRequestId === request.id}
-                  aria-label={`סטטוס בקשה של ${request.teacher_full_name}`}
-                >
-                  {REQUEST_STATUS_OPTIONS.map((option) => (
-                    <option key={option.value} value={option.value}>
-                      {option.label}
-                    </option>
-                  ))}
-                </select>
+                <div className="secretary-dashboard__status-control">
+                  <span className={`ds-table__status ds-table__status--${request.status}`}>
+                    {translateRequestStatus(request.status)}
+                  </span>
+                  <select
+                    className="secretary-dashboard__input secretary-dashboard__status-select"
+                    value={request.status}
+                    onChange={(e) =>
+                      onStatusChange(request.id, e.target.value as RequestStatus)
+                    }
+                    disabled={updatingRequestId === request.id}
+                    aria-label={`סטטוס בקשה של ${request.teacher_full_name}`}
+                  >
+                    {REQUEST_STATUS_OPTIONS.map((option) => (
+                      <option key={option.value} value={option.value}>
+                        {option.label}
+                      </option>
+                    ))}
+                  </select>
+                </div>
               </td>
               <td>{formatRequestDate(request.created_at)}</td>
               <td>
@@ -78,7 +87,7 @@ export function SecretaryRequestsTable({
                 />
               </td>
               <td>
-                <div className="secretary-dashboard__row-actions">
+                <div className="ds-table__row-actions secretary-dashboard__row-actions">
                   <button
                     type="button"
                     className="ds-btn ds-btn--secondary secretary-dashboard__history-button"

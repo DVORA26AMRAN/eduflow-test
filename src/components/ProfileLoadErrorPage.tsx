@@ -10,44 +10,33 @@ export function ProfileLoadErrorPage({
   debugInfo,
 }: ProfileLoadErrorPageProps) {
   return (
-    <main dir="rtl" style={{ padding: 40, maxWidth: 700 }}>
-      <h1>שגיאה</h1>
-      <p>{errorMessage}</p>
+    <main dir="rtl" className="ds-page-shell">
+      <section className="ds-state ds-state--error" role="status" aria-live="polite">
+        <h1 className="ds-state__title">שגיאה</h1>
+        <p className="ds-state__message">{errorMessage}</p>
+      </section>
 
       {debugInfo && (
-        <section
-          style={{
-            marginTop: 24,
-            padding: 16,
-            border: '1px solid #ccc',
-            borderRadius: 8,
-            background: '#fafafa',
-            fontFamily: 'monospace',
-            fontSize: 14,
-            lineHeight: 1.6,
-          }}
-        >
-          <h2 style={{ marginTop: 0, fontFamily: 'inherit', fontSize: 16 }}>
-            פרטי ניפוי שגיאות
-          </h2>
-          <p style={{ margin: '8px 0' }}>
+        <section className="ds-debug-panel">
+          <h2>פרטי ניפוי שגיאות</h2>
+          <p>
             <strong>מזהה משתמש בהפעלה:</strong>{' '}
             {debugInfo.sessionUserId ?? '—'}
           </p>
-          <p style={{ margin: '8px 0' }}>
+          <p>
             <strong>אימייל בהפעלה:</strong> {debugInfo.sessionEmail ?? '—'}
           </p>
-          <p style={{ margin: '8px 0' }}>
+          <p>
             <strong>מזהה בשאילתת users:</strong>{' '}
             {debugInfo.queryUserId ?? '—'}
           </p>
-          <p style={{ margin: '8px 0' }}>
+          <p>
             <strong>הודעת שגיאה:</strong> {debugInfo.errorMessage ?? '—'}
           </p>
-          <p style={{ margin: '8px 0' }}>
+          <p>
             <strong>קוד שגיאה:</strong> {debugInfo.errorCode ?? '—'}
           </p>
-          <p style={{ margin: '8px 0' }}>
+          <p>
             <strong>האם data היה null:</strong>{' '}
             {debugInfo.dataWasNull ? 'כן' : 'לא'}
           </p>

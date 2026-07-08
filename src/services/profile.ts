@@ -101,7 +101,7 @@ export async function loadCurrentUserRole(
   })
 
   const responseText = await response.text()
-  let responseBody: unknown = null
+  let responseBody: unknown
 
   try {
     responseBody = responseText ? JSON.parse(responseText) : null

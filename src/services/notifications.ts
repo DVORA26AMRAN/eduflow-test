@@ -10,37 +10,43 @@ export type MarkNotificationAsReadResult =
   | { ok: true }
   | { ok: false }
 
-function parseNotification(row: {
-  id: unknown
-  notification_type: unknown
-  title: unknown
-  message: unknown
-  is_read: unknown
-  metadata: unknown
-  created_at: unknown
-}): TeacherNotification | null {
+function parseNotification(row: unknown): TeacherNotification | null {
+  if (!row || typeof row !== 'object') {
+    return null
+  }
+
+  const candidate = row as {
+    id?: unknown
+    notification_type?: unknown
+    title?: unknown
+    message?: unknown
+    is_read?: unknown
+    metadata?: unknown
+    created_at?: unknown
+  }
+
   if (
-    typeof row.id !== 'string' ||
-    typeof row.notification_type !== 'string' ||
-    typeof row.title !== 'string' ||
-    typeof row.message !== 'string' ||
-    typeof row.is_read !== 'boolean' ||
-    typeof row.created_at !== 'string' ||
-    row.metadata === null ||
-    typeof row.metadata !== 'object' ||
-    Array.isArray(row.metadata)
+    typeof candidate.id !== 'string' ||
+    typeof candidate.notification_type !== 'string' ||
+    typeof candidate.title !== 'string' ||
+    typeof candidate.message !== 'string' ||
+    typeof candidate.is_read !== 'boolean' ||
+    typeof candidate.created_at !== 'string' ||
+    candidate.metadata === null ||
+    typeof candidate.metadata !== 'object' ||
+    Array.isArray(candidate.metadata)
   ) {
     return null
   }
 
   return {
-    id: row.id,
-    notification_type: row.notification_type,
-    title: row.title,
-    message: row.message,
-    is_read: row.is_read,
-    metadata: row.metadata as Record<string, unknown>,
-    created_at: row.created_at,
+    id: candidate.id,
+    notification_type: candidate.notification_type,
+    title: candidate.title,
+    message: candidate.message,
+    is_read: candidate.is_read,
+    metadata: candidate.metadata as Record<string, unknown>,
+    created_at: candidate.created_at,
   }
 }
 

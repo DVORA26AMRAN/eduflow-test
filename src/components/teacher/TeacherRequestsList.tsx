@@ -12,9 +12,12 @@ type TeacherRequestsListProps = {
 export function TeacherRequestsList({ requests }: TeacherRequestsListProps) {
   if (requests.length === 0) {
     return (
-      <div className="teacher-dashboard__empty-state">
-        <p className="teacher-dashboard__empty-message">אין לך בקשות פעילות כרגע.</p>
-        <p className="teacher-dashboard__helper-text">כאן יופיעו הבקשות שתפתחי בהמשך.</p>
+      <div className="ds-state teacher-dashboard__empty-state">
+        <span className="ds-state__icon" aria-hidden="true">
+          📭
+        </span>
+        <p className="ds-state__title">אין לך בקשות פעילות כרגע.</p>
+        <p className="ds-state__message">כאן יופיעו הבקשות שתפתחי בהמשך.</p>
       </div>
     )
   }
@@ -34,7 +37,11 @@ export function TeacherRequestsList({ requests }: TeacherRequestsListProps) {
           {requests.map((request) => (
             <tr key={request.id}>
               <td>{translateRequestType(request.request_type)}</td>
-              <td>{translateRequestStatus(request.status)}</td>
+              <td>
+                <span className={`ds-table__status ds-table__status--${request.status}`}>
+                  {translateRequestStatus(request.status)}
+                </span>
+              </td>
               <td>{formatRequestDate(request.created_at)}</td>
               <td>{request.description}</td>
             </tr>

@@ -7,6 +7,7 @@ import {
   loadSubstituteBoardResponsePostIds,
 } from '../../services/substituteBoard'
 import { validateCreateSubstituteBoardPostInput } from '../../utils/substituteBoard'
+import { NavInboxIcon, NavUsersIcon } from '../dashboard/dashboardNav'
 import { CreateSubstituteBoardPostForm } from './CreateSubstituteBoardPostForm'
 import { SubstituteBoardPostsList } from './SubstituteBoardPostsList'
 
@@ -52,7 +53,9 @@ export function TeacherSubstituteBoardSection() {
   }, [])
 
   useEffect(() => {
-    void fetchBoard()
+    queueMicrotask(() => {
+      void fetchBoard()
+    })
   }, [fetchBoard, boardVersion])
 
   async function handleCreatePost(input: CreateSubstituteBoardPostInput) {
@@ -101,9 +104,14 @@ export function TeacherSubstituteBoardSection() {
 
   return (
     <section className="teacher-dashboard__substitute-board">
-      <h2 className="teacher-dashboard__section-title">לוח מילויי מקום</h2>
+      <h2 className="teacher-dashboard__section-title">
+        <span className="dashboard-card__title-icon" aria-hidden="true">
+          <NavUsersIcon />
+        </span>
+        לוח מילויי מקום
+      </h2>
 
-      <div className="ds-card ds-card--accent teacher-dashboard__substitute-create-card">
+      <div className="ds-card teacher-dashboard__substitute-create-card">
         <CreateSubstituteBoardPostForm
           key={formKey}
           isSubmitting={isSubmitting}
@@ -113,7 +121,12 @@ export function TeacherSubstituteBoardSection() {
       </div>
 
       <div className="ds-card teacher-dashboard__substitute-list-card">
-        <h3 className="teacher-dashboard__subsection-title">פרסומים בלוח</h3>
+        <h3 className="teacher-dashboard__subsection-title">
+          <span className="dashboard-card__title-icon" aria-hidden="true">
+            <NavInboxIcon />
+          </span>
+          פרסומים בלוח
+        </h3>
 
         {responseMessage && (
           <p

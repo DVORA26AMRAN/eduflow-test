@@ -1,0 +1,103 @@
+.dashboard-top-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--ds-space-5);
+  margin-bottom: var(--ds-space-6);
+  padding: var(--ds-space-5);
+  border: 1px solid var(--ds-color-border);
+  border-radius: var(--ds-radius-xl);
+  background: var(--ds-color-surface);
+  box-shadow: var(--ds-shadow-sm);
+}
+
+.dashboard-top-header__identity {
+  min-width: 0;
+}
+
+.dashboard-top-header__welcome {
+  margin: 0;
+  font-size: var(--ds-font-size-sm);
+  font-weight: var(--ds-font-weight-medium);
+  color: var(--ds-color-text-secondary);
+}
+
+.dashboard-top-header__role {
+  margin: var(--ds-space-1) 0 0;
+  font-size: var(--ds-font-size-xl);
+  font-weight: var(--ds-font-weight-medium);
+  line-height: var(--ds-line-height-tight);
+  color: var(--ds-color-text-primary);
+}
+
+.dashboard-top-header__user {
+  margin: var(--ds-space-2) 0 0;
+  font-size: var(--ds-font-size-sm);
+  color: var(--ds-color-text-secondary);
+}
+
+.dashboard-top-header__actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: var(--ds-space-3);
+  flex-shrink: 0;
+}
+
+.dashboard-top-header__search {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--ds-space-3);
+  min-width: min(360px, 48vw);
+  padding: 0 var(--ds-space-4) 0 var(--ds-space-3);
+  border: 1px solid var(--ds-color-border);
+  border-radius: var(--ds-radius-pill);
+  background: var(--ds-color-surface-soft);
+}
+
+.dashboard-top-header__search-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  color: var(--ds-color-text-secondary);
+  font-size: var(--ds-font-size-sm);
+  line-height: 1;
+  opacity: 0.8;
+}
+
+.dashboard-top-header__search-input {
+  width: 100%;
+  min-height: 42px;
+  border: none;
+  background: transparent;
+  color: var(--ds-color-text-primary);
+  font: inherit;
+}
+
+.dashboard-top-header__search-input::placeholder {
+  color: var(--ds-color-text-secondary);
+  opacity: 0.8;
+}
+
+.dashboard-top-header__search-input:focus {
+  outline: none;
+}
+
+@media (max-width: 1024px) {
+  .dashboard-top-header {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .dashboard-top-header__actions {
+    width: 100%;
+    flex-wrap: wrap;
+  }
+
+  .dashboard-top-header__search {
+    min-width: 0;
+    width: 100%;
+  }
+}

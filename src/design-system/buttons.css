@@ -6,6 +6,7 @@
   justify-content: center;
   gap: var(--ds-space-2);
   min-height: 44px;
+  min-width: 88px;
   padding: var(--ds-space-3) var(--ds-space-6);
   border: 1px solid transparent;
   border-radius: var(--ds-radius-pill);
@@ -64,6 +65,16 @@
 .ds-btn:focus-visible {
   outline: none;
   box-shadow: var(--ds-shadow-focus);
+}
+
+.ds-btn--danger {
+  background: var(--ds-color-error-bg);
+  color: var(--ds-color-error);
+  border-color: rgba(197, 48, 48, 0.28);
+}
+
+.ds-btn--danger:hover:not(:disabled) {
+  background: rgba(197, 48, 48, 0.14);
 }
 
 .ds-btn--primary:focus-visible {

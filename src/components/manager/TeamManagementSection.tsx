@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react'
 import type { InstitutionUser, UserRole } from '../../types/user'
 import { translateRole } from '../../utils/roles'
+import { NavUsersIcon } from '../dashboard/dashboardNav'
 import { CreateUserForm } from './CreateUserForm'
 
 type TeamManagementSectionProps = {
@@ -47,7 +48,12 @@ export function TeamManagementSection({
 
   return (
     <section className="ds-card manager-dashboard__team">
-      <h2 className="manager-dashboard__section-title">ניהול צוות</h2>
+      <h2 className="manager-dashboard__section-title">
+        <span className="dashboard-card__title-icon" aria-hidden="true">
+          <NavUsersIcon />
+        </span>
+        ניהול צוות
+      </h2>
 
       <label className="ds-field manager-dashboard__search-field" htmlFor="team-search">
         <span className="ds-label">חיפוש</span>

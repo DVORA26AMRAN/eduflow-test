@@ -3,6 +3,7 @@ import type { RequestPayload, RequestType, TeacherRequest } from '../../types/re
 import { REQUEST_CREATED_ATTACHMENT_UPLOAD_FAILED_MESSAGE } from '../../types/attachment'
 import { uploadRequestAttachment } from '../../services/attachments'
 import { createTeacherRequest, loadTeacherRequests } from '../../services/requests'
+import { NavClipboardIcon, NavInboxIcon } from '../dashboard/dashboardNav'
 import { CreateRequestForm } from './CreateRequestForm'
 import { TeacherRequestsList } from './TeacherRequestsList'
 
@@ -32,7 +33,9 @@ export function TeacherRequestsSection() {
   }, [])
 
   useEffect(() => {
-    void fetchRequests()
+    queueMicrotask(() => {
+      void fetchRequests()
+    })
   }, [fetchRequests, requestsListVersion])
 
   async function handleCreateRequest(input: {
@@ -81,9 +84,14 @@ export function TeacherRequestsSection() {
 
   return (
     <section className="teacher-dashboard__requests">
-      <h2 className="teacher-dashboard__section-title">הבקשות שלי</h2>
+      <h2 className="teacher-dashboard__section-title">
+        <span className="dashboard-card__title-icon" aria-hidden="true">
+          <NavClipboardIcon />
+        </span>
+        הבקשות שלי
+      </h2>
 
-      <div className="ds-card ds-card--accent teacher-dashboard__create-card">
+      <div className="ds-card teacher-dashboard__create-card">
         <CreateRequestForm
           key={formKey}
           isSubmitting={isSubmitting}
@@ -93,7 +101,12 @@ export function TeacherRequestsSection() {
       </div>
 
       <div className="ds-card teacher-dashboard__list-card">
-        <h3 className="teacher-dashboard__subsection-title">רשימת בקשות</h3>
+        <h3 className="teacher-dashboard__subsection-title">
+          <span className="dashboard-card__title-icon" aria-hidden="true">
+            <NavInboxIcon />
+          </span>
+          רשימת בקשות
+        </h3>
 
         {isLoading && <p className="ds-form-message">טוען בקשות...</p>}
 

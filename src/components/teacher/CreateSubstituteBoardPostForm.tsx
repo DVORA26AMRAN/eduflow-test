@@ -57,112 +57,117 @@ export function CreateSubstituteBoardPostForm({
     <>
       <h3 className="teacher-dashboard__subsection-title">פרסום חדש</h3>
 
-      <label className="ds-field" htmlFor="substitute-post-type">
-        <span className="ds-label">סוג פרסום</span>
-        <select
-          id="substitute-post-type"
-          className="ds-select"
-          value={postType}
-          onChange={(event) => {
-            setPostType(event.target.value as SubstituteBoardPostType | '')
-            setValidationMessage('')
-          }}
-          disabled={isSubmitting}
-        >
-          <option value="">בחרי סוג פרסום</option>
-          {SUBSTITUTE_BOARD_POST_TYPE_OPTIONS.map((option) => (
-            <option key={option.value} value={option.value}>
-              {option.label}
-            </option>
-          ))}
-        </select>
-      </label>
+      <div className="ds-fieldset">
+        <label className="ds-field" htmlFor="substitute-post-type">
+          <span className="ds-label">סוג פרסום</span>
+          <select
+            id="substitute-post-type"
+            className="ds-select"
+            value={postType}
+            onChange={(event) => {
+              setPostType(event.target.value as SubstituteBoardPostType | '')
+              setValidationMessage('')
+            }}
+            disabled={isSubmitting}
+          >
+            <option value="">בחרי סוג פרסום</option>
+            {SUBSTITUTE_BOARD_POST_TYPE_OPTIONS.map((option) => (
+              <option key={option.value} value={option.value}>
+                {option.label}
+              </option>
+            ))}
+          </select>
+        </label>
 
-      <label className="ds-field" htmlFor="substitute-date">
-        <span className="ds-label">תאריך</span>
-        <input
-          id="substitute-date"
-          type="date"
-          className="ds-input teacher-dashboard__date-input"
-          value={date}
-          onChange={(event) => {
-            setDate(event.target.value)
-            setValidationMessage('')
-          }}
-          disabled={isSubmitting}
-        />
-      </label>
-
-      <div className="teacher-dashboard__substitute-time-row">
-        <label className="ds-field" htmlFor="substitute-start-time">
-          <span className="ds-label">שעת התחלה</span>
+        <label className="ds-field" htmlFor="substitute-date">
+          <span className="ds-label">תאריך</span>
           <input
-            id="substitute-start-time"
-            type="time"
-            className="ds-input"
-            value={startTime}
-            onChange={(event) => setStartTime(event.target.value)}
+            id="substitute-date"
+            type="date"
+            className="ds-input teacher-dashboard__date-input"
+            value={date}
+            onChange={(event) => {
+              setDate(event.target.value)
+              setValidationMessage('')
+            }}
             disabled={isSubmitting}
           />
         </label>
 
-        <label className="ds-field" htmlFor="substitute-end-time">
-          <span className="ds-label">שעת סיום</span>
+        <div className="teacher-dashboard__substitute-time-row">
+          <label className="ds-field" htmlFor="substitute-start-time">
+            <span className="ds-label">שעת התחלה</span>
+            <input
+              id="substitute-start-time"
+              type="time"
+              className="ds-input"
+              value={startTime}
+              onChange={(event) => setStartTime(event.target.value)}
+              disabled={isSubmitting}
+            />
+          </label>
+
+          <label className="ds-field" htmlFor="substitute-end-time">
+            <span className="ds-label">שעת סיום</span>
+            <input
+              id="substitute-end-time"
+              type="time"
+              className="ds-input"
+              value={endTime}
+              onChange={(event) => setEndTime(event.target.value)}
+              disabled={isSubmitting}
+            />
+          </label>
+        </div>
+
+        <label className="ds-field" htmlFor="substitute-class-name">
+          <span className="ds-label">כיתה</span>
           <input
-            id="substitute-end-time"
-            type="time"
+            id="substitute-class-name"
+            type="text"
             className="ds-input"
-            value={endTime}
-            onChange={(event) => setEndTime(event.target.value)}
+            value={className}
+            onChange={(event) => setClassName(event.target.value)}
             disabled={isSubmitting}
           />
         </label>
+
+        <label className="ds-field" htmlFor="substitute-subject">
+          <span className="ds-label">מקצוע</span>
+          <input
+            id="substitute-subject"
+            type="text"
+            className="ds-input"
+            value={subject}
+            onChange={(event) => setSubject(event.target.value)}
+            disabled={isSubmitting}
+          />
+        </label>
+
+        <label className="ds-field" htmlFor="substitute-description">
+          <span className="ds-label">תיאור / הערות</span>
+          <textarea
+            id="substitute-description"
+            className="ds-textarea"
+            rows={3}
+            value={description}
+            onChange={(event) => setDescription(event.target.value)}
+            disabled={isSubmitting}
+          />
+          <p className="ds-helper-text">שדה זה מיועד להערות קצרות או הקשר נוסף לפרסום.</p>
+        </label>
+
+        <div className="ds-form-actions">
+          <button
+            type="button"
+            className="ds-btn ds-btn--primary teacher-dashboard__submit"
+            onClick={handleSubmit}
+            disabled={isSubmitting}
+          >
+            פרסום
+          </button>
+        </div>
       </div>
-
-      <label className="ds-field" htmlFor="substitute-class-name">
-        <span className="ds-label">כיתה</span>
-        <input
-          id="substitute-class-name"
-          type="text"
-          className="ds-input"
-          value={className}
-          onChange={(event) => setClassName(event.target.value)}
-          disabled={isSubmitting}
-        />
-      </label>
-
-      <label className="ds-field" htmlFor="substitute-subject">
-        <span className="ds-label">מקצוע</span>
-        <input
-          id="substitute-subject"
-          type="text"
-          className="ds-input"
-          value={subject}
-          onChange={(event) => setSubject(event.target.value)}
-          disabled={isSubmitting}
-        />
-      </label>
-
-      <label className="ds-field" htmlFor="substitute-description">
-        <span className="ds-label">תיאור / הערות</span>
-        <textarea
-          id="substitute-description"
-          className="ds-textarea"
-          rows={3}
-          value={description}
-          onChange={(event) => setDescription(event.target.value)}
-          disabled={isSubmitting}
-        />
-      </label>
-
-      <button
-        type="button"
-        className="ds-btn ds-btn--primary teacher-dashboard__submit"
-        onClick={handleSubmit}
-        disabled={isSubmitting}
-      >
-        פרסום
-      </button>
 
       {validationMessage && (
         <p className="ds-form-message ds-form-message--error">{validationMessage}</p>

@@ -1,5 +1,6 @@
 import type { ManagerRecentActivityEntry } from '../../types/analytics'
 import { formatRequestDateTime, translateRequestStatus } from '../../utils/requests'
+import { NavActivityIcon } from '../dashboard/dashboardNav'
 
 type ManagerRecentActivitySectionProps = {
   entries: ManagerRecentActivityEntry[]
@@ -14,7 +15,12 @@ export function ManagerRecentActivitySection({
 }: ManagerRecentActivitySectionProps) {
   return (
     <section className="ds-card manager-dashboard__insight-card" aria-label="פעילות אחרונה">
-      <h2 className="manager-dashboard__section-title">פעילות אחרונה</h2>
+      <h2 className="manager-dashboard__section-title">
+        <span className="dashboard-card__title-icon" aria-hidden="true">
+          <NavActivityIcon />
+        </span>
+        פעילות אחרונה
+      </h2>
 
       {isLoading && (
         <p className="manager-dashboard__insight-status">טוען נתונים...</p>
@@ -35,8 +41,13 @@ export function ManagerRecentActivitySection({
           {entries.map((entry) => (
             <li key={entry.id} className="manager-dashboard__activity-item">
               <p className="manager-dashboard__activity-transition">
-                {translateRequestStatus(entry.previous_status)} ←{' '}
-                {translateRequestStatus(entry.new_status)}
+                <span className={`ds-table__status ds-table__status--${entry.previous_status}`}>
+                  {translateRequestStatus(entry.previous_status)}
+                </span>{' '}
+                ←{' '}
+                <span className={`ds-table__status ds-table__status--${entry.new_status}`}>
+                  {translateRequestStatus(entry.new_status)}
+                </span>
               </p>
               <p className="manager-dashboard__activity-meta">
                 {formatRequestDateTime(entry.created_at)}

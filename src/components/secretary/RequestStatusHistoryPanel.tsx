@@ -57,9 +57,12 @@ export function RequestStatusHistoryPanel({
         )}
 
         {!isLoading && !errorMessage && entries.length === 0 && (
-          <p className="secretary-dashboard__history-status">
-            אין היסטוריית סטטוסים לבקשה זו.
-          </p>
+          <div className="ds-state secretary-dashboard__history-empty-state">
+            <span className="ds-state__icon" aria-hidden="true">
+              🕘
+            </span>
+            <p className="ds-state__title">אין היסטוריית סטטוסים לבקשה זו.</p>
+          </div>
         )}
 
         {!isLoading && !errorMessage && entries.length > 0 && (
@@ -67,8 +70,13 @@ export function RequestStatusHistoryPanel({
             {entries.map((entry) => (
               <li key={entry.id} className="secretary-dashboard__history-item">
                 <p className="secretary-dashboard__history-transition">
-                  {translateRequestStatus(entry.previous_status)} ←{' '}
-                  {translateRequestStatus(entry.new_status)}
+                  <span className={`ds-table__status ds-table__status--${entry.previous_status}`}>
+                    {translateRequestStatus(entry.previous_status)}
+                  </span>{' '}
+                  ←{' '}
+                  <span className={`ds-table__status ds-table__status--${entry.new_status}`}>
+                    {translateRequestStatus(entry.new_status)}
+                  </span>
                 </p>
                 {entry.changed_by_full_name && (
                   <p className="secretary-dashboard__history-meta">

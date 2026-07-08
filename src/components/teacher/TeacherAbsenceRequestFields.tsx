@@ -25,7 +25,7 @@ export function TeacherAbsenceRequestFields({
   onReplacedByChange,
 }: TeacherAbsenceRequestFieldsProps) {
   return (
-    <div className="teacher-dashboard__absence-form">
+    <div className="teacher-dashboard__absence-form ds-fieldset">
       <label className="ds-field" htmlFor="absence-date">
         <span className="ds-label">תאריך היעדרות</span>
         <input
@@ -83,6 +83,7 @@ export function TeacherAbsenceRequestFields({
           disabled={isDisabled}
           placeholder="שם המחליפה (אופציונלי)"
         />
+        <p className="ds-helper-text">אפשר להשאיר ריק אם עדיין אין מורה מחליפה.</p>
       </label>
     </div>
   )
