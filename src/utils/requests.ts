@@ -1,4 +1,6 @@
 import type {
+  ArchiveFilters,
+  ArchivedTeacherRequest,
   RequestStatus,
   RequestType,
   SecretaryInboxFilters,
@@ -128,6 +130,59 @@ export function filterSecretaryInboxRequests(
     }
 
     if (filters.requestStatus !== 'all' && request.status !== filters.requestStatus) {
+      return false
+    }
+
+    return true
+  })
+}
+
+function isDateOnOrAfter(isoDate: string, dateFrom: string): boolean {
+  if (!dateFrom) {
+    return true
+  }
+
+  const value = new Date(isoDate)
+  const from = new Date(`${dateFrom}T00:00:00`)
+  if (Number.isNaN(value.getTime()) || Number.isNaN(from.getTime())) {
+    return true
+  }
+
+  return value.getTime() >= from.getTime()
+}
+
+function isDateOnOrBefore(isoDate: string, dateTo: string): boolean {
+  if (!dateTo) {
+    return true
+  }
+
+  const value = new Date(isoDate)
+  const to = new Date(`${dateTo}T23:59:59.999`)
+  if (Number.isNaN(value.getTime()) || Number.isNaN(to.getTime())) {
+    return true
+  }
+
+  return value.getTime() <= to.getTime()
+}
+
+export function filterArchivedTeacherRequests(
+  requests: ArchivedTeacherRequest[],
+  filters: ArchiveFilters,
+): ArchivedTeacherRequest[] {
+  return requests.filter((request) => {
+    if (filters.requestType !== 'all' && request.request_type !== filters.requestType) {
+      return false
+    }
+
+    if (filters.requestStatus !== 'all' && request.status !== filters.requestStatus) {
+      return false
+    }
+
+    if (!isDateOnOrAfter(request.archived_at, filters.dateFrom)) {
+      return false
+    }
+
+    if (!isDateOnOrBefore(request.archived_at, filters.dateTo)) {
       return false
     }
 

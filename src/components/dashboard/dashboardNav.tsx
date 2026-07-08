@@ -76,3 +76,35 @@ export function NavActivityIcon() {
     </svg>
   )
 }
+
+export function NavArchiveIcon() {
+  const stroke = iconStroke()
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true">
+      <path d="M4.5 7.5h15v11.5a1.5 1.5 0 0 1-1.5 1.5h-12a1.5 1.5 0 0 1-1.5-1.5Z" {...stroke} />
+      <path d="M4 5.5h16v2H4Z" {...stroke} />
+      <path d="M10 12.5h4" {...stroke} />
+    </svg>
+  )
+}
+
+export function NavCalendarIcon() {
+  const stroke = iconStroke()
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true">
+      <rect x="4.5" y="5.5" width="15" height="14" rx="2" {...stroke} />
+      <path d="M8 3.8v3.2M16 3.8v3.2M4.5 10h15" {...stroke} />
+      <path d="M8.5 14h2M13.5 14h2M8.5 17h2" {...stroke} />
+    </svg>
+  )
+}
+
+export function NavPackageIcon() {
+  const stroke = iconStroke()
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true">
+      <path d="M4.8 8.2 12 4.5l7.2 3.7v7.6L12 19.5 4.8 15.8Z" {...stroke} />
+      <path d="M12 12.2V19.5M4.8 8.2 12 12.2l7.2-4" {...stroke} />
+    </svg>
+  )
+}

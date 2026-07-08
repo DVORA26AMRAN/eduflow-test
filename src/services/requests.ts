@@ -1,4 +1,5 @@
 import type {
+  ArchivedTeacherRequest,
   CreateRequestInput,
   RequestStatus,
   RequestStatusHistoryEntry,
@@ -10,6 +11,10 @@ import { supabase } from './supabase'
 
 export type LoadTeacherRequestsResult =
   | { ok: true; requests: TeacherRequest[] }
+  | { ok: false; errorMessage: string }
+
+export type LoadMyArchivedRequestsResult =
+  | { ok: true; requests: ArchivedTeacherRequest[] }
   | { ok: false; errorMessage: string }
 
 export type CreateTeacherRequestResult =
@@ -77,6 +82,7 @@ export async function loadTeacherRequests(): Promise<LoadTeacherRequestsResult> 
   const { data, error } = await supabase
     .from('requests')
     .select('id, request_type, description, status, created_at')
+    .is('archived_at', null)
     .order('created_at', { ascending: false })
 
   if (error) {
@@ -90,6 +96,60 @@ export async function loadTeacherRequests(): Promise<LoadTeacherRequestsResult> 
   const requests = (data ?? [])
     .map(parseTeacherRequest)
     .filter((request): request is TeacherRequest => request !== null)
+
+  return { ok: true, requests }
+}
+
+function parseArchivedTeacherRequest(row: {
+  id: unknown
+  request_type: unknown
+  description: unknown
+  status: unknown
+  created_at: unknown
+  archived_at: unknown
+}): ArchivedTeacherRequest | null {
+  const base = parseTeacherRequest(row)
+  if (!base || typeof row.archived_at !== 'string') {
+    return null
+  }
+
+  return {
+    ...base,
+    archived_at: row.archived_at,
+  }
+}
+
+export async function loadMyArchivedRequests(): Promise<LoadMyArchivedRequestsResult> {
+  const { data: sessionData, error: sessionError } = await supabase.auth.getSession()
+
+  if (sessionError || !sessionData.session?.user) {
+    console.error('[requests] no authenticated session for archive load', sessionError)
+    return {
+      ok: false,
+      errorMessage: 'לא ניתן לטעון את הארכיון.',
+    }
+  }
+
+  const userId = sessionData.session.user.id
+
+  const { data, error } = await supabase
+    .from('requests')
+    .select('id, request_type, description, status, created_at, archived_at')
+    .eq('created_by_user_id', userId)
+    .not('archived_at', 'is', null)
+    .order('archived_at', { ascending: false })
+
+  if (error) {
+    console.error('[requests] failed to load archived requests', error)
+    return {
+      ok: false,
+      errorMessage: 'לא ניתן לטעון את הארכיון.',
+    }
+  }
+
+  const requests = (data ?? [])
+    .map(parseArchivedTeacherRequest)
+    .filter((request): request is ArchivedTeacherRequest => request !== null)
 
   return { ok: true, requests }
 }
@@ -147,6 +207,7 @@ export async function loadSecretaryRequests(): Promise<LoadSecretaryRequestsResu
     .select(
       'id, request_type, description, status, created_at, users!created_by_user_id(full_name)',
     )
+    .is('archived_at', null)
     .order('created_at', { ascending: false })
 
   if (error) {

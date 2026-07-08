@@ -34,6 +34,17 @@ export type TeacherRequest = {
   created_at: string
 }
 
+export type ArchivedTeacherRequest = TeacherRequest & {
+  archived_at: string
+}
+
+export type ArchiveFilters = {
+  requestType: RequestType | 'all'
+  requestStatus: RequestStatus | 'all'
+  dateFrom: string
+  dateTo: string
+}
+
 export type CreateRequestInput = {
   requestType: RequestType
   description: string

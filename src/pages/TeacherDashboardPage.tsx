@@ -2,11 +2,13 @@ import { useEffect, useState } from 'react'
 import organizationLogo from '../assets/images/logo.png.png'
 import { DashboardShell } from '../components/dashboard/DashboardShell'
 import {
+  NavArchiveIcon,
   NavBellIcon,
   NavClipboardIcon,
   NavUsersIcon,
   type DashboardNavItem,
 } from '../components/dashboard/dashboardNav'
+import { TeacherArchiveSection } from '../components/teacher/TeacherArchiveSection'
 import { TeacherNotificationsSection } from '../components/teacher/TeacherNotificationsSection'
 import { TeacherRequestsSection } from '../components/teacher/TeacherRequestsSection'
 import { TeacherSubstituteBoardSection } from '../components/teacher/TeacherSubstituteBoardSection'
@@ -20,6 +22,7 @@ const teacherNavItems: DashboardNavItem[] = [
   { id: 'notifications', label: 'התראות', icon: <NavBellIcon /> },
   { id: 'requests', label: 'בקשות', icon: <NavClipboardIcon /> },
   { id: 'substituteBoard', label: 'לוח מילויי מקום', icon: <NavUsersIcon /> },
+  { id: 'archive', label: 'הארכיון שלי', icon: <NavArchiveIcon /> },
 ]
 
 export function TeacherDashboardPage({ onLogout }: TeacherDashboardPageProps) {
@@ -106,6 +109,15 @@ export function TeacherDashboardPage({ onLogout }: TeacherDashboardPageProps) {
           tabIndex={-1}
         >
           <TeacherSubstituteBoardSection />
+        </section>
+
+        <section
+          id="teacher-archive"
+          data-section-id="archive"
+          className="teacher-dashboard__shell-section"
+          tabIndex={-1}
+        >
+          <TeacherArchiveSection />
         </section>
       </div>
     </DashboardShell>
