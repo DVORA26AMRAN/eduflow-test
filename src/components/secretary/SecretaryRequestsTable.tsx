@@ -11,20 +11,28 @@ type SecretaryRequestsTableProps = {
   requests: SecretaryInboxRequest[]
   emptyMessage: string
   updatingRequestId: string | null
+  archivingRequestId: string | null
   requestIdsWithAttachments: ReadonlySet<string>
   onStatusChange: (requestId: string, status: RequestStatus) => void
   onShowHistory: (requestId: string) => void
   onShowNotes: (requestId: string) => void
+  onArchive: (request: SecretaryInboxRequest) => void
+}
+
+function canArchiveRequest(status: RequestStatus): boolean {
+  return status === 'completed' || status === 'rejected'
 }
 
 export function SecretaryRequestsTable({
   requests,
   emptyMessage,
   updatingRequestId,
+  archivingRequestId,
   requestIdsWithAttachments,
   onStatusChange,
   onShowHistory,
   onShowNotes,
+  onArchive,
 }: SecretaryRequestsTableProps) {
   if (requests.length === 0) {
     return (
@@ -52,7 +60,11 @@ export function SecretaryRequestsTable({
           </tr>
         </thead>
         <tbody>
-          {requests.map((request) => (
+          {requests.map((request) => {
+            const isArchiving = archivingRequestId === request.id
+            const showArchiveAction = canArchiveRequest(request.status)
+
+            return (
             <tr key={request.id}>
               <td>{request.teacher_full_name}</td>
               <td>{translateRequestType(request.request_type)}</td>
@@ -68,7 +80,7 @@ export function SecretaryRequestsTable({
                     onChange={(e) =>
                       onStatusChange(request.id, e.target.value as RequestStatus)
                     }
-                    disabled={updatingRequestId === request.id}
+                    disabled={updatingRequestId === request.id || archivingRequestId !== null}
                     aria-label={`סטטוס בקשה של ${request.teacher_full_name}`}
                   >
                     {REQUEST_STATUS_OPTIONS.map((option) => (
@@ -102,10 +114,21 @@ export function SecretaryRequestsTable({
                   >
                     הערות
                   </button>
+                  {showArchiveAction && (
+                    <button
+                      type="button"
+                      className="ds-btn ds-btn--secondary"
+                      onClick={() => onArchive(request)}
+                      disabled={archivingRequestId !== null}
+                    >
+                      {isArchiving ? 'מעביר...' : 'העבר לארכיון'}
+                    </button>
+                  )}
                 </div>
               </td>
             </tr>
-          ))}
+            )
+          })}
         </tbody>
       </table>
     </div>

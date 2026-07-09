@@ -14,7 +14,11 @@ const defaultFilters: SecretaryArchiveFilters = {
   dateTo: '',
 }
 
-export function SecretaryArchiveSection() {
+type SecretaryArchiveSectionProps = {
+  refreshToken: number
+}
+
+export function SecretaryArchiveSection({ refreshToken }: SecretaryArchiveSectionProps) {
   const [requests, setRequests] = useState<SecretaryArchivedRequest[]>([])
   const [filters, setFilters] = useState<SecretaryArchiveFilters>(defaultFilters)
   const [isLoading, setIsLoading] = useState(true)
@@ -40,7 +44,7 @@ export function SecretaryArchiveSection() {
     queueMicrotask(() => {
       void fetchArchive()
     })
-  }, [fetchArchive])
+  }, [fetchArchive, refreshToken])
 
   const filteredRequests = useMemo(
     () => filterSecretaryArchivedRequests(requests, filters),

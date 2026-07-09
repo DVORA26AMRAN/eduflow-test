@@ -24,6 +24,7 @@ const secretaryNavItems: DashboardNavItem[] = [
 
 export function SecretaryDashboardPage({ onLogout }: SecretaryDashboardPageProps) {
   const [activeSectionId, setActiveSectionId] = useState<string>('substituteApprovals')
+  const [archiveRefreshToken, setArchiveRefreshToken] = useState(0)
 
   function handleSectionSelect(sectionId: string) {
     const target = document.querySelector<HTMLElement>(
@@ -70,6 +71,10 @@ export function SecretaryDashboardPage({ onLogout }: SecretaryDashboardPageProps
     return () => observer.disconnect()
   }, [])
 
+  function handleArchiveChanged() {
+    setArchiveRefreshToken((value) => value + 1)
+  }
+
   return (
     <DashboardShell
       roleLabel="אזור המזכירה"
@@ -96,7 +101,7 @@ export function SecretaryDashboardPage({ onLogout }: SecretaryDashboardPageProps
           className="secretary-dashboard__shell-section"
           tabIndex={-1}
         >
-          <SecretaryRequestsInbox />
+          <SecretaryRequestsInbox onArchived={handleArchiveChanged} />
         </section>
 
         <section
@@ -105,7 +110,7 @@ export function SecretaryDashboardPage({ onLogout }: SecretaryDashboardPageProps
           className="secretary-dashboard__shell-section"
           tabIndex={-1}
         >
-          <SecretaryArchiveSection />
+          <SecretaryArchiveSection refreshToken={archiveRefreshToken} />
         </section>
       </div>
     </DashboardShell>

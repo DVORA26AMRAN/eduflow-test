@@ -6,6 +6,7 @@ import type {
   SecretaryInboxRequest,
 } from '../../types/request'
 import {
+  archiveRequestAsSecretary,
   loadRequestStatusHistory,
   loadSecretaryRequests,
   updateRequestStatus,
@@ -24,7 +25,11 @@ const defaultFilters: SecretaryInboxFilters = {
   requestStatus: 'all',
 }
 
-export function SecretaryRequestsInbox() {
+type SecretaryRequestsInboxProps = {
+  onArchived: () => void
+}
+
+export function SecretaryRequestsInbox({ onArchived }: SecretaryRequestsInboxProps) {
   const [requests, setRequests] = useState<SecretaryInboxRequest[]>([])
   const [filters, setFilters] = useState<SecretaryInboxFilters>(defaultFilters)
   const [isLoading, setIsLoading] = useState(true)
@@ -40,6 +45,10 @@ export function SecretaryRequestsInbox() {
     ReadonlySet<string>
   >(new Set())
   const [notesRequestId, setNotesRequestId] = useState<string | null>(null)
+  const [archivingRequestId, setArchivingRequestId] = useState<string | null>(null)
+  const [archiveDialogRequest, setArchiveDialogRequest] = useState<SecretaryInboxRequest | null>(
+    null,
+  )
 
   const fetchRequests = useCallback(async () => {
     setIsLoading(true)
@@ -143,6 +152,46 @@ export function SecretaryRequestsInbox() {
     setNotesRequestId(requestId)
   }
 
+  function handleOpenArchiveDialog(request: SecretaryInboxRequest) {
+    setStatusMessage('')
+    setArchiveDialogRequest(request)
+  }
+
+  function handleCloseArchiveDialog() {
+    if (archivingRequestId !== null) {
+      return
+    }
+    setArchiveDialogRequest(null)
+  }
+
+  async function handleConfirmArchive() {
+    if (!archiveDialogRequest || archivingRequestId !== null) {
+      return
+    }
+
+    setStatusMessage('')
+    setArchivingRequestId(archiveDialogRequest.id)
+
+    const result = await archiveRequestAsSecretary(archiveDialogRequest.id)
+
+    setArchivingRequestId(null)
+
+    if (!result.ok) {
+      setStatusMessage(result.errorMessage)
+      setStatusMessageIsError(true)
+      setArchiveDialogRequest(null)
+      return
+    }
+
+    setRequests((currentRequests) =>
+      currentRequests.filter((request) => request.id !== archiveDialogRequest.id),
+    )
+    setStatusMessage('הבקשה הועברה לארכיון המוסדי בהצלחה.')
+    setStatusMessageIsError(false)
+    setArchiveDialogRequest(null)
+    onArchived()
+  }
+
   return (
     <section className="ds-card secretary-dashboard__inbox">
       <h2 className="secretary-dashboard__section-title">
@@ -177,11 +226,57 @@ export function SecretaryRequestsInbox() {
           requests={filteredRequests}
           emptyMessage={emptyMessage}
           updatingRequestId={updatingRequestId}
+          archivingRequestId={archivingRequestId}
           requestIdsWithAttachments={requestIdsWithAttachments}
           onStatusChange={handleStatusChange}
           onShowHistory={handleShowHistory}
           onShowNotes={handleShowNotes}
+          onArchive={handleOpenArchiveDialog}
         />
+      )}
+
+      {archiveDialogRequest && (
+        <div
+          className="secretary-dashboard__archive-confirm-overlay"
+          onClick={handleCloseArchiveDialog}
+          role="presentation"
+        >
+          <div
+            className="secretary-dashboard__archive-confirm-panel ds-card"
+            onClick={(event) => event.stopPropagation()}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="secretary-archive-confirm-title"
+          >
+            <h3
+              id="secretary-archive-confirm-title"
+              className="secretary-dashboard__section-title"
+            >
+              להעביר לארכיון מוסדי?
+            </h3>
+            <p className="ds-form-message">
+              הבקשה תוסר מתיבת הבקשות הפעילות ותופיע בארכיון המוסדי.
+            </p>
+            <div className="secretary-dashboard__archive-confirm-actions">
+              <button
+                type="button"
+                className="ds-btn ds-btn--secondary"
+                onClick={handleCloseArchiveDialog}
+                disabled={archivingRequestId !== null}
+              >
+                ביטול
+              </button>
+              <button
+                type="button"
+                className="ds-btn ds-btn--primary"
+                onClick={handleConfirmArchive}
+                disabled={archivingRequestId !== null}
+              >
+                {archivingRequestId !== null ? 'מעביר...' : 'כן, להעביר לארכיון'}
+              </button>
+            </div>
+          </div>
+        </div>
       )}
 
       <RequestStatusHistoryPanel

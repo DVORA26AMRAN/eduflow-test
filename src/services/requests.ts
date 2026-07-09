@@ -38,6 +38,8 @@ export type ArchiveRequestResult =
   | { ok: true }
   | { ok: false; errorMessage: string }
 
+export type ArchiveRequestAsSecretaryResult = ArchiveRequestResult
+
 export type LoadRequestStatusHistoryResult =
   | { ok: true; entries: RequestStatusHistoryEntry[] }
   | { ok: false; errorMessage: string }
@@ -382,6 +384,80 @@ export async function archiveRequest(requestId: string): Promise<ArchiveRequestR
 
   if (archivedRowError || !archivedRow || typeof archivedRow.archived_at !== 'string') {
     console.error('[requests] archive postcondition failed: row not archived after update', {
+      requestId,
+      archivedRowError,
+      archivedRow,
+    })
+    return {
+      ok: false,
+      errorMessage: 'לא ניתן להעביר בקשה זו לארכיון.',
+    }
+  }
+
+  return { ok: true }
+}
+
+export async function archiveRequestAsSecretary(
+  requestId: string,
+): Promise<ArchiveRequestAsSecretaryResult> {
+  const { data: sessionData, error: sessionError } = await supabase.auth.getSession()
+
+  if (sessionError || !sessionData.session?.user) {
+    console.error('[requests] no authenticated session for secretary archive', sessionError)
+    return {
+      ok: false,
+      errorMessage: 'לא ניתן להעביר את הבקשה לארכיון כרגע.',
+    }
+  }
+
+  const userId = sessionData.session.user.id
+  const archivedAt = new Date().toISOString()
+
+  const { data, error } = await supabase
+    .from('requests')
+    .update({
+      archived_at: archivedAt,
+      archived_by_user_id: userId,
+    })
+    .eq('id', requestId)
+    .in('status', ['completed', 'rejected'])
+    .is('archived_at', null)
+    .select('id')
+
+  if (error) {
+    console.error('[requests] failed to archive request as secretary', error)
+    return {
+      ok: false,
+      errorMessage: 'העברת הבקשה לארכיון נכשלה.',
+    }
+  }
+
+  if (!data || data.length === 0) {
+    return {
+      ok: false,
+      errorMessage: 'לא ניתן להעביר בקשה זו לארכיון.',
+    }
+  }
+
+  if (data.length !== 1 || data[0]?.id !== requestId) {
+    console.error('[requests] secretary archive postcondition failed: unexpected updated rows', {
+      requestId,
+      updatedRows: data,
+    })
+    return {
+      ok: false,
+      errorMessage: 'לא ניתן להעביר בקשה זו לארכיון.',
+    }
+  }
+
+  const { data: archivedRow, error: archivedRowError } = await supabase
+    .from('requests')
+    .select('id, archived_at')
+    .eq('id', requestId)
+    .single()
+
+  if (archivedRowError || !archivedRow || typeof archivedRow.archived_at !== 'string') {
+    console.error('[requests] secretary archive postcondition failed: row not archived after update', {
       requestId,
       archivedRowError,
       archivedRow,
