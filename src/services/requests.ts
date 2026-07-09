@@ -27,8 +27,15 @@ export type LoadSecretaryRequestsResult =
   | { ok: false; errorMessage: string }
 
 export type LoadSecretaryArchivedRequestsResult =
-  | { ok: true; requests: SecretaryArchivedRequest[] }
+  | { ok: true; requests: SecretaryArchivedRequest[]; totalCount: number }
   | { ok: false; errorMessage: string }
+
+export type LoadSecretaryArchivedRequestsParams = {
+  dateFrom?: string
+  dateTo?: string
+  page: number
+  pageSize: number
+}
 
 export type UpdateRequestStatusResult =
   | { ok: true }
@@ -283,14 +290,32 @@ function parseSecretaryArchivedRequest(row: {
   }
 }
 
-export async function loadSecretaryArchivedRequests(): Promise<LoadSecretaryArchivedRequestsResult> {
-  const { data, error } = await supabase
+export async function loadSecretaryArchivedRequests(
+  params: LoadSecretaryArchivedRequestsParams,
+): Promise<LoadSecretaryArchivedRequestsResult> {
+  const page = Math.max(1, params.page)
+  const pageSize = Math.max(1, params.pageSize)
+  const rangeFrom = (page - 1) * pageSize
+  const rangeTo = rangeFrom + pageSize - 1
+
+  let query = supabase
     .from('requests')
     .select(
       'id, request_type, status, created_at, archived_at, users!created_by_user_id(full_name)',
+      { count: 'exact' },
     )
     .not('archived_at', 'is', null)
     .order('archived_at', { ascending: false })
+
+  if (params.dateFrom) {
+    query = query.gte('archived_at', `${params.dateFrom}T00:00:00`)
+  }
+
+  if (params.dateTo) {
+    query = query.lte('archived_at', `${params.dateTo}T23:59:59.999`)
+  }
+
+  const { data, error, count } = await query.range(rangeFrom, rangeTo)
 
   if (error) {
     console.error('[requests] failed to load secretary archived requests', error)
@@ -304,7 +329,7 @@ export async function loadSecretaryArchivedRequests(): Promise<LoadSecretaryArch
     .map(parseSecretaryArchivedRequest)
     .filter((request): request is SecretaryArchivedRequest => request !== null)
 
-  return { ok: true, requests }
+  return { ok: true, requests, totalCount: count ?? 0 }
 }
 
 export async function updateRequestStatus(

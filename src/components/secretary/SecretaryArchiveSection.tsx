@@ -14,6 +14,8 @@ const defaultFilters: SecretaryArchiveFilters = {
   dateTo: '',
 }
 
+const ARCHIVE_PAGE_SIZE = 20
+
 type SecretaryArchiveSectionProps = {
   refreshToken: number
 }
@@ -21,6 +23,8 @@ type SecretaryArchiveSectionProps = {
 export function SecretaryArchiveSection({ refreshToken }: SecretaryArchiveSectionProps) {
   const [requests, setRequests] = useState<SecretaryArchivedRequest[]>([])
   const [filters, setFilters] = useState<SecretaryArchiveFilters>(defaultFilters)
+  const [page, setPage] = useState(1)
+  const [totalCount, setTotalCount] = useState(0)
   const [isLoading, setIsLoading] = useState(true)
   const [loadError, setLoadError] = useState('')
 
@@ -28,17 +32,35 @@ export function SecretaryArchiveSection({ refreshToken }: SecretaryArchiveSectio
     setIsLoading(true)
     setLoadError('')
 
-    const result = await loadSecretaryArchivedRequests()
+    const result = await loadSecretaryArchivedRequests({
+      dateFrom: filters.dateFrom || undefined,
+      dateTo: filters.dateTo || undefined,
+      page,
+      pageSize: ARCHIVE_PAGE_SIZE,
+    })
 
     if (!result.ok) {
       setRequests([])
+      setTotalCount(0)
       setLoadError(result.errorMessage)
     } else {
       setRequests(result.requests)
+      setTotalCount(result.totalCount)
     }
 
     setIsLoading(false)
-  }, [])
+  }, [filters.dateFrom, filters.dateTo, page])
+
+  function handleFiltersChange(next: SecretaryArchiveFilters) {
+    const datesChanged =
+      next.dateFrom !== filters.dateFrom || next.dateTo !== filters.dateTo
+
+    if (datesChanged) {
+      setPage(1)
+    }
+
+    setFilters(next)
+  }
 
   useEffect(() => {
     queueMicrotask(() => {
@@ -51,8 +73,14 @@ export function SecretaryArchiveSection({ refreshToken }: SecretaryArchiveSectio
     [requests, filters],
   )
 
+  const totalPages = Math.max(1, Math.ceil(totalCount / ARCHIVE_PAGE_SIZE))
+  const rangeStart = totalCount === 0 ? 0 : (page - 1) * ARCHIVE_PAGE_SIZE + 1
+  const rangeEnd = Math.min(page * ARCHIVE_PAGE_SIZE, totalCount)
+  const hasPreviousPage = page > 1
+  const hasNextPage = page < totalPages
+
   const emptyMessage =
-    requests.length === 0
+    totalCount === 0
       ? 'אין בקשות בארכיון המוסדי.'
       : 'לא נמצאו בקשות התואמות לסינון.'
 
@@ -65,7 +93,7 @@ export function SecretaryArchiveSection({ refreshToken }: SecretaryArchiveSectio
         ארכיון מוסדי
       </h2>
 
-      <SecretaryArchiveFiltersPanel filters={filters} onFiltersChange={setFilters} />
+      <SecretaryArchiveFiltersPanel filters={filters} onFiltersChange={handleFiltersChange} />
 
       {isLoading && <p className="secretary-dashboard__status">טוען ארכיון...</p>}
 
@@ -76,7 +104,41 @@ export function SecretaryArchiveSection({ refreshToken }: SecretaryArchiveSectio
       )}
 
       {!isLoading && !loadError && (
-        <SecretaryArchiveTable requests={filteredRequests} emptyMessage={emptyMessage} />
+        <>
+          <div className="secretary-dashboard__archive-pagination-summary">
+            {totalCount === 0 ? (
+              <p className="secretary-dashboard__status">אין בקשות בארכיון המוסדי.</p>
+            ) : (
+              <p className="secretary-dashboard__status">
+                מציגות {rangeStart}–{rangeEnd} מתוך {totalCount} בקשות (עמוד {page} מתוך{' '}
+                {totalPages})
+              </p>
+            )}
+          </div>
+
+          <SecretaryArchiveTable requests={filteredRequests} emptyMessage={emptyMessage} />
+
+          {totalCount > 0 && (
+            <div className="secretary-dashboard__archive-pagination">
+              <button
+                type="button"
+                className="ds-btn ds-btn--secondary"
+                onClick={() => setPage((currentPage) => currentPage - 1)}
+                disabled={!hasPreviousPage || isLoading}
+              >
+                הקודם
+              </button>
+              <button
+                type="button"
+                className="ds-btn ds-btn--secondary"
+                onClick={() => setPage((currentPage) => currentPage + 1)}
+                disabled={!hasNextPage || isLoading}
+              >
+                הבא
+              </button>
+            </div>
+          )}
+        </>
       )}
     </section>
   )

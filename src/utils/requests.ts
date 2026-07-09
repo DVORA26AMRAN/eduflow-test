@@ -186,14 +186,6 @@ export function filterSecretaryArchivedRequests(
       return false
     }
 
-    if (!isDateOnOrAfter(request.archived_at, filters.dateFrom)) {
-      return false
-    }
-
-    if (!isDateOnOrBefore(request.archived_at, filters.dateTo)) {
-      return false
-    }
-
     return true
   })
 }
