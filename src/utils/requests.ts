@@ -3,6 +3,8 @@ import type {
   ArchivedTeacherRequest,
   RequestStatus,
   RequestType,
+  SecretaryArchiveFilters,
+  SecretaryArchivedRequest,
   SecretaryInboxFilters,
   SecretaryInboxRequest,
 } from '../types/request'
@@ -163,6 +165,37 @@ function isDateOnOrBefore(isoDate: string, dateTo: string): boolean {
   }
 
   return value.getTime() <= to.getTime()
+}
+
+export function filterSecretaryArchivedRequests(
+  requests: SecretaryArchivedRequest[],
+  filters: SecretaryArchiveFilters,
+): SecretaryArchivedRequest[] {
+  const nameQuery = filters.teacherNameQuery.trim().toLowerCase()
+
+  return requests.filter((request) => {
+    if (nameQuery && !request.teacher_full_name.toLowerCase().includes(nameQuery)) {
+      return false
+    }
+
+    if (filters.requestType !== 'all' && request.request_type !== filters.requestType) {
+      return false
+    }
+
+    if (filters.requestStatus !== 'all' && request.status !== filters.requestStatus) {
+      return false
+    }
+
+    if (!isDateOnOrAfter(request.archived_at, filters.dateFrom)) {
+      return false
+    }
+
+    if (!isDateOnOrBefore(request.archived_at, filters.dateTo)) {
+      return false
+    }
+
+    return true
+  })
 }
 
 export function filterArchivedTeacherRequests(

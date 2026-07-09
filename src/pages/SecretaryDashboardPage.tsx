@@ -2,10 +2,12 @@ import { useEffect, useState } from 'react'
 import organizationLogo from '../assets/images/logo.png.png'
 import { DashboardShell } from '../components/dashboard/DashboardShell'
 import {
+  NavArchiveIcon,
   NavInboxIcon,
   NavUsersIcon,
   type DashboardNavItem,
 } from '../components/dashboard/dashboardNav'
+import { SecretaryArchiveSection } from '../components/secretary/SecretaryArchiveSection'
 import { SecretaryRequestsInbox } from '../components/secretary/SecretaryRequestsInbox'
 import { SecretarySubstituteApprovalsSection } from '../components/secretary/SecretarySubstituteApprovalsSection'
 import './SecretaryDashboardPage.css'
@@ -17,6 +19,7 @@ type SecretaryDashboardPageProps = {
 const secretaryNavItems: DashboardNavItem[] = [
   { id: 'substituteApprovals', label: 'אישורי מילויי מקום', icon: <NavUsersIcon /> },
   { id: 'requestsInbox', label: 'בקשות מורים', icon: <NavInboxIcon /> },
+  { id: 'institutionalArchive', label: 'ארכיון מוסדי', icon: <NavArchiveIcon /> },
 ]
 
 export function SecretaryDashboardPage({ onLogout }: SecretaryDashboardPageProps) {
@@ -94,6 +97,15 @@ export function SecretaryDashboardPage({ onLogout }: SecretaryDashboardPageProps
           tabIndex={-1}
         >
           <SecretaryRequestsInbox />
+        </section>
+
+        <section
+          id="secretary-institutional-archive"
+          data-section-id="institutionalArchive"
+          className="secretary-dashboard__shell-section"
+          tabIndex={-1}
+        >
+          <SecretaryArchiveSection />
         </section>
       </div>
     </DashboardShell>

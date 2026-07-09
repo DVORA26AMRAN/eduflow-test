@@ -3,6 +3,7 @@ import type {
   CreateRequestInput,
   RequestStatus,
   RequestStatusHistoryEntry,
+  SecretaryArchivedRequest,
   SecretaryInboxRequest,
   TeacherRequest,
 } from '../types/request'
@@ -23,6 +24,10 @@ export type CreateTeacherRequestResult =
 
 export type LoadSecretaryRequestsResult =
   | { ok: true; requests: SecretaryInboxRequest[] }
+  | { ok: false; errorMessage: string }
+
+export type LoadSecretaryArchivedRequestsResult =
+  | { ok: true; requests: SecretaryArchivedRequest[] }
   | { ok: false; errorMessage: string }
 
 export type UpdateRequestStatusResult =
@@ -239,6 +244,63 @@ export async function loadSecretaryRequests(): Promise<LoadSecretaryRequestsResu
   const requests = (data ?? [])
     .map(parseSecretaryInboxRequest)
     .filter((request): request is SecretaryInboxRequest => request !== null)
+
+  return { ok: true, requests }
+}
+
+function parseSecretaryArchivedRequest(row: {
+  id: unknown
+  request_type: unknown
+  status: unknown
+  created_at: unknown
+  archived_at: unknown
+  users: unknown
+}): SecretaryArchivedRequest | null {
+  const teacherFullName = extractTeacherFullName(row.users)
+
+  if (
+    typeof row.id !== 'string' ||
+    typeof row.created_at !== 'string' ||
+    typeof row.archived_at !== 'string' ||
+    typeof row.request_type !== 'string' ||
+    typeof row.status !== 'string' ||
+    teacherFullName === null ||
+    !isRequestType(row.request_type) ||
+    !isRequestStatus(row.status)
+  ) {
+    return null
+  }
+
+  return {
+    id: row.id,
+    request_type: row.request_type,
+    status: row.status,
+    created_at: row.created_at,
+    archived_at: row.archived_at,
+    teacher_full_name: teacherFullName,
+  }
+}
+
+export async function loadSecretaryArchivedRequests(): Promise<LoadSecretaryArchivedRequestsResult> {
+  const { data, error } = await supabase
+    .from('requests')
+    .select(
+      'id, request_type, status, created_at, archived_at, users!created_by_user_id(full_name)',
+    )
+    .not('archived_at', 'is', null)
+    .order('archived_at', { ascending: false })
+
+  if (error) {
+    console.error('[requests] failed to load secretary archived requests', error)
+    return {
+      ok: false,
+      errorMessage: 'לא ניתן לטעון את הארכיון המוסדי.',
+    }
+  }
+
+  const requests = (data ?? [])
+    .map(parseSecretaryArchivedRequest)
+    .filter((request): request is SecretaryArchivedRequest => request !== null)
 
   return { ok: true, requests }
 }
