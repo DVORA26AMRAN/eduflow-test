@@ -27,6 +27,7 @@ const teacherNavItems: DashboardNavItem[] = [
 
 export function TeacherDashboardPage({ onLogout }: TeacherDashboardPageProps) {
   const [activeSectionId, setActiveSectionId] = useState<string>('notifications')
+  const [archiveRefreshToken, setArchiveRefreshToken] = useState(0)
 
   function handleSectionSelect(sectionId: string) {
     const target = document.querySelector<HTMLElement>(
@@ -73,6 +74,10 @@ export function TeacherDashboardPage({ onLogout }: TeacherDashboardPageProps) {
     return () => observer.disconnect()
   }, [])
 
+  function handleArchiveChanged() {
+    setArchiveRefreshToken((value) => value + 1)
+  }
+
   return (
     <DashboardShell
       roleLabel="אזור המורה"
@@ -99,7 +104,10 @@ export function TeacherDashboardPage({ onLogout }: TeacherDashboardPageProps) {
           className="teacher-dashboard__shell-section"
           tabIndex={-1}
         >
-          <TeacherRequestsSection />
+          <TeacherRequestsSection
+            refreshToken={archiveRefreshToken}
+            onArchived={handleArchiveChanged}
+          />
         </section>
 
         <section
@@ -117,7 +125,7 @@ export function TeacherDashboardPage({ onLogout }: TeacherDashboardPageProps) {
           className="teacher-dashboard__shell-section"
           tabIndex={-1}
         >
-          <TeacherArchiveSection />
+          <TeacherArchiveSection refreshToken={archiveRefreshToken} />
         </section>
       </div>
     </DashboardShell>

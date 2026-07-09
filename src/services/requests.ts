@@ -29,6 +29,10 @@ export type UpdateRequestStatusResult =
   | { ok: true }
   | { ok: false; errorMessage: string }
 
+export type ArchiveRequestResult =
+  | { ok: true }
+  | { ok: false; errorMessage: string }
+
 export type LoadRequestStatusHistoryResult =
   | { ok: true; entries: RequestStatusHistoryEntry[] }
   | { ok: false; errorMessage: string }
@@ -124,6 +128,13 @@ export async function loadMyArchivedRequests(): Promise<LoadMyArchivedRequestsRe
 
   if (sessionError || !sessionData.session?.user) {
     console.error('[requests] no authenticated session for archive load', sessionError)
+    console.error('[requests][archive][diagnostic]', {
+      branch: 'no_session',
+      message: sessionError?.message ?? null,
+      code: sessionError?.code ?? null,
+      details: null,
+      hint: null,
+    })
     return {
       ok: false,
       errorMessage: 'לא ניתן לטעון את הארכיון.',
@@ -141,6 +152,13 @@ export async function loadMyArchivedRequests(): Promise<LoadMyArchivedRequestsRe
 
   if (error) {
     console.error('[requests] failed to load archived requests', error)
+    console.error('[requests][archive][diagnostic]', {
+      branch: 'supabase_query_error',
+      message: error.message ?? null,
+      code: error.code ?? null,
+      details: error.details ?? null,
+      hint: error.hint ?? null,
+    })
     return {
       ok: false,
       errorMessage: 'לא ניתן לטעון את הארכיון.',
@@ -236,6 +254,49 @@ export async function updateRequestStatus(
     return {
       ok: false,
       errorMessage: 'עדכון סטטוס הבקשה נכשל.',
+    }
+  }
+
+  return { ok: true }
+}
+
+export async function archiveRequest(requestId: string): Promise<ArchiveRequestResult> {
+  const { data: sessionData, error: sessionError } = await supabase.auth.getSession()
+
+  if (sessionError || !sessionData.session?.user) {
+    console.error('[requests] no authenticated session for archive', sessionError)
+    return {
+      ok: false,
+      errorMessage: 'לא ניתן להעביר את הבקשה לארכיון כרגע.',
+    }
+  }
+
+  const userId = sessionData.session.user.id
+  const archivedAt = new Date().toISOString()
+
+  const { data, error } = await supabase
+    .from('requests')
+    .update({
+      archived_at: archivedAt,
+      archived_by_user_id: userId,
+    })
+    .eq('id', requestId)
+    .eq('created_by_user_id', userId)
+    .is('archived_at', null)
+    .select('id')
+
+  if (error) {
+    console.error('[requests] failed to archive request', error)
+    return {
+      ok: false,
+      errorMessage: 'העברת הבקשה לארכיון נכשלה.',
+    }
+  }
+
+  if (!data || data.length === 0) {
+    return {
+      ok: false,
+      errorMessage: 'לא ניתן להעביר בקשה זו לארכיון.',
     }
   }
 

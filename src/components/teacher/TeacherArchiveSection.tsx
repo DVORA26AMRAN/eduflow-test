@@ -14,7 +14,11 @@ const defaultFilters: ArchiveFilters = {
   dateTo: '',
 }
 
-export function TeacherArchiveSection() {
+type TeacherArchiveSectionProps = {
+  refreshToken: number
+}
+
+export function TeacherArchiveSection({ refreshToken }: TeacherArchiveSectionProps) {
   const [requests, setRequests] = useState<ArchivedTeacherRequest[]>([])
   const [filters, setFilters] = useState<ArchiveFilters>(defaultFilters)
   const [selectedRequestId, setSelectedRequestId] = useState<string | null>(null)
@@ -42,7 +46,7 @@ export function TeacherArchiveSection() {
     queueMicrotask(() => {
       void fetchArchive()
     })
-  }, [fetchArchive])
+  }, [fetchArchive, refreshToken])
 
   const filteredRequests = useMemo(
     () => filterArchivedTeacherRequests(requests, filters),
