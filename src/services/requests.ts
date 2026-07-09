@@ -300,6 +300,36 @@ export async function archiveRequest(requestId: string): Promise<ArchiveRequestR
     }
   }
 
+  if (data.length !== 1 || data[0]?.id !== requestId) {
+    console.error('[requests] archive postcondition failed: unexpected updated rows', {
+      requestId,
+      updatedRows: data,
+    })
+    return {
+      ok: false,
+      errorMessage: 'לא ניתן להעביר בקשה זו לארכיון.',
+    }
+  }
+
+  const { data: archivedRow, error: archivedRowError } = await supabase
+    .from('requests')
+    .select('id, archived_at')
+    .eq('id', requestId)
+    .eq('created_by_user_id', userId)
+    .single()
+
+  if (archivedRowError || !archivedRow || typeof archivedRow.archived_at !== 'string') {
+    console.error('[requests] archive postcondition failed: row not archived after update', {
+      requestId,
+      archivedRowError,
+      archivedRow,
+    })
+    return {
+      ok: false,
+      errorMessage: 'לא ניתן להעביר בקשה זו לארכיון.',
+    }
+  }
+
   return { ok: true }
 }
 
