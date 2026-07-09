@@ -62,8 +62,12 @@ export type SecretaryInboxRequest = {
 
 export type SecretaryInboxFilters = {
   teacherNameQuery: string
+  descriptionQuery: string
   requestType: RequestType | 'all'
   requestStatus: RequestStatus | 'all'
+  dateFrom: string
+  dateTo: string
+  attachmentsOnly: boolean
 }
 
 export type SecretaryArchivedRequest = {

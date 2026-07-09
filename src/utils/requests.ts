@@ -119,11 +119,17 @@ export function isRequestStatus(value: string): value is RequestStatus {
 export function filterSecretaryInboxRequests(
   requests: SecretaryInboxRequest[],
   filters: SecretaryInboxFilters,
+  requestIdsWithAttachments: ReadonlySet<string> = new Set(),
 ): SecretaryInboxRequest[] {
   const nameQuery = filters.teacherNameQuery.trim().toLowerCase()
+  const descriptionQuery = filters.descriptionQuery.trim().toLowerCase()
 
   return requests.filter((request) => {
     if (nameQuery && !request.teacher_full_name.toLowerCase().includes(nameQuery)) {
+      return false
+    }
+
+    if (descriptionQuery && !request.description.toLowerCase().includes(descriptionQuery)) {
       return false
     }
 
@@ -132,6 +138,18 @@ export function filterSecretaryInboxRequests(
     }
 
     if (filters.requestStatus !== 'all' && request.status !== filters.requestStatus) {
+      return false
+    }
+
+    if (!isDateOnOrAfter(request.created_at, filters.dateFrom)) {
+      return false
+    }
+
+    if (!isDateOnOrBefore(request.created_at, filters.dateTo)) {
+      return false
+    }
+
+    if (filters.attachmentsOnly && !requestIdsWithAttachments.has(request.id)) {
       return false
     }
 

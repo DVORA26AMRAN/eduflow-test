@@ -21,8 +21,12 @@ import { SecretaryRequestsTable } from './SecretaryRequestsTable'
 
 const defaultFilters: SecretaryInboxFilters = {
   teacherNameQuery: '',
+  descriptionQuery: '',
   requestType: 'all',
   requestStatus: 'all',
+  dateFrom: '',
+  dateTo: '',
+  attachmentsOnly: false,
 }
 
 type SecretaryRequestsInboxProps = {
@@ -82,8 +86,8 @@ export function SecretaryRequestsInbox({ onArchived }: SecretaryRequestsInboxPro
   }, [fetchRequests])
 
   const filteredRequests = useMemo(
-    () => filterSecretaryInboxRequests(requests, filters),
-    [requests, filters],
+    () => filterSecretaryInboxRequests(requests, filters, requestIdsWithAttachments),
+    [requests, filters, requestIdsWithAttachments],
   )
 
   const emptyMessage =

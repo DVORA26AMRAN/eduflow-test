@@ -21,14 +21,24 @@ export function SecretaryRequestsFilters({
   }
 
   return (
-    <div className="secretary-dashboard__filters">
+    <div className="secretary-dashboard__filters secretary-dashboard__inbox-filters">
       <label className="secretary-dashboard__filter-field">
         <span className="secretary-dashboard__filter-label">חיפוש לפי שם מורה</span>
         <input
           className="secretary-dashboard__input secretary-dashboard__search"
           placeholder="הקלידי שם מורה"
           value={filters.teacherNameQuery}
-          onChange={(e) => updateFilter('teacherNameQuery', e.target.value)}
+          onChange={(event) => updateFilter('teacherNameQuery', event.target.value)}
+        />
+      </label>
+
+      <label className="secretary-dashboard__filter-field">
+        <span className="secretary-dashboard__filter-label">חיפוש בתיאור</span>
+        <input
+          className="secretary-dashboard__input secretary-dashboard__search"
+          placeholder="הקלידי טקסט מתוך התיאור"
+          value={filters.descriptionQuery}
+          onChange={(event) => updateFilter('descriptionQuery', event.target.value)}
         />
       </label>
 
@@ -37,8 +47,8 @@ export function SecretaryRequestsFilters({
         <select
           className="secretary-dashboard__input"
           value={filters.requestType}
-          onChange={(e) =>
-            updateFilter('requestType', e.target.value as RequestType | 'all')
+          onChange={(event) =>
+            updateFilter('requestType', event.target.value as RequestType | 'all')
           }
         >
           <option value="all">כל הסוגים</option>
@@ -55,8 +65,8 @@ export function SecretaryRequestsFilters({
         <select
           className="secretary-dashboard__input"
           value={filters.requestStatus}
-          onChange={(e) =>
-            updateFilter('requestStatus', e.target.value as RequestStatus | 'all')
+          onChange={(event) =>
+            updateFilter('requestStatus', event.target.value as RequestStatus | 'all')
           }
         >
           <option value="all">כל הסטטוסים</option>
@@ -65,6 +75,37 @@ export function SecretaryRequestsFilters({
           <option value="completed">הושלם</option>
           <option value="rejected">נדחה</option>
         </select>
+      </label>
+
+      <label className="secretary-dashboard__filter-field">
+        <span className="secretary-dashboard__filter-label">מתאריך יצירה</span>
+        <input
+          type="date"
+          className="secretary-dashboard__input"
+          value={filters.dateFrom}
+          onChange={(event) => updateFilter('dateFrom', event.target.value)}
+        />
+      </label>
+
+      <label className="secretary-dashboard__filter-field">
+        <span className="secretary-dashboard__filter-label">עד תאריך יצירה</span>
+        <input
+          type="date"
+          className="secretary-dashboard__input"
+          value={filters.dateTo}
+          onChange={(event) => updateFilter('dateTo', event.target.value)}
+        />
+      </label>
+
+      <label className="secretary-dashboard__filter-field secretary-dashboard__filter-field--checkbox">
+        <span className="secretary-dashboard__filter-checkbox">
+          <input
+            type="checkbox"
+            checked={filters.attachmentsOnly}
+            onChange={(event) => updateFilter('attachmentsOnly', event.target.checked)}
+          />
+          <span>רק בקשות עם קובץ מצורף</span>
+        </span>
       </label>
     </div>
   )
