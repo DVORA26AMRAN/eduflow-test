@@ -98,13 +98,18 @@ function createEmptyAnalytics(): ManagerAnalytics {
     inProgressRequestsCount: 0,
     completedRequestsCount: 0,
     rejectedRequestsCount: 0,
+    requestTypeCounts: {
+      absence: 0,
+      budget_or_equipment: 0,
+      substitute_teacher: 0,
+    },
   }
 }
 
 export async function loadManagerAnalytics(): Promise<LoadManagerAnalyticsResult> {
   const [usersResult, requestsResult] = await Promise.all([
     supabase.from('users').select('primary_role, status'),
-    supabase.from('requests').select('status'),
+    supabase.from('requests').select('status, request_type'),
   ])
 
   if (usersResult.error) {
@@ -159,6 +164,10 @@ export async function loadManagerAnalytics(): Promise<LoadManagerAnalyticsResult
       case 'rejected':
         analytics.rejectedRequestsCount += 1
         break
+    }
+
+    if (isRequestType(request.request_type)) {
+      analytics.requestTypeCounts[request.request_type] += 1
     }
   }
 

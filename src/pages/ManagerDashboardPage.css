@@ -65,6 +65,76 @@
   background: var(--ds-color-surface-soft);
 }
 
+.manager-dashboard__type-distribution {
+  margin-bottom: var(--ds-space-8);
+  padding: var(--ds-space-6);
+}
+
+.manager-dashboard__type-distribution-status {
+  margin: 0;
+  color: var(--ds-color-text-secondary);
+}
+
+.manager-dashboard__type-distribution-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: var(--ds-space-4);
+}
+
+.manager-dashboard__type-distribution-item {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ds-space-2);
+}
+
+.manager-dashboard__type-distribution-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--ds-space-3);
+}
+
+.manager-dashboard__type-distribution-label {
+  color: var(--ds-color-text-primary);
+  font-size: var(--ds-font-size-sm);
+  font-weight: var(--ds-font-weight-medium);
+}
+
+.manager-dashboard__type-distribution-count {
+  color: var(--ds-color-text-secondary);
+  font-size: var(--ds-font-size-sm);
+  font-variant-numeric: tabular-nums;
+}
+
+.manager-dashboard__type-distribution-track {
+  height: 10px;
+  border-radius: var(--ds-radius-pill);
+  background: var(--ds-color-surface-soft);
+  overflow: hidden;
+}
+
+.manager-dashboard__type-distribution-bar {
+  height: 100%;
+  min-width: 0;
+  border-radius: var(--ds-radius-pill);
+  transition: width 0.2s ease;
+}
+
+.manager-dashboard__type-distribution-bar--absence {
+  background: var(--ds-color-accent);
+}
+
+.manager-dashboard__type-distribution-bar--budget_or_equipment {
+  background: #7c6bb8;
+}
+
+.manager-dashboard__type-distribution-bar--substitute_teacher {
+  background: #5b9ea8;
+}
+
 .manager-dashboard__insights {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));

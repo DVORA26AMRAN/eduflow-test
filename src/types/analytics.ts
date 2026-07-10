@@ -8,6 +8,11 @@ export type ManagerAnalytics = {
   inProgressRequestsCount: number
   completedRequestsCount: number
   rejectedRequestsCount: number
+  requestTypeCounts: {
+    absence: number
+    budget_or_equipment: number
+    substitute_teacher: number
+  }
 }
 
 export type ManagerRecentRequest = {

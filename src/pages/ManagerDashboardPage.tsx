@@ -9,6 +9,7 @@ import {
 } from '../components/dashboard/dashboardNav'
 import { ManagerRecentActivitySection } from '../components/manager/ManagerRecentActivitySection'
 import { ManagerRecentRequestsSection } from '../components/manager/ManagerRecentRequestsSection'
+import { ManagerRequestTypeDistribution } from '../components/manager/ManagerRequestTypeDistribution'
 import { ManagerStatsCards } from '../components/manager/ManagerStatsCards'
 import { TeamManagementSection } from '../components/manager/TeamManagementSection'
 import {
@@ -236,6 +237,12 @@ export function ManagerDashboardPage({
           tabIndex={-1}
         >
           <ManagerStatsCards
+            analytics={analytics}
+            isLoading={isAnalyticsLoading}
+            errorMessage={analyticsError}
+          />
+
+          <ManagerRequestTypeDistribution
             analytics={analytics}
             isLoading={isAnalyticsLoading}
             errorMessage={analyticsError}
