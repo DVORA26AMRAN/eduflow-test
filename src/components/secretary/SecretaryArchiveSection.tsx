@@ -3,6 +3,7 @@ import type { SecretaryArchiveFilters, SecretaryArchivedRequest } from '../../ty
 import { loadSecretaryArchivedRequests } from '../../services/requests'
 import { filterSecretaryArchivedRequests } from '../../utils/requests'
 import { NavArchiveIcon } from '../dashboard/dashboardNav'
+import { DashboardCollapsibleSection } from '../dashboard/DashboardCollapsibleSection'
 import { SecretaryArchiveFilters as SecretaryArchiveFiltersPanel } from './SecretaryArchiveFilters'
 import { SecretaryArchiveTable } from './SecretaryArchiveTable'
 
@@ -86,60 +87,59 @@ export function SecretaryArchiveSection({ refreshToken }: SecretaryArchiveSectio
 
   return (
     <section className="ds-card secretary-dashboard__archive" aria-label="ארכיון מוסדי">
-      <h2 className="secretary-dashboard__section-title">
-        <span className="dashboard-card__title-icon" aria-hidden="true">
-          <NavArchiveIcon />
-        </span>
-        ארכיון מוסדי
-      </h2>
+      <DashboardCollapsibleSection
+        title="ארכיון מוסדי"
+        icon={<NavArchiveIcon />}
+        className="dashboard-collapsible-section--flush-header"
+      >
+        <SecretaryArchiveFiltersPanel filters={filters} onFiltersChange={handleFiltersChange} />
 
-      <SecretaryArchiveFiltersPanel filters={filters} onFiltersChange={handleFiltersChange} />
+        {isLoading && <p className="secretary-dashboard__status">טוען ארכיון...</p>}
 
-      {isLoading && <p className="secretary-dashboard__status">טוען ארכיון...</p>}
+        {!isLoading && loadError && (
+          <p className="secretary-dashboard__status secretary-dashboard__status--error">
+            {loadError}
+          </p>
+        )}
 
-      {!isLoading && loadError && (
-        <p className="secretary-dashboard__status secretary-dashboard__status--error">
-          {loadError}
-        </p>
-      )}
-
-      {!isLoading && !loadError && (
-        <>
-          <div className="secretary-dashboard__archive-pagination-summary">
-            {totalCount === 0 ? (
-              <p className="secretary-dashboard__status">אין בקשות בארכיון המוסדי.</p>
-            ) : (
-              <p className="secretary-dashboard__status">
-                מציגות {rangeStart}–{rangeEnd} מתוך {totalCount} בקשות (עמוד {page} מתוך{' '}
-                {totalPages})
-              </p>
-            )}
-          </div>
-
-          <SecretaryArchiveTable requests={filteredRequests} emptyMessage={emptyMessage} />
-
-          {totalCount > 0 && (
-            <div className="secretary-dashboard__archive-pagination">
-              <button
-                type="button"
-                className="ds-btn ds-btn--secondary"
-                onClick={() => setPage((currentPage) => currentPage - 1)}
-                disabled={!hasPreviousPage || isLoading}
-              >
-                הקודם
-              </button>
-              <button
-                type="button"
-                className="ds-btn ds-btn--secondary"
-                onClick={() => setPage((currentPage) => currentPage + 1)}
-                disabled={!hasNextPage || isLoading}
-              >
-                הבא
-              </button>
+        {!isLoading && !loadError && (
+          <>
+            <div className="secretary-dashboard__archive-pagination-summary">
+              {totalCount === 0 ? (
+                <p className="secretary-dashboard__status">אין בקשות בארכיון המוסדי.</p>
+              ) : (
+                <p className="secretary-dashboard__status">
+                  מציגות {rangeStart}–{rangeEnd} מתוך {totalCount} בקשות (עמוד {page} מתוך{' '}
+                  {totalPages})
+                </p>
+              )}
             </div>
-          )}
-        </>
-      )}
+
+            <SecretaryArchiveTable requests={filteredRequests} emptyMessage={emptyMessage} />
+
+            {totalCount > 0 && (
+              <div className="secretary-dashboard__archive-pagination">
+                <button
+                  type="button"
+                  className="ds-btn ds-btn--secondary"
+                  onClick={() => setPage((currentPage) => currentPage - 1)}
+                  disabled={!hasPreviousPage || isLoading}
+                >
+                  הקודם
+                </button>
+                <button
+                  type="button"
+                  className="ds-btn ds-btn--secondary"
+                  onClick={() => setPage((currentPage) => currentPage + 1)}
+                  disabled={!hasNextPage || isLoading}
+                >
+                  הבא
+                </button>
+              </div>
+            )}
+          </>
+        )}
+      </DashboardCollapsibleSection>
     </section>
   )
 }

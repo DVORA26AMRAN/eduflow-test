@@ -10,6 +10,7 @@ import {
   loadPendingSubstituteBoardApprovals,
 } from '../../services/substituteBoard'
 import { NavUsersIcon } from '../dashboard/dashboardNav'
+import { DashboardCollapsibleSection } from '../dashboard/DashboardCollapsibleSection'
 import { SecretarySubstituteApprovalsTable } from './SecretarySubstituteApprovalsTable'
 
 export function SecretarySubstituteApprovalsSection() {
@@ -65,43 +66,42 @@ export function SecretarySubstituteApprovalsSection() {
 
   return (
     <section className="ds-card secretary-dashboard__substitute-approvals">
-      <h2 className="secretary-dashboard__section-title">
-        <span className="dashboard-card__title-icon" aria-hidden="true">
-          <NavUsersIcon />
-        </span>
-        מילויי מקום ממתינים לאישור
-      </h2>
+      <DashboardCollapsibleSection
+        title="מילויי מקום ממתינים לאישור"
+        icon={<NavUsersIcon />}
+        className="dashboard-collapsible-section--flush-header"
+      >
+        {statusMessage && (
+          <p
+            className={
+              statusMessageIsError
+                ? 'ds-form-message ds-form-message--error'
+                : 'ds-form-message ds-form-message--success'
+            }
+          >
+            {statusMessage}
+          </p>
+        )}
 
-      {statusMessage && (
-        <p
-          className={
-            statusMessageIsError
-              ? 'ds-form-message ds-form-message--error'
-              : 'ds-form-message ds-form-message--success'
-          }
-        >
-          {statusMessage}
-        </p>
-      )}
+        {isLoading && (
+          <p className="ds-form-message">
+            {SECRETARY_SUBSTITUTE_APPROVALS_LOADING_MESSAGE}
+          </p>
+        )}
 
-      {isLoading && (
-        <p className="ds-form-message">
-          {SECRETARY_SUBSTITUTE_APPROVALS_LOADING_MESSAGE}
-        </p>
-      )}
+        {!isLoading && loadError && (
+          <p className="ds-form-message ds-form-message--error">{loadError}</p>
+        )}
 
-      {!isLoading && loadError && (
-        <p className="ds-form-message ds-form-message--error">{loadError}</p>
-      )}
-
-      {!isLoading && !loadError && (
-        <SecretarySubstituteApprovalsTable
-          approvals={approvals}
-          emptyMessage={SECRETARY_SUBSTITUTE_APPROVALS_EMPTY_MESSAGE}
-          approvingPostId={approvingPostId}
-          onApprove={(postId) => void handleApprove(postId)}
-        />
-      )}
+        {!isLoading && !loadError && (
+          <SecretarySubstituteApprovalsTable
+            approvals={approvals}
+            emptyMessage={SECRETARY_SUBSTITUTE_APPROVALS_EMPTY_MESSAGE}
+            approvingPostId={approvingPostId}
+            onApprove={(postId) => void handleApprove(postId)}
+          />
+        )}
+      </DashboardCollapsibleSection>
     </section>
   )
 }

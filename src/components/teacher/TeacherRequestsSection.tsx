@@ -4,6 +4,7 @@ import { REQUEST_CREATED_ATTACHMENT_UPLOAD_FAILED_MESSAGE } from '../../types/at
 import { uploadRequestAttachment } from '../../services/attachments'
 import { archiveRequest, createTeacherRequest, loadTeacherRequests } from '../../services/requests'
 import { NavClipboardIcon, NavInboxIcon } from '../dashboard/dashboardNav'
+import { DashboardCollapsibleSection } from '../dashboard/DashboardCollapsibleSection'
 import { CreateRequestForm } from './CreateRequestForm'
 import { TeacherRequestsList } from './TeacherRequestsList'
 
@@ -129,44 +130,39 @@ export function TeacherRequestsSection({ refreshToken, onArchived }: TeacherRequ
 
   return (
     <section className="teacher-dashboard__requests">
-      <h2 className="teacher-dashboard__section-title">
-        <span className="dashboard-card__title-icon" aria-hidden="true">
-          <NavClipboardIcon />
-        </span>
-        הבקשות שלי
-      </h2>
-
-      <div className="ds-card teacher-dashboard__create-card">
-        <CreateRequestForm
-          key={formKey}
-          isSubmitting={isSubmitting}
-          submitMessage={submitMessage}
-          onSubmit={handleCreateRequest}
-        />
-      </div>
-
-      <div className="ds-card teacher-dashboard__list-card">
-        <h3 className="teacher-dashboard__subsection-title">
-          <span className="dashboard-card__title-icon" aria-hidden="true">
-            <NavInboxIcon />
-          </span>
-          רשימת בקשות
-        </h3>
-
-        {isLoading && <p className="ds-form-message">טוען בקשות...</p>}
-
-        {!isLoading && loadError && (
-          <p className="ds-form-message ds-form-message--error">{loadError}</p>
-        )}
-
-        {!isLoading && !loadError && (
-          <TeacherRequestsList
-            requests={requests}
-            archivingRequestId={archivingRequestId}
-            onArchive={handleOpenArchiveDialog}
+      <DashboardCollapsibleSection title="הבקשות שלי" icon={<NavClipboardIcon />}>
+        <div className="ds-card teacher-dashboard__create-card">
+          <CreateRequestForm
+            key={formKey}
+            isSubmitting={isSubmitting}
+            submitMessage={submitMessage}
+            onSubmit={handleCreateRequest}
           />
-        )}
-      </div>
+        </div>
+
+        <div className="ds-card teacher-dashboard__list-card">
+          <h3 className="teacher-dashboard__subsection-title">
+            <span className="dashboard-card__title-icon" aria-hidden="true">
+              <NavInboxIcon />
+            </span>
+            רשימת בקשות
+          </h3>
+
+          {isLoading && <p className="ds-form-message">טוען בקשות...</p>}
+
+          {!isLoading && loadError && (
+            <p className="ds-form-message ds-form-message--error">{loadError}</p>
+          )}
+
+          {!isLoading && !loadError && (
+            <TeacherRequestsList
+              requests={requests}
+              archivingRequestId={archivingRequestId}
+              onArchive={handleOpenArchiveDialog}
+            />
+          )}
+        </div>
+      </DashboardCollapsibleSection>
 
       {archiveDialogRequest && (
         <div

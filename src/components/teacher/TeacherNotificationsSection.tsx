@@ -9,6 +9,7 @@ import {
 } from '../../services/notifications'
 import { supabase } from '../../services/supabase'
 import { NavBellIcon } from '../dashboard/dashboardNav'
+import { DashboardCollapsibleSection } from '../dashboard/DashboardCollapsibleSection'
 import { TeacherNotificationsList } from './TeacherNotificationsList'
 
 function prependNotificationIfNew(
@@ -117,36 +118,35 @@ export function TeacherNotificationsSection() {
 
   return (
     <section className="teacher-dashboard__notifications">
-      <div className="teacher-dashboard__notifications-header">
-        <h2 className="teacher-dashboard__section-title">
-          <span className="dashboard-card__title-icon" aria-hidden="true">
-            <NavBellIcon />
-          </span>
-          התראות
-        </h2>
-        {!isLoading && !loadError && (
-          <p className="teacher-dashboard__notifications-count">
-            {unreadCount === 0
-              ? 'אין התראות שלא נקראו'
-              : `${unreadCount} התראות שלא נקראו`}
-          </p>
-        )}
-      </div>
+      <DashboardCollapsibleSection
+        title="התראות"
+        icon={<NavBellIcon />}
+        headerAddon={
+          !isLoading && !loadError ? (
+            <p className="teacher-dashboard__notifications-count">
+              {unreadCount === 0
+                ? 'אין התראות שלא נקראו'
+                : `${unreadCount} התראות שלא נקראו`}
+            </p>
+          ) : null
+        }
+        className="dashboard-collapsible-section--flush-header"
+      >
+        <div className="ds-card teacher-dashboard__notifications-card">
+          {isLoading && <p className="ds-form-message">טוען התראות...</p>}
 
-      <div className="ds-card teacher-dashboard__notifications-card">
-        {isLoading && <p className="ds-form-message">טוען התראות...</p>}
+          {!isLoading && loadError && (
+            <p className="ds-form-message ds-form-message--error">{loadError}</p>
+          )}
 
-        {!isLoading && loadError && (
-          <p className="ds-form-message ds-form-message--error">{loadError}</p>
-        )}
-
-        {!isLoading && !loadError && (
-          <TeacherNotificationsList
-            notifications={notifications}
-            onNotificationClick={handleNotificationClick}
-          />
-        )}
-      </div>
+          {!isLoading && !loadError && (
+            <TeacherNotificationsList
+              notifications={notifications}
+              onNotificationClick={handleNotificationClick}
+            />
+          )}
+        </div>
+      </DashboardCollapsibleSection>
     </section>
   )
 }

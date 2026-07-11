@@ -3,6 +3,7 @@ import type { ArchiveFilters, ArchivedTeacherRequest } from '../../types/request
 import { loadMyArchivedRequests } from '../../services/requests'
 import { filterArchivedTeacherRequests } from '../../utils/requests'
 import { NavArchiveIcon } from '../dashboard/dashboardNav'
+import { DashboardCollapsibleSection } from '../dashboard/DashboardCollapsibleSection'
 import { TeacherArchiveDetails } from './TeacherArchiveDetails'
 import { TeacherArchiveFilters } from './TeacherArchiveFilters'
 import { TeacherArchiveList } from './TeacherArchiveList'
@@ -63,34 +64,29 @@ export function TeacherArchiveSection({ refreshToken }: TeacherArchiveSectionPro
 
   return (
     <section className="teacher-dashboard__archive" aria-label="הארכיון שלי">
-      <h2 className="teacher-dashboard__section-title">
-        <span className="dashboard-card__title-icon" aria-hidden="true">
-          <NavArchiveIcon />
-        </span>
-        הארכיון שלי
-      </h2>
+      <DashboardCollapsibleSection title="הארכיון שלי" icon={<NavArchiveIcon />}>
+        <div className="ds-card teacher-dashboard__archive-card">
+          <TeacherArchiveFilters filters={filters} onFiltersChange={setFilters} />
 
-      <div className="ds-card teacher-dashboard__archive-card">
-        <TeacherArchiveFilters filters={filters} onFiltersChange={setFilters} />
+          {isLoading && <p className="ds-form-message">טוען ארכיון...</p>}
 
-        {isLoading && <p className="ds-form-message">טוען ארכיון...</p>}
+          {!isLoading && loadError && (
+            <p className="ds-form-message ds-form-message--error">{loadError}</p>
+          )}
 
-        {!isLoading && loadError && (
-          <p className="ds-form-message ds-form-message--error">{loadError}</p>
-        )}
-
-        {!isLoading && !loadError && (
-          <div className="teacher-dashboard__archive-layout">
-            <TeacherArchiveList
-              requests={filteredRequests}
-              selectedRequestId={selectedRequest?.id ?? null}
-              emptyMessage={emptyMessage}
-              onSelect={setSelectedRequestId}
-            />
-            <TeacherArchiveDetails request={selectedRequest} />
-          </div>
-        )}
-      </div>
+          {!isLoading && !loadError && (
+            <div className="teacher-dashboard__archive-layout">
+              <TeacherArchiveList
+                requests={filteredRequests}
+                selectedRequestId={selectedRequest?.id ?? null}
+                emptyMessage={emptyMessage}
+                onSelect={setSelectedRequestId}
+              />
+              <TeacherArchiveDetails request={selectedRequest} />
+            </div>
+          )}
+        </div>
+      </DashboardCollapsibleSection>
     </section>
   )
 }

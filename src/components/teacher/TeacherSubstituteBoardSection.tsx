@@ -8,6 +8,7 @@ import {
 } from '../../services/substituteBoard'
 import { validateCreateSubstituteBoardPostInput } from '../../utils/substituteBoard'
 import { NavInboxIcon, NavUsersIcon } from '../dashboard/dashboardNav'
+import { DashboardCollapsibleSection } from '../dashboard/DashboardCollapsibleSection'
 import { CreateSubstituteBoardPostForm } from './CreateSubstituteBoardPostForm'
 import { SubstituteBoardPostsList } from './SubstituteBoardPostsList'
 
@@ -104,59 +105,54 @@ export function TeacherSubstituteBoardSection() {
 
   return (
     <section className="teacher-dashboard__substitute-board">
-      <h2 className="teacher-dashboard__section-title">
-        <span className="dashboard-card__title-icon" aria-hidden="true">
-          <NavUsersIcon />
-        </span>
-        לוח מילויי מקום
-      </h2>
-
-      <div className="ds-card teacher-dashboard__substitute-create-card">
-        <CreateSubstituteBoardPostForm
-          key={formKey}
-          isSubmitting={isSubmitting}
-          submitMessage={createMessage}
-          onSubmit={handleCreatePost}
-        />
-      </div>
-
-      <div className="ds-card teacher-dashboard__substitute-list-card">
-        <h3 className="teacher-dashboard__subsection-title">
-          <span className="dashboard-card__title-icon" aria-hidden="true">
-            <NavInboxIcon />
-          </span>
-          פרסומים בלוח
-        </h3>
-
-        {responseMessage && (
-          <p
-            className={
-              responseMessageIsError
-                ? 'ds-form-message ds-form-message--error'
-                : 'ds-form-message ds-form-message--success'
-            }
-          >
-            {responseMessage}
-          </p>
-        )}
-
-        {isLoading && <p className="ds-form-message">טוען לוח מילויי מקום...</p>}
-
-        {!isLoading && loadError && (
-          <p className="ds-form-message ds-form-message--error">{loadError}</p>
-        )}
-
-        {!isLoading && !loadError && (
-          <SubstituteBoardPostsList
-            posts={posts}
-            currentUserId={currentUserId}
-            respondedPostIds={respondedPostIds}
-            respondingPostId={respondingPostId}
-            onRespond={handleRespond}
-            onApprovalSubmitted={() => setBoardVersion((version) => version + 1)}
+      <DashboardCollapsibleSection title="לוח מילויי מקום" icon={<NavUsersIcon />}>
+        <div className="ds-card teacher-dashboard__substitute-create-card">
+          <CreateSubstituteBoardPostForm
+            key={formKey}
+            isSubmitting={isSubmitting}
+            submitMessage={createMessage}
+            onSubmit={handleCreatePost}
           />
-        )}
-      </div>
+        </div>
+
+        <div className="ds-card teacher-dashboard__substitute-list-card">
+          <h3 className="teacher-dashboard__subsection-title">
+            <span className="dashboard-card__title-icon" aria-hidden="true">
+              <NavInboxIcon />
+            </span>
+            פרסומים בלוח
+          </h3>
+
+          {responseMessage && (
+            <p
+              className={
+                responseMessageIsError
+                  ? 'ds-form-message ds-form-message--error'
+                  : 'ds-form-message ds-form-message--success'
+              }
+            >
+              {responseMessage}
+            </p>
+          )}
+
+          {isLoading && <p className="ds-form-message">טוען לוח מילויי מקום...</p>}
+
+          {!isLoading && loadError && (
+            <p className="ds-form-message ds-form-message--error">{loadError}</p>
+          )}
+
+          {!isLoading && !loadError && (
+            <SubstituteBoardPostsList
+              posts={posts}
+              currentUserId={currentUserId}
+              respondedPostIds={respondedPostIds}
+              respondingPostId={respondingPostId}
+              onRespond={handleRespond}
+              onApprovalSubmitted={() => setBoardVersion((version) => version + 1)}
+            />
+          )}
+        </div>
+      </DashboardCollapsibleSection>
     </section>
   )
 }

@@ -14,6 +14,7 @@ import {
 import { loadRequestAttachmentRequestIds } from '../../services/attachments'
 import { filterSecretaryInboxRequests } from '../../utils/requests'
 import { NavInboxIcon } from '../dashboard/dashboardNav'
+import { DashboardCollapsibleSection } from '../dashboard/DashboardCollapsibleSection'
 import { RequestStatusHistoryPanel } from './RequestStatusHistoryPanel'
 import { RequestNotesPanel } from './RequestNotesPanel'
 import { SecretaryRequestsFilters } from './SecretaryRequestsFilters'
@@ -198,46 +199,45 @@ export function SecretaryRequestsInbox({ onArchived }: SecretaryRequestsInboxPro
 
   return (
     <section className="ds-card secretary-dashboard__inbox">
-      <h2 className="secretary-dashboard__section-title">
-        <span className="dashboard-card__title-icon" aria-hidden="true">
-          <NavInboxIcon />
-        </span>
-        תיבת בקשות
-      </h2>
+      <DashboardCollapsibleSection
+        title="תיבת בקשות"
+        icon={<NavInboxIcon />}
+        className="dashboard-collapsible-section--flush-header"
+      >
+        <SecretaryRequestsFilters filters={filters} onFiltersChange={setFilters} />
 
-      <SecretaryRequestsFilters filters={filters} onFiltersChange={setFilters} />
+        {statusMessage && (
+          <p
+            className={
+              statusMessageIsError
+                ? 'ds-form-message ds-form-message--error'
+                : 'ds-form-message ds-form-message--success'
+            }
+          >
+            {statusMessage}
+          </p>
+        )}
 
-      {statusMessage && (
-        <p
-          className={
-            statusMessageIsError
-              ? 'ds-form-message ds-form-message--error'
-              : 'ds-form-message ds-form-message--success'
-          }
-        >
-          {statusMessage}
-        </p>
-      )}
+        {isLoading && <p className="ds-form-message">טוען בקשות...</p>}
 
-      {isLoading && <p className="ds-form-message">טוען בקשות...</p>}
+        {!isLoading && loadError && (
+          <p className="ds-form-message ds-form-message--error">{loadError}</p>
+        )}
 
-      {!isLoading && loadError && (
-        <p className="ds-form-message ds-form-message--error">{loadError}</p>
-      )}
-
-      {!isLoading && !loadError && (
-        <SecretaryRequestsTable
-          requests={filteredRequests}
-          emptyMessage={emptyMessage}
-          updatingRequestId={updatingRequestId}
-          archivingRequestId={archivingRequestId}
-          requestIdsWithAttachments={requestIdsWithAttachments}
-          onStatusChange={handleStatusChange}
-          onShowHistory={handleShowHistory}
-          onShowNotes={handleShowNotes}
-          onArchive={handleOpenArchiveDialog}
-        />
-      )}
+        {!isLoading && !loadError && (
+          <SecretaryRequestsTable
+            requests={filteredRequests}
+            emptyMessage={emptyMessage}
+            updatingRequestId={updatingRequestId}
+            archivingRequestId={archivingRequestId}
+            requestIdsWithAttachments={requestIdsWithAttachments}
+            onStatusChange={handleStatusChange}
+            onShowHistory={handleShowHistory}
+            onShowNotes={handleShowNotes}
+            onArchive={handleOpenArchiveDialog}
+          />
+        )}
+      </DashboardCollapsibleSection>
 
       {archiveDialogRequest && (
         <div
