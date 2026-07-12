@@ -302,7 +302,36 @@
 }
 
 .login-page__form .ds-field:last-of-type {
+  margin-bottom: var(--ds-control-gap);
+}
+
+.login-page__remember-me {
+  display: block;
   margin-bottom: var(--ds-card-gap);
+}
+
+.login-page__remember-checkbox {
+  display: flex;
+  align-items: center;
+  gap: var(--ds-label-gap);
+  min-height: 44px;
+  color: var(--ds-color-text-primary);
+  font-size: var(--ds-font-size-sm);
+  cursor: pointer;
+}
+
+.login-page__remember-checkbox input {
+  flex-shrink: 0;
+  width: 18px;
+  height: 18px;
+  margin: 0;
+  accent-color: var(--ds-color-primary);
+  cursor: pointer;
+}
+
+.login-page__remember-checkbox input:focus-visible {
+  outline: 2px solid var(--ds-color-primary-light);
+  outline-offset: 2px;
 }
 
 .login-page__submit {

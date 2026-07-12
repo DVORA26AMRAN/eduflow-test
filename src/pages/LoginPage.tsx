@@ -6,9 +6,11 @@ import schoolBuildingImage from '../assets/images/school-building.png.png'
 type LoginPageProps = {
   email: string
   password: string
+  rememberMe: boolean
   message: string
   onEmailChange: (value: string) => void
   onPasswordChange: (value: string) => void
+  onRememberMeChange: (value: boolean) => void
   onLogin: () => void
 }
 
@@ -31,9 +33,11 @@ function getMessageClassName(message: string): string {
 export function LoginPage({
   email,
   password,
+  rememberMe,
   message,
   onEmailChange,
   onPasswordChange,
+  onRememberMeChange,
   onLogin,
 }: LoginPageProps) {
   function handleSubmit(event: FormEvent<HTMLFormElement>) {
@@ -68,7 +72,8 @@ export function LoginPage({
                 id="login-email"
                 className="ds-input"
                 type="email"
-                autoComplete="email"
+                name="username"
+                autoComplete="username"
                 placeholder="הזן שם משתמש"
                 value={email}
                 onChange={(e) => onEmailChange(e.target.value)}
@@ -81,11 +86,24 @@ export function LoginPage({
                 id="login-password"
                 className="ds-input"
                 type="password"
+                name="password"
                 autoComplete="current-password"
                 placeholder="הזן סיסמה"
                 value={password}
                 onChange={(e) => onPasswordChange(e.target.value)}
               />
+            </label>
+
+            <label className="login-page__remember-me" htmlFor="login-remember-me">
+              <span className="login-page__remember-checkbox">
+                <input
+                  id="login-remember-me"
+                  type="checkbox"
+                  checked={rememberMe}
+                  onChange={(e) => onRememberMeChange(e.target.checked)}
+                />
+                <span>זכור את כתובת המייל</span>
+              </span>
             </label>
 
             <button type="submit" className="ds-btn ds-btn--primary login-page__submit">

@@ -16,6 +16,11 @@ import {
 } from './services/auth'
 import { loadCurrentUserProfile, logAuthState, logProfileDebug } from './services/profile'
 import { PENDING_PASSWORD_SETUP_KEY, supabase } from './services/supabase'
+import {
+  getInitialLoginFormState,
+  handleRememberMeAfterLogin,
+} from './utils/rememberedEmail'
+import { buildSignInCredentials } from './services/authCredentials'
 import type {
   AuthenticatedUserProfile,
   ProfileLoadDebugInfo,
@@ -23,8 +28,10 @@ import type {
 } from './types/user'
 
 function App() {
-  const [email, setEmail] = useState('')
+  const initialLoginFormState = getInitialLoginFormState()
+  const [email, setEmail] = useState(initialLoginFormState.email)
   const [password, setPassword] = useState('')
+  const [rememberMe, setRememberMe] = useState(initialLoginFormState.rememberMe)
   const [message, setMessage] = useState('')
   const [authReady, setAuthReady] = useState(false)
   const [needsPasswordSetup, setNeedsPasswordSetup] = useState(false)
@@ -260,10 +267,9 @@ function App() {
     loadedProfile.current = null
     setCurrentProfile(null)
 
-    const { data, error } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    })
+    const { data, error } = await supabase.auth.signInWithPassword(
+      buildSignInCredentials(email, password),
+    )
 
     if (error) {
       setMessage('ההתחברות נכשלה. בדקי מייל וסיסמה.')
@@ -285,6 +291,7 @@ function App() {
     }
 
     sessionStorage.removeItem(PENDING_PASSWORD_SETUP_KEY)
+    handleRememberMeAfterLogin(rememberMe, email)
     setMessage('התחברת בהצלחה.')
 
     logProfileDebug('login succeeded', {
@@ -452,9 +459,11 @@ function App() {
       <LoginPage
         email={email}
         password={password}
+        rememberMe={rememberMe}
         message={message}
         onEmailChange={setEmail}
         onPasswordChange={setPassword}
+        onRememberMeChange={setRememberMe}
         onLogin={login}
       />
     )
