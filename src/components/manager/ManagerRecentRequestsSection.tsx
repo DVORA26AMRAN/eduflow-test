@@ -1,7 +1,11 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import type { ManagerRecentRequest } from '../../types/analytics'
+import type { ReminderNavigationIntent } from '../../types/reminderNavigation'
 import { loadRecentRequests } from '../../services/analytics'
 import { archiveRequestForManager } from '../../services/managerPersonalArchive'
+import { loadInstitutionRequestReminderSummaries, subscribeToInstitutionRequestReminders, unsubscribeFromInstitutionRequestReminders, upsertReminderSummary } from '../../services/requestReminders'
+import type { RequestReminderSummary } from '../../types/requestReminder'
+import { useRequestReminderNavigationEffect } from '../../hooks/useRequestReminderNavigationEffect'
 import { NavClipboardIcon } from '../dashboard/dashboardNav'
 import { DashboardCollapsibleSection } from '../dashboard/DashboardCollapsibleSection'
 import { ManagerRecentRequestsTable } from './ManagerRecentRequestsTable'
@@ -9,11 +13,21 @@ import { ManagerRecentRequestsTable } from './ManagerRecentRequestsTable'
 type ManagerRecentRequestsSectionProps = {
   refreshToken: number
   onArchived: () => void
+  institutionId?: string | null
+  unreadReminderRequestIds?: ReadonlySet<string>
+  reminderNavigationIntent?: ReminderNavigationIntent | null
+  highlightedRequestId?: string | null
+  onReminderNavigationComplete?: (token: number, found: boolean) => void
 }
 
 export function ManagerRecentRequestsSection({
   refreshToken,
   onArchived,
+  institutionId,
+  unreadReminderRequestIds = new Set(),
+  reminderNavigationIntent = null,
+  highlightedRequestId = null,
+  onReminderNavigationComplete,
 }: ManagerRecentRequestsSectionProps) {
   const [requests, setRequests] = useState<ManagerRecentRequest[]>([])
   const [isLoading, setIsLoading] = useState(true)
@@ -24,18 +38,32 @@ export function ManagerRecentRequestsSection({
   const [archiveDialogRequest, setArchiveDialogRequest] = useState<ManagerRecentRequest | null>(
     null,
   )
+  const [reminderSummariesByRequestId, setReminderSummariesByRequestId] = useState<
+    Map<string, RequestReminderSummary>
+  >(new Map())
 
   const fetchRequests = useCallback(async () => {
     setIsLoading(true)
     setErrorMessage('')
 
-    const result = await loadRecentRequests()
+    const [requestsResult, remindersResult] = await Promise.all([
+      loadRecentRequests(),
+      loadInstitutionRequestReminderSummaries(),
+    ])
 
-    if (!result.ok) {
+    if (!requestsResult.ok) {
       setRequests([])
-      setErrorMessage(result.errorMessage)
+      setErrorMessage(requestsResult.errorMessage)
     } else {
-      setRequests(result.requests)
+      setRequests(requestsResult.requests)
+    }
+
+    if (remindersResult.ok) {
+      setReminderSummariesByRequestId(
+        new Map(remindersResult.summaries.map((summary) => [summary.request_id, summary])),
+      )
+    } else {
+      setReminderSummariesByRequestId(new Map())
     }
 
     setIsLoading(false)
@@ -46,6 +74,56 @@ export function ManagerRecentRequestsSection({
       void fetchRequests()
     })
   }, [fetchRequests, refreshToken])
+
+  useEffect(() => {
+    if (unreadReminderRequestIds.size === 0) {
+      return
+    }
+
+    async function refreshReminderSummaries() {
+      const result = await loadInstitutionRequestReminderSummaries()
+      if (result.ok) {
+        setReminderSummariesByRequestId(
+          new Map(result.summaries.map((summary) => [summary.request_id, summary])),
+        )
+      }
+    }
+
+    void refreshReminderSummaries()
+  }, [unreadReminderRequestIds])
+
+  useEffect(() => {
+    if (!institutionId) {
+      return
+    }
+
+    const channel = subscribeToInstitutionRequestReminders(institutionId, (summary) => {
+      setReminderSummariesByRequestId((currentSummaries) => upsertReminderSummary(currentSummaries, summary))
+    })
+
+    return () => {
+      void unsubscribeFromInstitutionRequestReminders(channel)
+    }
+  }, [institutionId])
+
+  const requestIds = useMemo(() => new Set(requests.map((request) => request.id)), [requests])
+
+  const handleReminderNavigationComplete = useCallback(
+    (token: number, found: boolean) => {
+      onReminderNavigationComplete?.(token, found)
+    },
+    [onReminderNavigationComplete],
+  )
+
+  useRequestReminderNavigationEffect({
+    intent: reminderNavigationIntent,
+    expectedLocationKind: 'manager_recent',
+    isReady: !isLoading && !errorMessage,
+    isRequestInDataset: (requestId) => requestIds.has(requestId),
+    isRequestVisible: (requestId) => requestIds.has(requestId),
+    revealRequest: () => {},
+    onComplete: handleReminderNavigationComplete,
+  })
 
   function handleOpenArchiveDialog(request: ManagerRecentRequest) {
     setStatusMessage('')
@@ -122,6 +200,9 @@ export function ManagerRecentRequestsSection({
           <ManagerRecentRequestsTable
             requests={requests}
             archivingRequestId={archivingRequestId}
+            unreadReminderRequestIds={unreadReminderRequestIds}
+            reminderSummariesByRequestId={reminderSummariesByRequestId}
+            highlightedRequestId={highlightedRequestId}
             onArchive={handleOpenArchiveDialog}
           />
         )}

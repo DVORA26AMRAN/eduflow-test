@@ -37,7 +37,7 @@ export function SecretaryArchiveTable({ requests, emptyMessage }: SecretaryArchi
         </thead>
         <tbody>
           {requests.map((request) => (
-            <tr key={request.id}>
+            <tr key={request.id} data-request-id={request.id}>
               <td>{request.teacher_full_name}</td>
               <td>{translateRequestType(request.request_type)}</td>
               <td>

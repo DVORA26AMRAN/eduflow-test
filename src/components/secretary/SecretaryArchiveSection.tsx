@@ -1,33 +1,45 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import type { SecretaryArchiveFilters, SecretaryArchivedRequest } from '../../types/request'
+import type { ReminderNavigationIntent } from '../../types/reminderNavigation'
 import { loadSecretaryArchivedRequests } from '../../services/requests'
+import { INSTITUTIONAL_ARCHIVE_PAGE_SIZE } from '../../services/reminderRequestLocation'
 import { filterSecretaryArchivedRequests } from '../../utils/requests'
+import {
+  SECRETARY_ARCHIVE_DEFAULT_FILTERS,
+  shouldResetArchiveFilters,
+} from '../../utils/reminderNavigation'
+import { useRequestReminderNavigationEffect } from '../../hooks/useRequestReminderNavigationEffect'
 import { NavArchiveIcon } from '../dashboard/dashboardNav'
 import { DashboardCollapsibleSection } from '../dashboard/DashboardCollapsibleSection'
 import { SecretaryArchiveFilters as SecretaryArchiveFiltersPanel } from './SecretaryArchiveFilters'
 import { SecretaryArchiveTable } from './SecretaryArchiveTable'
 
-const defaultFilters: SecretaryArchiveFilters = {
-  teacherNameQuery: '',
-  requestType: 'all',
-  requestStatus: 'all',
-  dateFrom: '',
-  dateTo: '',
-}
+const defaultFilters = SECRETARY_ARCHIVE_DEFAULT_FILTERS
 
-const ARCHIVE_PAGE_SIZE = 20
+const ARCHIVE_PAGE_SIZE = INSTITUTIONAL_ARCHIVE_PAGE_SIZE
 
 type SecretaryArchiveSectionProps = {
   refreshToken: number
+  reminderNavigationIntent?: ReminderNavigationIntent | null
+  onReminderNavigationComplete?: (token: number, found: boolean) => void
 }
 
-export function SecretaryArchiveSection({ refreshToken }: SecretaryArchiveSectionProps) {
+export function SecretaryArchiveSection({
+  refreshToken,
+  reminderNavigationIntent = null,
+  onReminderNavigationComplete,
+}: SecretaryArchiveSectionProps) {
   const [requests, setRequests] = useState<SecretaryArchivedRequest[]>([])
   const [filters, setFilters] = useState<SecretaryArchiveFilters>(defaultFilters)
   const [page, setPage] = useState(1)
   const [totalCount, setTotalCount] = useState(0)
   const [isLoading, setIsLoading] = useState(true)
   const [loadError, setLoadError] = useState('')
+
+  const effectivePage =
+    reminderNavigationIntent?.location.kind === 'secretary_institutional_archive'
+      ? reminderNavigationIntent.location.page
+      : page
 
   const fetchArchive = useCallback(async () => {
     setIsLoading(true)
@@ -36,7 +48,7 @@ export function SecretaryArchiveSection({ refreshToken }: SecretaryArchiveSectio
     const result = await loadSecretaryArchivedRequests({
       dateFrom: filters.dateFrom || undefined,
       dateTo: filters.dateTo || undefined,
-      page,
+      page: effectivePage,
       pageSize: ARCHIVE_PAGE_SIZE,
     })
 
@@ -50,7 +62,7 @@ export function SecretaryArchiveSection({ refreshToken }: SecretaryArchiveSectio
     }
 
     setIsLoading(false)
-  }, [filters.dateFrom, filters.dateTo, page])
+  }, [filters.dateFrom, filters.dateTo, effectivePage])
 
   function handleFiltersChange(next: SecretaryArchiveFilters) {
     const datesChanged =
@@ -74,11 +86,42 @@ export function SecretaryArchiveSection({ refreshToken }: SecretaryArchiveSectio
     [requests, filters],
   )
 
+  const filteredRequestIds = useMemo(
+    () => new Set(filteredRequests.map((request) => request.id)),
+    [filteredRequests],
+  )
+
+  const handleReminderNavigationComplete = useCallback(
+    (token: number, found: boolean) => {
+      onReminderNavigationComplete?.(token, found)
+    },
+    [onReminderNavigationComplete],
+  )
+
+  const revealReminderRequest = useCallback(
+    (requestId: string) => {
+      if (shouldResetArchiveFilters(filters, requestId, requests, filteredRequestIds)) {
+        setFilters(defaultFilters)
+      }
+    },
+    [filters, requests, filteredRequestIds],
+  )
+
+  useRequestReminderNavigationEffect({
+    intent: reminderNavigationIntent,
+    expectedLocationKind: 'secretary_institutional_archive',
+    isReady: !isLoading && !loadError,
+    isRequestInDataset: (requestId) => requests.some((request) => request.id === requestId),
+    isRequestVisible: (requestId) => filteredRequestIds.has(requestId),
+    revealRequest: revealReminderRequest,
+    onComplete: handleReminderNavigationComplete,
+  })
+
   const totalPages = Math.max(1, Math.ceil(totalCount / ARCHIVE_PAGE_SIZE))
-  const rangeStart = totalCount === 0 ? 0 : (page - 1) * ARCHIVE_PAGE_SIZE + 1
-  const rangeEnd = Math.min(page * ARCHIVE_PAGE_SIZE, totalCount)
-  const hasPreviousPage = page > 1
-  const hasNextPage = page < totalPages
+  const rangeStart = totalCount === 0 ? 0 : (effectivePage - 1) * ARCHIVE_PAGE_SIZE + 1
+  const rangeEnd = Math.min(effectivePage * ARCHIVE_PAGE_SIZE, totalCount)
+  const hasPreviousPage = effectivePage > 1
+  const hasNextPage = effectivePage < totalPages
 
   const emptyMessage =
     totalCount === 0
@@ -109,7 +152,7 @@ export function SecretaryArchiveSection({ refreshToken }: SecretaryArchiveSectio
                 <p className="secretary-dashboard__status">אין בקשות בארכיון המוסדי.</p>
               ) : (
                 <p className="secretary-dashboard__status">
-                  מציגות {rangeStart}–{rangeEnd} מתוך {totalCount} בקשות (עמוד {page} מתוך{' '}
+                  מציגות {rangeStart}–{rangeEnd} מתוך {totalCount} בקשות (עמוד {effectivePage} מתוך{' '}
                   {totalPages})
                 </p>
               )}

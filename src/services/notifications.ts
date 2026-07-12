@@ -1,16 +1,20 @@
 import type { RealtimeChannel } from '@supabase/supabase-js'
 import type { TeacherNotification } from '../types/notification'
+import { NOTIFICATION_TYPE_REQUEST_REMINDER } from '../types/requestReminder'
+import type { AdminNotification } from '../types/requestReminder'
 import { supabase } from './supabase'
 
+export type AppNotification = TeacherNotification | AdminNotification
+
 export type LoadNotificationsResult =
-  | { ok: true; notifications: TeacherNotification[] }
+  | { ok: true; notifications: AppNotification[] }
   | { ok: false; errorMessage: string }
 
 export type MarkNotificationAsReadResult =
   | { ok: true }
   | { ok: false }
 
-function parseNotification(row: unknown): TeacherNotification | null {
+function parseNotification(row: unknown): AppNotification | null {
   if (!row || typeof row !== 'object') {
     return null
   }
@@ -66,9 +70,13 @@ export async function loadNotifications(): Promise<LoadNotificationsResult> {
 
   const notifications = (data ?? [])
     .map(parseNotification)
-    .filter((notification): notification is TeacherNotification => notification !== null)
+    .filter((notification): notification is AppNotification => notification !== null)
 
   return { ok: true, notifications }
+}
+
+export async function loadAdminNotifications(): Promise<LoadNotificationsResult> {
+  return loadNotifications()
 }
 
 export async function markNotificationAsRead(
@@ -87,14 +95,14 @@ export async function markNotificationAsRead(
   return { ok: true }
 }
 
-export type TeacherNotificationInsertHandler = (notification: TeacherNotification) => void
+export type NotificationInsertHandler = (notification: AppNotification) => void
 
-export function subscribeToTeacherNotifications(
+export function subscribeToUserNotifications(
   userId: string,
-  onInsert: TeacherNotificationInsertHandler,
+  onInsert: NotificationInsertHandler,
 ): RealtimeChannel {
   const channel = supabase
-    .channel(`teacher-notifications:${userId}`)
+    .channel(`user-notifications:${userId}`)
     .on(
       'postgres_changes',
       {
@@ -119,8 +127,56 @@ export function subscribeToTeacherNotifications(
   return channel
 }
 
-export async function unsubscribeFromTeacherNotifications(
+export type TeacherNotificationInsertHandler = NotificationInsertHandler
+
+export function subscribeToTeacherNotifications(
+  userId: string,
+  onInsert: TeacherNotificationInsertHandler,
+): RealtimeChannel {
+  return subscribeToUserNotifications(userId, onInsert)
+}
+
+export function subscribeToAdminNotifications(
+  userId: string,
+  onInsert: NotificationInsertHandler,
+): RealtimeChannel {
+  return subscribeToUserNotifications(userId, onInsert)
+}
+
+export async function unsubscribeFromUserNotifications(
   channel: RealtimeChannel,
 ): Promise<void> {
   await supabase.removeChannel(channel)
+}
+
+export async function unsubscribeFromTeacherNotifications(
+  channel: RealtimeChannel,
+): Promise<void> {
+  await unsubscribeFromUserNotifications(channel)
+}
+
+export async function unsubscribeFromAdminNotifications(
+  channel: RealtimeChannel,
+): Promise<void> {
+  await unsubscribeFromUserNotifications(channel)
+}
+
+export function getUnreadReminderRequestIds(notifications: AppNotification[]): Set<string> {
+  const requestIds = new Set<string>()
+
+  for (const notification of notifications) {
+    if (
+      notification.notification_type !== NOTIFICATION_TYPE_REQUEST_REMINDER ||
+      notification.is_read
+    ) {
+      continue
+    }
+
+    const requestId = notification.metadata.request_id
+    if (typeof requestId === 'string') {
+      requestIds.add(requestId)
+    }
+  }
+
+  return requestIds
 }

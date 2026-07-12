@@ -1,20 +1,28 @@
 import type { ManagerRecentRequest } from '../../types/analytics'
+import type { RequestReminderSummary } from '../../types/requestReminder'
 import {
   formatRequestDate,
   translateRequestStatus,
   translateRequestType,
 } from '../../utils/requests'
+import { RequestReminderRowIndicator } from '../requests/RequestReminderRowIndicator'
 import { RequestArchiveTrashButton } from '../requests/RequestArchiveTrashButton'
 
 type ManagerRecentRequestsTableProps = {
   requests: ManagerRecentRequest[]
   archivingRequestId: string | null
+  unreadReminderRequestIds: ReadonlySet<string>
+  reminderSummariesByRequestId: ReadonlyMap<string, RequestReminderSummary>
+  highlightedRequestId?: string | null
   onArchive: (request: ManagerRecentRequest) => void
 }
 
 export function ManagerRecentRequestsTable({
   requests,
   archivingRequestId,
+  unreadReminderRequestIds,
+  reminderSummariesByRequestId,
+  highlightedRequestId = null,
   onArchive,
 }: ManagerRecentRequestsTableProps) {
   return (
@@ -30,11 +38,31 @@ export function ManagerRecentRequestsTable({
           </tr>
         </thead>
         <tbody>
-          {requests.map((request) => (
-            <tr key={request.id}>
+          {requests.map((request) => {
+            const reminderSummary = reminderSummariesByRequestId.get(request.id)
+            const hasUnreadReminder = unreadReminderRequestIds.has(request.id)
+
+            return (
+            <tr
+              key={request.id}
+              data-request-id={request.id}
+              className={
+                hasUnreadReminder
+                  ? 'manager-dashboard__row--reminder-received'
+                  : highlightedRequestId === request.id
+                    ? 'manager-dashboard__row--reminder-received'
+                    : undefined
+              }
+            >
               <td>{request.teacher_full_name}</td>
               <td>{translateRequestType(request.request_type)}</td>
               <td>
+                <RequestReminderRowIndicator
+                  summary={reminderSummary}
+                  hasUnreadReminder={hasUnreadReminder}
+                  badgeClassName="manager-dashboard__reminder-badge"
+                  metaClassName="manager-dashboard__reminder-meta"
+                />
                 <span className={`ds-table__status ds-table__status--${request.status}`}>
                   {translateRequestStatus(request.status)}
                 </span>
@@ -51,7 +79,8 @@ export function ManagerRecentRequestsTable({
                 </div>
               </td>
             </tr>
-          ))}
+            )
+          })}
         </tbody>
       </table>
     </div>

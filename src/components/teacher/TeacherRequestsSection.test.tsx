@@ -9,6 +9,11 @@ vi.mock('../../services/requests', () => ({
   archiveRequest: vi.fn(),
 }))
 
+vi.mock('../../services/requestReminders', () => ({
+  loadTeacherRequestReminderStates: vi.fn(async () => ({ ok: true, states: [] })),
+  sendRequestReminder: vi.fn(),
+}))
+
 vi.mock('../../services/attachments', () => ({
   uploadRequestAttachment: vi.fn(),
 }))

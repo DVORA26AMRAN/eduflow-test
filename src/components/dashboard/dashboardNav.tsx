@@ -4,6 +4,11 @@ export type DashboardNavItem = {
   id: string
   label: string
   icon: ReactNode
+  badgeCount?: number
+  badgeAnimate?: boolean
+  onSelect?: () => void
+  ariaLabel?: string
+  disabled?: boolean
 }
 
 function iconStroke() {

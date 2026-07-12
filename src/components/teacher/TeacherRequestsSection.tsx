@@ -3,6 +3,12 @@ import type { RequestPayload, RequestType, TeacherRequest } from '../../types/re
 import { REQUEST_CREATED_ATTACHMENT_UPLOAD_FAILED_MESSAGE } from '../../types/attachment'
 import { uploadRequestAttachment } from '../../services/attachments'
 import { archiveRequest, createTeacherRequest, loadTeacherRequests } from '../../services/requests'
+import {
+  loadTeacherRequestReminderStates,
+  sendRequestReminder,
+} from '../../services/requestReminders'
+import type { TeacherRequestReminderState } from '../../types/requestReminder'
+import { REQUEST_REMINDER_COOLDOWN_HOURS } from '../../types/requestReminder'
 import { NavClipboardIcon, NavInboxIcon } from '../dashboard/dashboardNav'
 import { DashboardCollapsibleSection } from '../dashboard/DashboardCollapsibleSection'
 import { TeacherCreateRequestModal } from './TeacherCreateRequestModal'
@@ -37,19 +43,34 @@ export function TeacherRequestsSection({ refreshToken, onArchived }: TeacherRequ
   const [activeRequestType, setActiveRequestType] = useState<RequestType | null>(null)
   const [selectedCategoryType, setSelectedCategoryType] = useState<RequestType | ''>('')
   const [archivingRequestId, setArchivingRequestId] = useState<string | null>(null)
+  const [remindingRequestId, setRemindingRequestId] = useState<string | null>(null)
+  const [reminderStatesByRequestId, setReminderStatesByRequestId] = useState<
+    Map<string, TeacherRequestReminderState>
+  >(new Map())
   const [archiveDialogRequest, setArchiveDialogRequest] = useState<TeacherRequest | null>(null)
 
   const fetchRequests = useCallback(async () => {
     setIsLoading(true)
     setLoadError('')
 
-    const result = await loadTeacherRequests()
+    const [requestsResult, remindersResult] = await Promise.all([
+      loadTeacherRequests(),
+      loadTeacherRequestReminderStates(),
+    ])
 
-    if (!result.ok) {
+    if (!requestsResult.ok) {
       setRequests([])
-      setLoadError(result.errorMessage)
+      setLoadError(requestsResult.errorMessage)
     } else {
-      setRequests(result.requests)
+      setRequests(requestsResult.requests)
+    }
+
+    if (remindersResult.ok) {
+      setReminderStatesByRequestId(
+        new Map(remindersResult.states.map((state) => [state.request_id, state])),
+      )
+    } else {
+      setReminderStatesByRequestId(new Map())
     }
 
     setIsLoading(false)
@@ -165,6 +186,57 @@ export function TeacherRequestsSection({ refreshToken, onArchived }: TeacherRequ
     onArchived()
   }
 
+  async function handleSendReminder(request: TeacherRequest) {
+    if (remindingRequestId !== null || archivingRequestId !== null) {
+      return
+    }
+
+    setSubmitMessage('')
+    setRemindingRequestId(request.id)
+
+    const result = await sendRequestReminder(request.id)
+
+    setRemindingRequestId(null)
+
+    if (!result.ok) {
+      setSubmitMessage(result.errorMessage)
+
+      if (result.nextReminderAvailableAt) {
+        setReminderStatesByRequestId((currentStates) => {
+          const nextStates = new Map(currentStates)
+          const existing = nextStates.get(request.id)
+
+          nextStates.set(request.id, {
+            request_id: request.id,
+            reminder_count: existing?.reminder_count ?? 0,
+            last_reminder_at: existing?.last_reminder_at ?? null,
+            next_reminder_available_at: result.nextReminderAvailableAt ?? null,
+          })
+
+          return nextStates
+        })
+      }
+
+      return
+    }
+
+    setSubmitMessage('התזכורת נשלחה בהצלחה.')
+    setReminderStatesByRequestId((currentStates) => {
+      const nextStates = new Map(currentStates)
+      const cooldownEndsAt = new Date(result.createdAt)
+      cooldownEndsAt.setHours(cooldownEndsAt.getHours() + REQUEST_REMINDER_COOLDOWN_HOURS)
+
+      nextStates.set(request.id, {
+        request_id: request.id,
+        reminder_count: result.reminderCount,
+        last_reminder_at: result.createdAt,
+        next_reminder_available_at: cooldownEndsAt.toISOString(),
+      })
+
+      return nextStates
+    })
+  }
+
   return (
     <section className="teacher-dashboard__requests">
       <DashboardCollapsibleSection title="הבקשות שלי" icon={<NavClipboardIcon />}>
@@ -200,7 +272,10 @@ export function TeacherRequestsSection({ refreshToken, onArchived }: TeacherRequ
             <TeacherRequestsList
               requests={requests}
               archivingRequestId={archivingRequestId}
+              remindingRequestId={remindingRequestId}
+              reminderStatesByRequestId={reminderStatesByRequestId}
               onArchive={handleOpenArchiveDialog}
+              onSendReminder={handleSendReminder}
             />
           )}
         </div>

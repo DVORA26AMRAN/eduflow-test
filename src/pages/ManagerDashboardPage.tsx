@@ -1,8 +1,9 @@
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { DashboardShell } from '../components/dashboard/DashboardShell'
 import {
   NavActivityIcon,
   NavArchiveIcon,
+  NavBellIcon,
   NavChartIcon,
   NavUsersIcon,
   type DashboardNavItem,
@@ -13,11 +14,19 @@ import { ManagerRecentRequestsSection } from '../components/manager/ManagerRecen
 import { ManagerRequestTypeDistribution } from '../components/manager/ManagerRequestTypeDistribution'
 import { ManagerStatsCards } from '../components/manager/ManagerStatsCards'
 import { TeamManagementSection } from '../components/manager/TeamManagementSection'
+import { useAdminReminderNotifications } from '../hooks/useAdminReminderNotifications'
+import { useReminderBellNavigation } from '../hooks/useReminderBellNavigation'
 import {
   loadManagerAnalytics,
   loadRecentRequestActivity,
 } from '../services/analytics'
 import { loadInstitutionUsers } from '../services/institutionUsers'
+import { resolveManagerReminderRequestLocation } from '../services/reminderRequestLocation'
+import {
+  REMINDER_BELL_NAV_ID,
+  REMINDER_NAV_ARIA_LABEL,
+  REMINDER_NAV_LABEL,
+} from '../utils/reminderNavigation'
 import type {
   ManagerAnalytics,
   ManagerRecentActivityEntry,
@@ -41,13 +50,6 @@ type ManagerDashboardPageProps = {
   onCreateUser: () => void
   onLogout: () => void
 }
-
-const managerNavItems: DashboardNavItem[] = [
-  { id: 'stats', label: 'נתונים', icon: <NavChartIcon /> },
-  { id: 'recentActivity', label: 'פעילות אחרונה', icon: <NavActivityIcon /> },
-  { id: MANAGER_ARCHIVE_SECTION_ID, label: 'הארכיון שלי', icon: <NavArchiveIcon /> },
-  { id: TEAM_MANAGEMENT_SECTION_ID, label: 'ניהול משתמשים', icon: <NavUsersIcon /> },
-]
 
 export function ManagerDashboardPage({
   profile,
@@ -73,8 +75,17 @@ export function ManagerDashboardPage({
   const [recentActivityError, setRecentActivityError] = useState('')
   const [archiveRefreshToken, setArchiveRefreshToken] = useState(0)
   const [activeSectionId, setActiveSectionId] = useState<string>('stats')
+  const [liveAnnouncement, setLiveAnnouncement] = useState('')
+  const announcementTimeoutRef = useRef<number | null>(null)
 
-  function handleSectionSelect(sectionId: string) {
+  const {
+    unreadCount,
+    unreadReminderRequestIds,
+    getNewestUnreadReminder,
+    markReminderNotificationAsRead,
+  } = useAdminReminderNotifications()
+
+  const scrollToSection = useCallback((sectionId: string) => {
     const target = document.querySelector<HTMLElement>(
       `.manager-dashboard [data-section-id="${sectionId}"]`,
     )
@@ -85,6 +96,65 @@ export function ManagerDashboardPage({
     setActiveSectionId(sectionId)
     target.scrollIntoView({ behavior: 'smooth', block: 'start' })
     requestAnimationFrame(() => target.focus({ preventScroll: true }))
+  }, [])
+
+  const announceNavigation = useCallback((message: string) => {
+    setLiveAnnouncement(message)
+
+    if (announcementTimeoutRef.current !== null) {
+      window.clearTimeout(announcementTimeoutRef.current)
+    }
+
+    announcementTimeoutRef.current = window.setTimeout(() => {
+      setLiveAnnouncement('')
+      announcementTimeoutRef.current = null
+    }, 3000)
+  }, [])
+
+  const {
+    navigationIntent,
+    highlightedRequestId,
+    handleReminderBellClick,
+    handleReminderNavigationComplete,
+  } = useReminderBellNavigation({
+    role: 'institution_manager',
+    scrollToSection,
+    resolveLocation: resolveManagerReminderRequestLocation,
+    getNewestUnreadReminder,
+    markReminderNotificationAsRead,
+    onNavigationAnnouncement: announceNavigation,
+  })
+
+  const managerNavItems: DashboardNavItem[] = useMemo(() => {
+    const items: DashboardNavItem[] = [
+      { id: 'stats', label: 'נתונים', icon: <NavChartIcon /> },
+    ]
+
+    if (unreadCount > 0) {
+      items.push({
+        id: REMINDER_BELL_NAV_ID,
+        label: REMINDER_NAV_LABEL,
+        icon: <NavBellIcon />,
+        badgeCount: unreadCount,
+        badgeAnimate: true,
+        ariaLabel: REMINDER_NAV_ARIA_LABEL,
+        onSelect: () => {
+          void handleReminderBellClick()
+        },
+      })
+    }
+
+    items.push(
+      { id: 'recentActivity', label: 'פעילות אחרונה', icon: <NavActivityIcon /> },
+      { id: MANAGER_ARCHIVE_SECTION_ID, label: 'הארכיון שלי', icon: <NavArchiveIcon /> },
+      { id: TEAM_MANAGEMENT_SECTION_ID, label: 'ניהול משתמשים', icon: <NavUsersIcon /> },
+    )
+
+    return items
+  }, [handleReminderBellClick, unreadCount])
+
+  function handleSectionSelect(sectionId: string) {
+    scrollToSection(sectionId)
   }
 
   useEffect(() => {
@@ -213,6 +283,14 @@ export function ManagerDashboardPage({
     return () => observer.disconnect()
   }, [])
 
+  useEffect(() => {
+    return () => {
+      if (announcementTimeoutRef.current !== null) {
+        window.clearTimeout(announcementTimeoutRef.current)
+      }
+    }
+  }, [])
+
   return (
     <DashboardShell
       roleLabel="אזור מנהלת"
@@ -224,6 +302,10 @@ export function ManagerDashboardPage({
       onLogout={onLogout}
     >
       <div dir="rtl" className="manager-dashboard">
+        <div className="reminder-navigation-live-region" aria-live="polite" aria-atomic="true">
+          {liveAnnouncement}
+        </div>
+
         <section
           id="manager-stats"
           data-section-id="stats"
@@ -253,6 +335,11 @@ export function ManagerDashboardPage({
             <ManagerRecentRequestsSection
               refreshToken={archiveRefreshToken}
               onArchived={handleRequestArchived}
+              institutionId={profile.school?.id ?? null}
+              unreadReminderRequestIds={unreadReminderRequestIds}
+              reminderNavigationIntent={navigationIntent}
+              highlightedRequestId={highlightedRequestId}
+              onReminderNavigationComplete={handleReminderNavigationComplete}
             />
 
             <ManagerRecentActivitySection
@@ -269,7 +356,11 @@ export function ManagerDashboardPage({
           className="manager-dashboard__shell-section"
           tabIndex={-1}
         >
-          <ManagerArchiveSection refreshToken={archiveRefreshToken} />
+          <ManagerArchiveSection
+            refreshToken={archiveRefreshToken}
+            reminderNavigationIntent={navigationIntent}
+            onReminderNavigationComplete={handleReminderNavigationComplete}
+          />
         </section>
 
         <section

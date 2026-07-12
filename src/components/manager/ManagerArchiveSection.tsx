@@ -3,34 +3,46 @@ import type {
   ManagerPersonalArchivedRequest,
   ManagerPersonalArchiveFilters,
 } from '../../types/managerPersonalArchive'
+import type { ReminderNavigationIntent } from '../../types/reminderNavigation'
 import { loadManagerPersonalArchivedRequests } from '../../services/managerPersonalArchive'
+import { MANAGER_PERSONAL_ARCHIVE_PAGE_SIZE } from '../../services/reminderRequestLocation'
 import { filterManagerPersonalArchivedRequests } from '../../utils/requests'
+import {
+  MANAGER_ARCHIVE_DEFAULT_FILTERS,
+  shouldResetArchiveFilters,
+} from '../../utils/reminderNavigation'
+import { useRequestReminderNavigationEffect } from '../../hooks/useRequestReminderNavigationEffect'
 import { NavArchiveIcon } from '../dashboard/dashboardNav'
 import { DashboardCollapsibleSection } from '../dashboard/DashboardCollapsibleSection'
 import { SecretaryArchiveFilters as ManagerArchiveFiltersPanel } from '../secretary/SecretaryArchiveFilters'
 import { SecretaryArchiveTable } from '../secretary/SecretaryArchiveTable'
 
-const defaultFilters: ManagerPersonalArchiveFilters = {
-  teacherNameQuery: '',
-  requestType: 'all',
-  requestStatus: 'all',
-  dateFrom: '',
-  dateTo: '',
-}
+const defaultFilters = MANAGER_ARCHIVE_DEFAULT_FILTERS
 
-const ARCHIVE_PAGE_SIZE = 20
+const ARCHIVE_PAGE_SIZE = MANAGER_PERSONAL_ARCHIVE_PAGE_SIZE
 
 type ManagerArchiveSectionProps = {
   refreshToken: number
+  reminderNavigationIntent?: ReminderNavigationIntent | null
+  onReminderNavigationComplete?: (token: number, found: boolean) => void
 }
 
-export function ManagerArchiveSection({ refreshToken }: ManagerArchiveSectionProps) {
+export function ManagerArchiveSection({
+  refreshToken,
+  reminderNavigationIntent = null,
+  onReminderNavigationComplete,
+}: ManagerArchiveSectionProps) {
   const [requests, setRequests] = useState<ManagerPersonalArchivedRequest[]>([])
   const [filters, setFilters] = useState<ManagerPersonalArchiveFilters>(defaultFilters)
   const [page, setPage] = useState(1)
   const [totalCount, setTotalCount] = useState(0)
   const [isLoading, setIsLoading] = useState(true)
   const [loadError, setLoadError] = useState('')
+
+  const effectivePage =
+    reminderNavigationIntent?.location.kind === 'manager_personal_archive'
+      ? reminderNavigationIntent.location.page
+      : page
 
   const fetchArchive = useCallback(async () => {
     setIsLoading(true)
@@ -39,7 +51,7 @@ export function ManagerArchiveSection({ refreshToken }: ManagerArchiveSectionPro
     const result = await loadManagerPersonalArchivedRequests({
       dateFrom: filters.dateFrom || undefined,
       dateTo: filters.dateTo || undefined,
-      page,
+      page: effectivePage,
       pageSize: ARCHIVE_PAGE_SIZE,
     })
 
@@ -53,7 +65,7 @@ export function ManagerArchiveSection({ refreshToken }: ManagerArchiveSectionPro
     }
 
     setIsLoading(false)
-  }, [filters.dateFrom, filters.dateTo, page])
+  }, [filters.dateFrom, filters.dateTo, effectivePage])
 
   function handleFiltersChange(next: ManagerPersonalArchiveFilters) {
     const datesChanged =
@@ -77,11 +89,42 @@ export function ManagerArchiveSection({ refreshToken }: ManagerArchiveSectionPro
     [requests, filters],
   )
 
+  const filteredRequestIds = useMemo(
+    () => new Set(filteredRequests.map((request) => request.id)),
+    [filteredRequests],
+  )
+
+  const handleReminderNavigationComplete = useCallback(
+    (token: number, found: boolean) => {
+      onReminderNavigationComplete?.(token, found)
+    },
+    [onReminderNavigationComplete],
+  )
+
+  const revealReminderRequest = useCallback(
+    (requestId: string) => {
+      if (shouldResetArchiveFilters(filters, requestId, requests, filteredRequestIds)) {
+        setFilters(defaultFilters)
+      }
+    },
+    [filters, requests, filteredRequestIds],
+  )
+
+  useRequestReminderNavigationEffect({
+    intent: reminderNavigationIntent,
+    expectedLocationKind: 'manager_personal_archive',
+    isReady: !isLoading && !loadError,
+    isRequestInDataset: (requestId) => requests.some((request) => request.id === requestId),
+    isRequestVisible: (requestId) => filteredRequestIds.has(requestId),
+    revealRequest: revealReminderRequest,
+    onComplete: handleReminderNavigationComplete,
+  })
+
   const totalPages = Math.max(1, Math.ceil(totalCount / ARCHIVE_PAGE_SIZE))
-  const rangeStart = totalCount === 0 ? 0 : (page - 1) * ARCHIVE_PAGE_SIZE + 1
-  const rangeEnd = Math.min(page * ARCHIVE_PAGE_SIZE, totalCount)
-  const hasPreviousPage = page > 1
-  const hasNextPage = page < totalPages
+  const rangeStart = totalCount === 0 ? 0 : (effectivePage - 1) * ARCHIVE_PAGE_SIZE + 1
+  const rangeEnd = Math.min(effectivePage * ARCHIVE_PAGE_SIZE, totalCount)
+  const hasPreviousPage = effectivePage > 1
+  const hasNextPage = effectivePage < totalPages
 
   const emptyMessage =
     totalCount === 0 ? 'אין בקשות בארכיון האישי שלך.' : 'לא נמצאו בקשות התואמות לסינון.'
@@ -110,7 +153,7 @@ export function ManagerArchiveSection({ refreshToken }: ManagerArchiveSectionPro
                 <p className="manager-dashboard__insight-status">אין בקשות בארכיון האישי שלך.</p>
               ) : (
                 <p className="manager-dashboard__insight-status">
-                  מציגות {rangeStart}–{rangeEnd} מתוך {totalCount} בקשות (עמוד {page} מתוך{' '}
+                  מציגות {rangeStart}–{rangeEnd} מתוך {totalCount} בקשות (עמוד {effectivePage} מתוך{' '}
                   {totalPages})
                 </p>
               )}

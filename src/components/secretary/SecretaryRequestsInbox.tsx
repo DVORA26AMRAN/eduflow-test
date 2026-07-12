@@ -5,6 +5,7 @@ import type {
   SecretaryInboxFilters,
   SecretaryInboxRequest,
 } from '../../types/request'
+import type { ReminderNavigationIntent } from '../../types/reminderNavigation'
 import {
   archiveRequestAsSecretary,
   loadRequestStatusHistory,
@@ -12,7 +13,11 @@ import {
   updateRequestStatus,
 } from '../../services/requests'
 import { loadRequestAttachmentRequestIds } from '../../services/attachments'
+import { loadInstitutionRequestReminderSummaries, subscribeToInstitutionRequestReminders, unsubscribeFromInstitutionRequestReminders, upsertReminderSummary } from '../../services/requestReminders'
+import type { RequestReminderSummary } from '../../types/requestReminder'
 import { filterSecretaryInboxRequests } from '../../utils/requests'
+import { SECRETARY_INBOX_DEFAULT_FILTERS, shouldResetSecretaryInboxFilters } from '../../utils/reminderNavigation'
+import { useRequestReminderNavigationEffect } from '../../hooks/useRequestReminderNavigationEffect'
 import { NavInboxIcon } from '../dashboard/dashboardNav'
 import { DashboardCollapsibleSection } from '../dashboard/DashboardCollapsibleSection'
 import { RequestStatusHistoryPanel } from './RequestStatusHistoryPanel'
@@ -20,21 +25,25 @@ import { RequestNotesPanel } from './RequestNotesPanel'
 import { SecretaryRequestsFilters } from './SecretaryRequestsFilters'
 import { SecretaryRequestsTable } from './SecretaryRequestsTable'
 
-const defaultFilters: SecretaryInboxFilters = {
-  teacherNameQuery: '',
-  descriptionQuery: '',
-  requestType: 'all',
-  requestStatus: 'all',
-  dateFrom: '',
-  dateTo: '',
-  attachmentsOnly: false,
-}
+const defaultFilters = SECRETARY_INBOX_DEFAULT_FILTERS
 
 type SecretaryRequestsInboxProps = {
   onArchived: () => void
+  institutionId?: string | null
+  unreadReminderRequestIds?: ReadonlySet<string>
+  reminderNavigationIntent?: ReminderNavigationIntent | null
+  highlightedRequestId?: string | null
+  onReminderNavigationComplete?: (token: number, found: boolean) => void
 }
 
-export function SecretaryRequestsInbox({ onArchived }: SecretaryRequestsInboxProps) {
+export function SecretaryRequestsInbox({
+  onArchived,
+  institutionId,
+  unreadReminderRequestIds = new Set(),
+  reminderNavigationIntent = null,
+  highlightedRequestId = null,
+  onReminderNavigationComplete,
+}: SecretaryRequestsInboxProps) {
   const [requests, setRequests] = useState<SecretaryInboxRequest[]>([])
   const [filters, setFilters] = useState<SecretaryInboxFilters>(defaultFilters)
   const [isLoading, setIsLoading] = useState(true)
@@ -54,14 +63,18 @@ export function SecretaryRequestsInbox({ onArchived }: SecretaryRequestsInboxPro
   const [archiveDialogRequest, setArchiveDialogRequest] = useState<SecretaryInboxRequest | null>(
     null,
   )
+  const [reminderSummariesByRequestId, setReminderSummariesByRequestId] = useState<
+    Map<string, RequestReminderSummary>
+  >(new Map())
 
   const fetchRequests = useCallback(async () => {
     setIsLoading(true)
     setLoadError('')
 
-    const [requestsResult, attachmentIdsResult] = await Promise.all([
+    const [requestsResult, attachmentIdsResult, remindersResult] = await Promise.all([
       loadSecretaryRequests(),
       loadRequestAttachmentRequestIds(),
+      loadInstitutionRequestReminderSummaries(),
     ])
 
     if (!requestsResult.ok) {
@@ -77,6 +90,14 @@ export function SecretaryRequestsInbox({ onArchived }: SecretaryRequestsInboxPro
       setRequestIdsWithAttachments(new Set())
     }
 
+    if (remindersResult.ok) {
+      setReminderSummariesByRequestId(
+        new Map(remindersResult.summaries.map((summary) => [summary.request_id, summary])),
+      )
+    } else {
+      setReminderSummariesByRequestId(new Map())
+    }
+
     setIsLoading(false)
   }, [])
 
@@ -86,10 +107,74 @@ export function SecretaryRequestsInbox({ onArchived }: SecretaryRequestsInboxPro
     })
   }, [fetchRequests])
 
+  useEffect(() => {
+    if (unreadReminderRequestIds.size === 0) {
+      return
+    }
+
+    async function refreshReminderSummaries() {
+      const result = await loadInstitutionRequestReminderSummaries()
+      if (result.ok) {
+        setReminderSummariesByRequestId(
+          new Map(result.summaries.map((summary) => [summary.request_id, summary])),
+        )
+      }
+    }
+
+    void refreshReminderSummaries()
+  }, [unreadReminderRequestIds])
+
+  useEffect(() => {
+    if (!institutionId) {
+      return
+    }
+
+    const channel = subscribeToInstitutionRequestReminders(institutionId, (summary) => {
+      setReminderSummariesByRequestId((currentSummaries) => upsertReminderSummary(currentSummaries, summary))
+    })
+
+    return () => {
+      void unsubscribeFromInstitutionRequestReminders(channel)
+    }
+  }, [institutionId])
+
   const filteredRequests = useMemo(
     () => filterSecretaryInboxRequests(requests, filters, requestIdsWithAttachments),
     [requests, filters, requestIdsWithAttachments],
   )
+
+  const filteredRequestIds = useMemo(
+    () => new Set(filteredRequests.map((request) => request.id)),
+    [filteredRequests],
+  )
+
+  const handleReminderNavigationComplete = useCallback(
+    (token: number, found: boolean) => {
+      onReminderNavigationComplete?.(token, found)
+    },
+    [onReminderNavigationComplete],
+  )
+
+  const revealReminderRequest = useCallback(
+    (requestId: string) => {
+      if (
+        shouldResetSecretaryInboxFilters(filters, requestId, requests, filteredRequestIds)
+      ) {
+        setFilters(defaultFilters)
+      }
+    },
+    [filters, requests, filteredRequestIds],
+  )
+
+  useRequestReminderNavigationEffect({
+    intent: reminderNavigationIntent,
+    expectedLocationKind: 'secretary_inbox',
+    isReady: !isLoading && !loadError,
+    isRequestInDataset: (requestId) => requests.some((request) => request.id === requestId),
+    isRequestVisible: (requestId) => filteredRequestIds.has(requestId),
+    revealRequest: revealReminderRequest,
+    onComplete: handleReminderNavigationComplete,
+  })
 
   const emptyMessage =
     requests.length === 0
@@ -231,6 +316,9 @@ export function SecretaryRequestsInbox({ onArchived }: SecretaryRequestsInboxPro
             updatingRequestId={updatingRequestId}
             archivingRequestId={archivingRequestId}
             requestIdsWithAttachments={requestIdsWithAttachments}
+            unreadReminderRequestIds={unreadReminderRequestIds}
+            reminderSummariesByRequestId={reminderSummariesByRequestId}
+            highlightedRequestId={highlightedRequestId}
             onStatusChange={handleStatusChange}
             onShowHistory={handleShowHistory}
             onShowNotes={handleShowNotes}

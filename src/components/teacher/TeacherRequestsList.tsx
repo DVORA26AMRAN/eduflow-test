@@ -1,4 +1,7 @@
 import type { TeacherRequest } from '../../types/request'
+import type { TeacherRequestReminderState } from '../../types/requestReminder'
+import { canSendRequestReminder } from '../../services/requestReminders'
+import { RequestReminderBellButton } from '../requests/RequestReminderBellButton'
 import {
   formatRequestDate,
   translateRequestStatus,
@@ -8,13 +11,19 @@ import {
 type TeacherRequestsListProps = {
   requests: TeacherRequest[]
   archivingRequestId: string | null
+  remindingRequestId: string | null
+  reminderStatesByRequestId: ReadonlyMap<string, TeacherRequestReminderState>
   onArchive: (request: TeacherRequest) => void
+  onSendReminder: (request: TeacherRequest) => void
 }
 
 export function TeacherRequestsList({
   requests,
   archivingRequestId,
+  remindingRequestId,
+  reminderStatesByRequestId,
   onArchive,
+  onSendReminder,
 }: TeacherRequestsListProps) {
   if (requests.length === 0) {
     return (
@@ -43,6 +52,10 @@ export function TeacherRequestsList({
         <tbody>
           {requests.map((request) => {
             const isArchiving = archivingRequestId === request.id
+            const isReminding = remindingRequestId === request.id
+            const reminderState = reminderStatesByRequestId.get(request.id)
+            const isCooldownActive = Boolean(reminderState?.next_reminder_available_at)
+            const showReminderBell = canSendRequestReminder(request.status)
 
             return (
               <tr key={request.id}>
@@ -56,11 +69,27 @@ export function TeacherRequestsList({
                 <td>{request.description}</td>
                 <td>
                   <div className="ds-table__row-actions">
+                    <RequestReminderBellButton
+                      requestStatus={request.status}
+                      isVisible={showReminderBell}
+                      isDisabled={
+                        archivingRequestId !== null ||
+                        remindingRequestId !== null ||
+                        isCooldownActive
+                      }
+                      isSending={isReminding}
+                      disabledReason={
+                        isCooldownActive
+                          ? 'ניתן לשלוח תזכורת נוספת רק לאחר תקופת ההמתנה'
+                          : undefined
+                      }
+                      onSendReminder={() => onSendReminder(request)}
+                    />
                     <button
                       type="button"
                       className="ds-btn ds-btn--secondary"
                       onClick={() => onArchive(request)}
-                      disabled={archivingRequestId !== null}
+                      disabled={archivingRequestId !== null || remindingRequestId !== null}
                     >
                       {isArchiving ? 'מעביר...' : 'העבר לארכיון'}
                     </button>

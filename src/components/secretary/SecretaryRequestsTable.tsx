@@ -1,10 +1,12 @@
 import type { RequestStatus, SecretaryInboxRequest } from '../../types/request'
+import type { RequestReminderSummary } from '../../types/requestReminder'
 import {
   formatRequestDate,
   REQUEST_STATUS_OPTIONS,
   translateRequestStatus,
   translateRequestType,
 } from '../../utils/requests'
+import { RequestReminderRowIndicator } from '../requests/RequestReminderRowIndicator'
 import { SecretaryRequestAttachmentCell } from './SecretaryRequestAttachmentCell'
 
 type SecretaryRequestsTableProps = {
@@ -13,6 +15,9 @@ type SecretaryRequestsTableProps = {
   updatingRequestId: string | null
   archivingRequestId: string | null
   requestIdsWithAttachments: ReadonlySet<string>
+  unreadReminderRequestIds: ReadonlySet<string>
+  reminderSummariesByRequestId: ReadonlyMap<string, RequestReminderSummary>
+  highlightedRequestId?: string | null
   onStatusChange: (requestId: string, status: RequestStatus) => void
   onShowHistory: (requestId: string) => void
   onShowNotes: (requestId: string) => void
@@ -29,6 +34,9 @@ export function SecretaryRequestsTable({
   updatingRequestId,
   archivingRequestId,
   requestIdsWithAttachments,
+  unreadReminderRequestIds,
+  reminderSummariesByRequestId,
+  highlightedRequestId = null,
   onStatusChange,
   onShowHistory,
   onShowNotes,
@@ -63,14 +71,33 @@ export function SecretaryRequestsTable({
           {requests.map((request) => {
             const isArchiving = archivingRequestId === request.id
             const showArchiveAction = canArchiveRequest(request.status)
+            const reminderSummary = reminderSummariesByRequestId.get(request.id)
+            const hasUnreadReminder = unreadReminderRequestIds.has(request.id)
 
             return (
-            <tr key={request.id}>
+            <tr
+              key={request.id}
+              data-request-id={request.id}
+              className={
+                hasUnreadReminder
+                  ? 'secretary-dashboard__row--reminder-received'
+                  : highlightedRequestId === request.id
+                    ? 'secretary-dashboard__row--reminder-received'
+                    : undefined
+              }
+            >
               <td>{request.teacher_full_name}</td>
               <td>{translateRequestType(request.request_type)}</td>
               <td>{request.description}</td>
               <td>
-                <div className="secretary-dashboard__status-control">
+                <div className="secretary-dashboard__status-cell">
+                  <RequestReminderRowIndicator
+                    summary={reminderSummary}
+                    hasUnreadReminder={hasUnreadReminder}
+                    badgeClassName="secretary-dashboard__reminder-badge"
+                    metaClassName="secretary-dashboard__reminder-meta"
+                  />
+                  <div className="secretary-dashboard__status-control">
                   <span className={`ds-table__status ds-table__status--${request.status}`}>
                     {translateRequestStatus(request.status)}
                   </span>
@@ -89,6 +116,7 @@ export function SecretaryRequestsTable({
                       </option>
                     ))}
                   </select>
+                </div>
                 </div>
               </td>
               <td>{formatRequestDate(request.created_at)}</td>

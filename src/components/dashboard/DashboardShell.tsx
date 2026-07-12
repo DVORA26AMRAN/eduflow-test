@@ -54,13 +54,37 @@ export function DashboardShell({
                     ? 'dashboard-shell__nav-item dashboard-shell__nav-item--active'
                     : 'dashboard-shell__nav-item'
                 }
-                onClick={() => onSectionSelect(item.id)}
+                onClick={() => {
+                  if (item.onSelect) {
+                    item.onSelect()
+                    return
+                  }
+
+                  onSectionSelect(item.id)
+                }}
                 aria-current={item.id === activeSectionId ? 'true' : undefined}
+                aria-label={item.ariaLabel ?? item.label}
+                disabled={item.disabled}
               >
-                <span className="dashboard-shell__nav-icon" aria-hidden="true">
+                <span
+                  className={
+                    item.badgeAnimate
+                      ? 'dashboard-shell__nav-icon dashboard-shell__nav-icon--ringing'
+                      : 'dashboard-shell__nav-icon'
+                  }
+                  aria-hidden="true"
+                >
                   {item.icon}
                 </span>
                 <span className="dashboard-shell__nav-label">{item.label}</span>
+                {typeof item.badgeCount === 'number' && item.badgeCount > 0 && (
+                  <span
+                    className="dashboard-shell__nav-badge"
+                    aria-label={`${item.badgeCount} תזכורות שלא נקראו`}
+                  >
+                    {item.badgeCount}
+                  </span>
+                )}
               </button>
             ))}
           </nav>
