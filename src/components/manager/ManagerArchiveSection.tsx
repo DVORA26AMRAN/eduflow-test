@@ -4,9 +4,10 @@ import type {
   ManagerPersonalArchiveFilters,
 } from '../../types/managerPersonalArchive'
 import type { ReminderNavigationIntent } from '../../types/reminderNavigation'
+import type { RequestDetailsManagerRequest } from '../../types/requestDetails'
 import { loadManagerPersonalArchivedRequests } from '../../services/managerPersonalArchive'
 import { MANAGER_PERSONAL_ARCHIVE_PAGE_SIZE } from '../../services/reminderRequestLocation'
-import { filterManagerPersonalArchivedRequests } from '../../utils/requests'
+import { filterManagerPersonalArchivedRequests, translateRequestType } from '../../utils/requests'
 import {
   MANAGER_ARCHIVE_DEFAULT_FILTERS,
   shouldResetArchiveFilters,
@@ -16,6 +17,7 @@ import { NavArchiveIcon } from '../dashboard/dashboardNav'
 import { DashboardSection } from '../dashboard/DashboardSection'
 import { SecretaryArchiveFilters as ManagerArchiveFiltersPanel } from '../secretary/SecretaryArchiveFilters'
 import { SecretaryArchiveTable } from '../secretary/SecretaryArchiveTable'
+import { RequestDetailsModal } from '../requests/RequestDetailsModal'
 
 const defaultFilters = MANAGER_ARCHIVE_DEFAULT_FILTERS
 
@@ -23,12 +25,18 @@ const ARCHIVE_PAGE_SIZE = MANAGER_PERSONAL_ARCHIVE_PAGE_SIZE
 
 type ManagerArchiveSectionProps = {
   refreshToken: number
+  unreadMessageRequestIds?: ReadonlySet<string>
+  requestIdsWithMessages?: ReadonlySet<string>
+  onConversationOpened?: (requestId: string) => void | Promise<boolean>
   reminderNavigationIntent?: ReminderNavigationIntent | null
   onReminderNavigationComplete?: (token: number, found: boolean) => void
 }
 
 export function ManagerArchiveSection({
   refreshToken,
+  unreadMessageRequestIds = new Set(),
+  requestIdsWithMessages = new Set(),
+  onConversationOpened,
   reminderNavigationIntent = null,
   onReminderNavigationComplete,
 }: ManagerArchiveSectionProps) {
@@ -38,6 +46,10 @@ export function ManagerArchiveSection({
   const [totalCount, setTotalCount] = useState(0)
   const [isLoading, setIsLoading] = useState(true)
   const [loadError, setLoadError] = useState('')
+  const [detailsRequest, setDetailsRequest] = useState<RequestDetailsManagerRequest | null>(null)
+  const [detailsReturnFocusElement, setDetailsReturnFocusElement] = useState<HTMLElement | null>(
+    null,
+  )
 
   const effectivePage =
     reminderNavigationIntent?.location.kind === 'manager_personal_archive'
@@ -129,6 +141,26 @@ export function ManagerArchiveSection({
   const emptyMessage =
     totalCount === 0 ? 'אין בקשות בארכיון האישי שלך.' : 'לא נמצאו בקשות התואמות לסינון.'
 
+  const handleOpenDetails = useCallback(
+    (request: ManagerPersonalArchivedRequest, rowElement: HTMLTableRowElement) => {
+      setDetailsReturnFocusElement(rowElement)
+      setDetailsRequest({
+        id: request.id,
+        request_type: request.request_type,
+        description: translateRequestType(request.request_type),
+        status: request.status,
+        created_at: request.created_at,
+        teacher_full_name: request.teacher_full_name,
+        role: 'manager',
+      })
+    },
+    [],
+  )
+
+  const handleCloseDetails = useCallback(() => {
+    setDetailsRequest(null)
+  }, [])
+
   return (
     <section className="ds-card manager-dashboard__archive" aria-label="הארכיון שלי">
       <DashboardSection
@@ -159,7 +191,13 @@ export function ManagerArchiveSection({
               )}
             </div>
 
-            <SecretaryArchiveTable requests={filteredRequests} emptyMessage={emptyMessage} />
+            <SecretaryArchiveTable
+              requests={filteredRequests}
+              emptyMessage={emptyMessage}
+              unreadMessageRequestIds={unreadMessageRequestIds}
+              requestIdsWithMessages={requestIdsWithMessages}
+              onOpenDetails={handleOpenDetails}
+            />
 
             {totalCount > 0 && (
               <div className="manager-dashboard__archive-pagination">
@@ -184,6 +222,17 @@ export function ManagerArchiveSection({
           </>
         )}
       </DashboardSection>
+
+      {detailsRequest && (
+        <RequestDetailsModal
+          isOpen
+          request={detailsRequest}
+          returnFocusElement={detailsReturnFocusElement}
+          onConversationOpened={() => void onConversationOpened?.(detailsRequest.id)}
+          onClose={handleCloseDetails}
+          showNotes={false}
+        />
+      )}
     </section>
   )
 }

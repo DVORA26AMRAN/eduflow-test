@@ -5,12 +5,18 @@ import {
   translateRequestStatus,
   translateRequestType,
 } from '../../utils/requests'
+import { RequestDetailsConversationSection } from '../requests/RequestDetailsConversationSection'
+import '../requests/RequestDetailsConversationSection.css'
 
 type TeacherArchiveDetailsProps = {
   request: ArchivedTeacherRequest | null
+  onConversationOpened?: (requestId: string) => void | Promise<boolean>
 }
 
-export function TeacherArchiveDetails({ request }: TeacherArchiveDetailsProps) {
+export function TeacherArchiveDetails({
+  request,
+  onConversationOpened,
+}: TeacherArchiveDetailsProps) {
   if (!request) {
     return (
       <div className="ds-state teacher-dashboard__archive-details-empty">
@@ -55,6 +61,12 @@ export function TeacherArchiveDetails({ request }: TeacherArchiveDetailsProps) {
           <dd>{request.description}</dd>
         </div>
       </dl>
+
+      <RequestDetailsConversationSection
+        requestId={request.id}
+        isActive
+        onConversationOpened={() => void onConversationOpened?.(request.id)}
+      />
     </article>
   )
 }

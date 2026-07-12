@@ -17,9 +17,17 @@ const defaultFilters: ArchiveFilters = {
 
 type TeacherArchiveSectionProps = {
   refreshToken: number
+  unreadMessageRequestIds?: ReadonlySet<string>
+  requestIdsWithMessages?: ReadonlySet<string>
+  onConversationOpened?: (requestId: string) => void | Promise<boolean>
 }
 
-export function TeacherArchiveSection({ refreshToken }: TeacherArchiveSectionProps) {
+export function TeacherArchiveSection({
+  refreshToken,
+  unreadMessageRequestIds = new Set(),
+  requestIdsWithMessages = new Set(),
+  onConversationOpened,
+}: TeacherArchiveSectionProps) {
   const [requests, setRequests] = useState<ArchivedTeacherRequest[]>([])
   const [filters, setFilters] = useState<ArchiveFilters>(defaultFilters)
   const [selectedRequestId, setSelectedRequestId] = useState<string | null>(null)
@@ -80,9 +88,14 @@ export function TeacherArchiveSection({ refreshToken }: TeacherArchiveSectionPro
                 requests={filteredRequests}
                 selectedRequestId={selectedRequest?.id ?? null}
                 emptyMessage={emptyMessage}
+                unreadMessageRequestIds={unreadMessageRequestIds}
+                requestIdsWithMessages={requestIdsWithMessages}
                 onSelect={setSelectedRequestId}
               />
-              <TeacherArchiveDetails request={selectedRequest} />
+              <TeacherArchiveDetails
+                request={selectedRequest}
+                onConversationOpened={onConversationOpened}
+              />
             </div>
           )}
         </div>

@@ -23,6 +23,9 @@ import { TeacherRequestsList } from './TeacherRequestsList'
 type TeacherRequestsSectionProps = {
   refreshToken: number
   onArchived: () => void
+  unreadMessageRequestIds?: ReadonlySet<string>
+  requestIdsWithMessages?: ReadonlySet<string>
+  onConversationOpened?: (requestId: string) => void | Promise<boolean>
   requestNavigationIntent?: DashboardRequestNavigationIntent | null
   onRequestNavigationIntentConsumed?: () => void
 }
@@ -42,6 +45,9 @@ function getSubmitMessageClassName(message: string): string {
 export function TeacherRequestsSection({
   refreshToken,
   onArchived,
+  unreadMessageRequestIds = new Set(),
+  requestIdsWithMessages = new Set(),
+  onConversationOpened,
   requestNavigationIntent = null,
   onRequestNavigationIntentConsumed,
 }: TeacherRequestsSectionProps) {
@@ -335,6 +341,8 @@ export function TeacherRequestsSection({
               archivingRequestId={archivingRequestId}
               remindingRequestId={remindingRequestId}
               reminderStatesByRequestId={reminderStatesByRequestId}
+              unreadMessageRequestIds={unreadMessageRequestIds}
+              requestIdsWithMessages={requestIdsWithMessages}
               onArchive={handleOpenArchiveDialog}
               onSendReminder={handleSendReminder}
               onOpenDetails={handleOpenDetails}
@@ -360,6 +368,7 @@ export function TeacherRequestsSection({
           request={detailsRequest}
           returnFocusElement={detailsReturnFocusElement}
           teacherReminderState={reminderStatesByRequestId.get(detailsRequest.id)}
+          onConversationOpened={() => void onConversationOpened?.(detailsRequest.id)}
           showHistory
           showNotes={false}
           onClose={handleCloseDetails}

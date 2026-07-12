@@ -22,6 +22,8 @@ const baseProps = {
   archivingRequestId: null,
   remindingRequestId: null,
   reminderStatesByRequestId: new Map(),
+  unreadMessageRequestIds: new Set<string>(),
+  requestIdsWithMessages: new Set<string>(),
   onArchive,
   onSendReminder,
   onOpenDetails,
@@ -179,5 +181,58 @@ describe('TeacherRequestsList reminder bell', () => {
     await user.click(screen.getByRole('button', { name: 'שליחת תזכורת לבקשה חדשה' }))
     expect(onOpenDetails).toHaveBeenCalledTimes(1)
     expect(onSendReminder).toHaveBeenCalledTimes(1)
+  })
+})
+
+describe('TeacherRequestsList conversation rows', () => {
+  const request = {
+    id: 'req-new',
+    request_type: 'absence' as const,
+    description: 'בקשה חדשה',
+    status: 'new' as const,
+    created_at: '2026-07-01T10:00:00.000Z',
+  }
+
+  it('highlights rows only when conversation messages are unread', () => {
+    const { container } = render(
+      <TeacherRequestsList
+        {...baseProps}
+        requests={[request]}
+        unreadMessageRequestIds={new Set(['req-new'])}
+        requestIdsWithMessages={new Set(['req-new'])}
+      />,
+    )
+
+    expect(container.querySelector('.ds-table__row--unread-conversation')).toBeTruthy()
+    expect(screen.getByText('הודעה חדשה')).toBeInTheDocument()
+  })
+
+  it('shows neutral conversation icon after messages are read', () => {
+    const { container, rerender } = render(
+      <TeacherRequestsList
+        {...baseProps}
+        requests={[request]}
+        unreadMessageRequestIds={new Set(['req-new'])}
+        requestIdsWithMessages={new Set(['req-new'])}
+      />,
+    )
+
+    rerender(
+      <TeacherRequestsList
+        {...baseProps}
+        requests={[request]}
+        unreadMessageRequestIds={new Set()}
+        requestIdsWithMessages={new Set(['req-new'])}
+      />,
+    )
+
+    expect(container.querySelector('.ds-table__row--unread-conversation')).toBeNull()
+    expect(screen.getByLabelText('יש שיחה בבקשה')).toBeInTheDocument()
+  })
+
+  it('shows no conversation indicator without conversation messages', () => {
+    render(<TeacherRequestsList {...baseProps} requests={[request]} />)
+
+    expect(screen.queryByLabelText('יש שיחה בבקשה')).not.toBeInTheDocument()
   })
 })

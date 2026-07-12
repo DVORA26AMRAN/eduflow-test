@@ -27,6 +27,9 @@ type SecretaryRequestsInboxProps = {
   onArchived: () => void
   institutionId?: string | null
   unreadReminderRequestIds?: ReadonlySet<string>
+  unreadMessageRequestIds?: ReadonlySet<string>
+  requestIdsWithMessages?: ReadonlySet<string>
+  onConversationOpened?: (requestId: string) => void | Promise<boolean>
   reminderNavigationIntent?: ReminderNavigationIntent | null
   highlightedRequestId?: string | null
   onReminderNavigationComplete?: (token: number, found: boolean) => void
@@ -38,6 +41,9 @@ export function SecretaryRequestsInbox({
   onArchived,
   institutionId,
   unreadReminderRequestIds = new Set(),
+  unreadMessageRequestIds = new Set(),
+  requestIdsWithMessages = new Set(),
+  onConversationOpened,
   reminderNavigationIntent = null,
   highlightedRequestId = null,
   onReminderNavigationComplete,
@@ -313,6 +319,8 @@ export function SecretaryRequestsInbox({
             archivingRequestId={archivingRequestId}
             requestIdsWithAttachments={requestIdsWithAttachments}
             unreadReminderRequestIds={unreadReminderRequestIds}
+            unreadMessageRequestIds={unreadMessageRequestIds}
+            requestIdsWithMessages={requestIdsWithMessages}
             reminderSummariesByRequestId={reminderSummariesByRequestId}
             highlightedRequestId={highlightedRequestId}
             onStatusChange={handleStatusChange}
@@ -345,6 +353,7 @@ export function SecretaryRequestsInbox({
           hasAttachment={requestIdsWithAttachments.has(detailsRequest.id)}
           reminderSummary={reminderSummariesByRequestId.get(detailsRequest.id)}
           hasUnreadReminder={unreadReminderRequestIds.has(detailsRequest.id)}
+          onConversationOpened={() => void onConversationOpened?.(detailsRequest.id)}
           showHistory
           showNotes
           onClose={handleCloseDetails}

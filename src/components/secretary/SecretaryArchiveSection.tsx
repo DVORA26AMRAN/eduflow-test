@@ -1,9 +1,10 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import type { SecretaryArchiveFilters, SecretaryArchivedRequest } from '../../types/request'
 import type { ReminderNavigationIntent } from '../../types/reminderNavigation'
+import type { RequestDetailsSecretaryRequest } from '../../types/requestDetails'
 import { loadSecretaryArchivedRequests } from '../../services/requests'
 import { INSTITUTIONAL_ARCHIVE_PAGE_SIZE } from '../../services/reminderRequestLocation'
-import { filterSecretaryArchivedRequests } from '../../utils/requests'
+import { filterSecretaryArchivedRequests, translateRequestType } from '../../utils/requests'
 import {
   SECRETARY_ARCHIVE_DEFAULT_FILTERS,
   shouldResetArchiveFilters,
@@ -13,6 +14,7 @@ import { NavArchiveIcon } from '../dashboard/dashboardNav'
 import { DashboardSection } from '../dashboard/DashboardSection'
 import { SecretaryArchiveFilters as SecretaryArchiveFiltersPanel } from './SecretaryArchiveFilters'
 import { SecretaryArchiveTable } from './SecretaryArchiveTable'
+import { RequestDetailsModal } from '../requests/RequestDetailsModal'
 
 const defaultFilters = SECRETARY_ARCHIVE_DEFAULT_FILTERS
 
@@ -20,12 +22,18 @@ const ARCHIVE_PAGE_SIZE = INSTITUTIONAL_ARCHIVE_PAGE_SIZE
 
 type SecretaryArchiveSectionProps = {
   refreshToken: number
+  unreadMessageRequestIds?: ReadonlySet<string>
+  requestIdsWithMessages?: ReadonlySet<string>
+  onConversationOpened?: (requestId: string) => void | Promise<boolean>
   reminderNavigationIntent?: ReminderNavigationIntent | null
   onReminderNavigationComplete?: (token: number, found: boolean) => void
 }
 
 export function SecretaryArchiveSection({
   refreshToken,
+  unreadMessageRequestIds = new Set(),
+  requestIdsWithMessages = new Set(),
+  onConversationOpened,
   reminderNavigationIntent = null,
   onReminderNavigationComplete,
 }: SecretaryArchiveSectionProps) {
@@ -35,6 +43,10 @@ export function SecretaryArchiveSection({
   const [totalCount, setTotalCount] = useState(0)
   const [isLoading, setIsLoading] = useState(true)
   const [loadError, setLoadError] = useState('')
+  const [detailsRequest, setDetailsRequest] = useState<RequestDetailsSecretaryRequest | null>(null)
+  const [detailsReturnFocusElement, setDetailsReturnFocusElement] = useState<HTMLElement | null>(
+    null,
+  )
 
   const effectivePage =
     reminderNavigationIntent?.location.kind === 'secretary_institutional_archive'
@@ -128,6 +140,26 @@ export function SecretaryArchiveSection({
       ? 'אין בקשות בארכיון המוסדי.'
       : 'לא נמצאו בקשות התואמות לסינון.'
 
+  const handleOpenDetails = useCallback(
+    (request: SecretaryArchivedRequest, rowElement: HTMLTableRowElement) => {
+      setDetailsReturnFocusElement(rowElement)
+      setDetailsRequest({
+        id: request.id,
+        request_type: request.request_type,
+        description: translateRequestType(request.request_type),
+        status: request.status,
+        created_at: request.created_at,
+        teacher_full_name: request.teacher_full_name,
+        role: 'secretary',
+      })
+    },
+    [],
+  )
+
+  const handleCloseDetails = useCallback(() => {
+    setDetailsRequest(null)
+  }, [])
+
   return (
     <section className="ds-card secretary-dashboard__archive" aria-label="ארכיון מוסדי">
       <DashboardSection
@@ -158,7 +190,13 @@ export function SecretaryArchiveSection({
               )}
             </div>
 
-            <SecretaryArchiveTable requests={filteredRequests} emptyMessage={emptyMessage} />
+            <SecretaryArchiveTable
+              requests={filteredRequests}
+              emptyMessage={emptyMessage}
+              unreadMessageRequestIds={unreadMessageRequestIds}
+              requestIdsWithMessages={requestIdsWithMessages}
+              onOpenDetails={handleOpenDetails}
+            />
 
             {totalCount > 0 && (
               <div className="secretary-dashboard__archive-pagination">
@@ -183,6 +221,17 @@ export function SecretaryArchiveSection({
           </>
         )}
       </DashboardSection>
+
+      {detailsRequest && (
+        <RequestDetailsModal
+          isOpen
+          request={detailsRequest}
+          returnFocusElement={detailsReturnFocusElement}
+          onConversationOpened={() => void onConversationOpened?.(detailsRequest.id)}
+          onClose={handleCloseDetails}
+          showNotes={false}
+        />
+      )}
     </section>
   )
 }

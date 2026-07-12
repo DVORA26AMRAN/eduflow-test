@@ -5,11 +5,14 @@ import {
   translateRequestStatus,
   translateRequestType,
 } from '../../utils/requests'
+import { RequestConversationRowIndicator } from '../requests/RequestConversationRowIndicator'
 
 type TeacherArchiveListProps = {
   requests: ArchivedTeacherRequest[]
   selectedRequestId: string | null
   emptyMessage: string
+  unreadMessageRequestIds?: ReadonlySet<string>
+  requestIdsWithMessages?: ReadonlySet<string>
   onSelect: (requestId: string) => void
 }
 
@@ -17,6 +20,8 @@ export function TeacherArchiveList({
   requests,
   selectedRequestId,
   emptyMessage,
+  unreadMessageRequestIds = new Set(),
+  requestIdsWithMessages = new Set(),
   onSelect,
 }: TeacherArchiveListProps) {
   if (requests.length === 0) {
@@ -45,14 +50,25 @@ export function TeacherArchiveList({
         <tbody>
           {requests.map((request) => {
             const isSelected = selectedRequestId === request.id
+            const hasUnreadConversation = unreadMessageRequestIds.has(request.id)
+            const hasConversation = requestIdsWithMessages.has(request.id)
 
             return (
-              <tr key={request.id}>
+              <tr
+                key={request.id}
+                className={hasUnreadConversation ? 'ds-table__row--unread-conversation' : ''}
+              >
                 <td>{translateRequestType(request.request_type)}</td>
                 <td>
-                  <span className={`ds-table__status ds-table__status--${request.status}`}>
-                    {translateRequestStatus(request.status)}
-                  </span>
+                  <div className="request-row__status-cell">
+                    <RequestConversationRowIndicator
+                      hasConversation={hasConversation}
+                      hasUnreadConversation={hasUnreadConversation}
+                    />
+                    <span className={`ds-table__status ds-table__status--${request.status}`}>
+                      {translateRequestStatus(request.status)}
+                    </span>
+                  </div>
                 </td>
                 <td>{formatRequestDate(request.created_at)}</td>
                 <td>{formatRequestDateTime(request.archived_at)}</td>

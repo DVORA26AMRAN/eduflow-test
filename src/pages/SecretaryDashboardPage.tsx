@@ -17,6 +17,7 @@ import { SecretaryArchiveSection } from '../components/secretary/SecretaryArchiv
 import { SecretaryRequestsInbox } from '../components/secretary/SecretaryRequestsInbox'
 import { SecretarySubstituteApprovalsSection } from '../components/secretary/SecretarySubstituteApprovalsSection'
 import { useAdminReminderNotifications } from '../hooks/useAdminReminderNotifications'
+import { useUnreadRequestMessageNotifications } from '../hooks/useUnreadRequestMessageNotifications'
 import { useDashboardSectionNavigation } from '../hooks/useDashboardSectionNavigation'
 import { useReminderBellNavigation } from '../hooks/useReminderBellNavigation'
 import { loadInstitutionRequestReminderSummaries } from '../services/requestReminders'
@@ -60,6 +61,21 @@ export function SecretaryDashboardPage({ profile, onLogout }: SecretaryDashboard
     getNewestUnreadReminder,
     markReminderNotificationAsRead,
   } = useAdminReminderNotifications()
+
+  const {
+    unreadMessageRequestIds,
+    requestIdsWithMessages,
+    markConversationAsRead,
+    registerRequestHasMessages,
+  } = useUnreadRequestMessageNotifications()
+
+  const handleConversationOpened = useCallback(
+    async (requestId: string) => {
+      registerRequestHasMessages(requestId)
+      return markConversationAsRead(requestId)
+    },
+    [markConversationAsRead, registerRequestHasMessages],
+  )
 
   const announceNavigation = useCallback((message: string) => {
     setLiveAnnouncement(message)
@@ -203,6 +219,9 @@ export function SecretaryDashboardPage({ profile, onLogout }: SecretaryDashboard
             onArchived={handleArchiveChanged}
             institutionId={profile.school?.id ?? null}
             unreadReminderRequestIds={unreadReminderRequestIds}
+            unreadMessageRequestIds={unreadMessageRequestIds}
+            requestIdsWithMessages={requestIdsWithMessages}
+            onConversationOpened={handleConversationOpened}
             reminderNavigationIntent={navigationIntent}
             highlightedRequestId={highlightedRequestId}
             onReminderNavigationComplete={handleReminderNavigationComplete}
@@ -219,6 +238,9 @@ export function SecretaryDashboardPage({ profile, onLogout }: SecretaryDashboard
         >
           <SecretaryArchiveSection
             refreshToken={archiveRefreshToken}
+            unreadMessageRequestIds={unreadMessageRequestIds}
+            requestIdsWithMessages={requestIdsWithMessages}
+            onConversationOpened={handleConversationOpened}
             reminderNavigationIntent={navigationIntent}
             onReminderNavigationComplete={handleReminderNavigationComplete}
           />

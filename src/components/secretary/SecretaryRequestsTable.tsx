@@ -9,6 +9,7 @@ import {
 } from '../../utils/requests'
 import { RequestSubjectMessagePreview } from '../requests/RequestSubjectMessagePreview'
 import { RequestDescriptionCell } from '../requests/RequestDescriptionCell'
+import { RequestConversationRowIndicator } from '../requests/RequestConversationRowIndicator'
 import { RequestReminderRowIndicator } from '../requests/RequestReminderRowIndicator'
 import { SecretaryRequestAttachmentCell } from './SecretaryRequestAttachmentCell'
 
@@ -19,6 +20,8 @@ type SecretaryRequestsTableProps = {
   archivingRequestId: string | null
   requestIdsWithAttachments: ReadonlySet<string>
   unreadReminderRequestIds: ReadonlySet<string>
+  unreadMessageRequestIds: ReadonlySet<string>
+  requestIdsWithMessages: ReadonlySet<string>
   reminderSummariesByRequestId: ReadonlyMap<string, RequestReminderSummary>
   highlightedRequestId?: string | null
   onStatusChange: (requestId: string, status: RequestStatus) => void
@@ -37,6 +40,8 @@ export function SecretaryRequestsTable({
   archivingRequestId,
   requestIdsWithAttachments,
   unreadReminderRequestIds,
+  unreadMessageRequestIds = new Set(),
+  requestIdsWithMessages = new Set(),
   reminderSummariesByRequestId,
   highlightedRequestId = null,
   onStatusChange,
@@ -74,6 +79,8 @@ export function SecretaryRequestsTable({
             const showArchiveAction = canArchiveRequest(request.status)
             const reminderSummary = reminderSummariesByRequestId.get(request.id)
             const hasUnreadReminder = unreadReminderRequestIds.has(request.id)
+            const hasUnreadConversation = unreadMessageRequestIds.has(request.id)
+            const hasConversation = requestIdsWithMessages.has(request.id)
 
             return (
             <tr
@@ -81,6 +88,7 @@ export function SecretaryRequestsTable({
               data-request-id={request.id}
               className={[
                 'ds-table__row--clickable',
+                hasUnreadConversation ? 'ds-table__row--unread-conversation' : '',
                 hasUnreadReminder
                   ? 'secretary-dashboard__row--reminder-received'
                   : highlightedRequestId === request.id
@@ -111,6 +119,10 @@ export function SecretaryRequestsTable({
               </td>
               <td>
                 <div className="secretary-dashboard__status-cell">
+                  <RequestConversationRowIndicator
+                    hasConversation={hasConversation}
+                    hasUnreadConversation={hasUnreadConversation}
+                  />
                   <RequestReminderRowIndicator
                     summary={reminderSummary}
                     hasUnreadReminder={hasUnreadReminder}

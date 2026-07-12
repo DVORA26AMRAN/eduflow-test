@@ -7,6 +7,9 @@ import { RequestDetailsModal } from './RequestDetailsModal'
 const loadRequestStatusHistory = vi.fn()
 const loadRequestAttachments = vi.fn()
 const loadRequestNotes = vi.fn()
+const loadRequestMessages = vi.fn()
+const subscribeToRequestMessages = vi.fn(() => ({}))
+const unsubscribeFromRequestMessages = vi.fn()
 
 vi.mock('../../services/requests', () => ({
   loadRequestStatusHistory: (...args: unknown[]) => loadRequestStatusHistory(...args),
@@ -19,6 +22,14 @@ vi.mock('../../services/attachments', () => ({
 
 vi.mock('../../services/notes', () => ({
   loadRequestNotes: (...args: unknown[]) => loadRequestNotes(...args),
+}))
+
+vi.mock('../../services/requestMessages', () => ({
+  loadRequestMessages: (...args: unknown[]) => loadRequestMessages(...args),
+  createRequestMessage: vi.fn(),
+  subscribeToRequestMessages: (...args: unknown[]) => subscribeToRequestMessages(...args),
+  unsubscribeFromRequestMessages: (...args: unknown[]) => unsubscribeFromRequestMessages(...args),
+  appendRequestMessageIfNew: (current: unknown[], incoming: unknown) => [...current, incoming],
 }))
 
 afterEach(() => {
@@ -42,6 +53,7 @@ beforeEach(() => {
   })
   loadRequestAttachments.mockResolvedValue({ ok: true, attachments: [] })
   loadRequestNotes.mockResolvedValue({ ok: true, notes: [] })
+  loadRequestMessages.mockResolvedValue({ ok: true, messages: [] })
 })
 
 const teacherRequest = {

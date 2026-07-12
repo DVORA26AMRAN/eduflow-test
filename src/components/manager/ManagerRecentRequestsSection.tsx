@@ -19,6 +19,9 @@ type ManagerRecentRequestsSectionProps = {
   onArchived: () => void
   institutionId?: string | null
   unreadReminderRequestIds?: ReadonlySet<string>
+  unreadMessageRequestIds?: ReadonlySet<string>
+  requestIdsWithMessages?: ReadonlySet<string>
+  onConversationOpened?: (requestId: string) => void | Promise<boolean>
   reminderNavigationIntent?: ReminderNavigationIntent | null
   highlightedRequestId?: string | null
   onReminderNavigationComplete?: (token: number, found: boolean) => void
@@ -29,6 +32,9 @@ export function ManagerRecentRequestsSection({
   onArchived,
   institutionId,
   unreadReminderRequestIds = new Set(),
+  unreadMessageRequestIds = new Set(),
+  requestIdsWithMessages = new Set(),
+  onConversationOpened,
   reminderNavigationIntent = null,
   highlightedRequestId = null,
   onReminderNavigationComplete,
@@ -221,6 +227,8 @@ export function ManagerRecentRequestsSection({
             requests={requests}
             archivingRequestId={archivingRequestId}
             unreadReminderRequestIds={unreadReminderRequestIds}
+            unreadMessageRequestIds={unreadMessageRequestIds}
+            requestIdsWithMessages={requestIdsWithMessages}
             reminderSummariesByRequestId={reminderSummariesByRequestId}
             highlightedRequestId={highlightedRequestId}
             onArchive={handleOpenArchiveDialog}
@@ -251,6 +259,7 @@ export function ManagerRecentRequestsSection({
           returnFocusElement={detailsReturnFocusElement}
           reminderSummary={reminderSummariesByRequestId.get(detailsRequest.id)}
           hasUnreadReminder={unreadReminderRequestIds.has(detailsRequest.id)}
+          onConversationOpened={() => void onConversationOpened?.(detailsRequest.id)}
           showHistory
           showNotes={false}
           onClose={handleCloseDetails}

@@ -15,6 +15,7 @@ import { ManagerRecentActivitySection } from '../components/manager/ManagerRecen
 import { ManagerRecentRequestsSection } from '../components/manager/ManagerRecentRequestsSection'
 import { TeamManagementSection } from '../components/manager/TeamManagementSection'
 import { useAdminReminderNotifications } from '../hooks/useAdminReminderNotifications'
+import { useUnreadRequestMessageNotifications } from '../hooks/useUnreadRequestMessageNotifications'
 import { useDashboardSectionNavigation } from '../hooks/useDashboardSectionNavigation'
 import { useReminderBellNavigation } from '../hooks/useReminderBellNavigation'
 import { loadRecentRequestActivity } from '../services/analytics'
@@ -88,6 +89,21 @@ export function ManagerDashboardPage({
     getNewestUnreadReminder,
     markReminderNotificationAsRead,
   } = useAdminReminderNotifications()
+
+  const {
+    unreadMessageRequestIds,
+    requestIdsWithMessages,
+    markConversationAsRead,
+    registerRequestHasMessages,
+  } = useUnreadRequestMessageNotifications()
+
+  const handleConversationOpened = useCallback(
+    async (requestId: string) => {
+      registerRequestHasMessages(requestId)
+      return markConversationAsRead(requestId)
+    },
+    [markConversationAsRead, registerRequestHasMessages],
+  )
 
   const announceNavigation = useCallback((message: string) => {
     setLiveAnnouncement(message)
@@ -283,6 +299,9 @@ export function ManagerDashboardPage({
               onArchived={handleRequestArchived}
               institutionId={profile.school?.id ?? null}
               unreadReminderRequestIds={unreadReminderRequestIds}
+              unreadMessageRequestIds={unreadMessageRequestIds}
+              requestIdsWithMessages={requestIdsWithMessages}
+              onConversationOpened={handleConversationOpened}
               reminderNavigationIntent={navigationIntent}
               highlightedRequestId={highlightedRequestId}
               onReminderNavigationComplete={handleReminderNavigationComplete}
@@ -304,6 +323,9 @@ export function ManagerDashboardPage({
         >
           <ManagerArchiveSection
             refreshToken={archiveRefreshToken}
+            unreadMessageRequestIds={unreadMessageRequestIds}
+            requestIdsWithMessages={requestIdsWithMessages}
+            onConversationOpened={handleConversationOpened}
             reminderNavigationIntent={navigationIntent}
             onReminderNavigationComplete={handleReminderNavigationComplete}
           />

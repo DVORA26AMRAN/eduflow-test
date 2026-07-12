@@ -1,5 +1,6 @@
 import type { RealtimeChannel } from '@supabase/supabase-js'
 import type { TeacherNotification } from '../types/notification'
+import { NOTIFICATION_TYPE_REQUEST_MESSAGE } from '../types/requestMessage'
 import { NOTIFICATION_TYPE_REQUEST_REMINDER } from '../types/requestReminder'
 import type { AdminNotification } from '../types/requestReminder'
 import { supabase } from './supabase'
@@ -179,4 +180,49 @@ export function getUnreadReminderRequestIds(notifications: AppNotification[]): S
   }
 
   return requestIds
+}
+
+export function getUnreadMessageRequestIds(notifications: AppNotification[]): Set<string> {
+  const requestIds = new Set<string>()
+
+  for (const notification of notifications) {
+    if (
+      notification.notification_type !== NOTIFICATION_TYPE_REQUEST_MESSAGE ||
+      notification.is_read
+    ) {
+      continue
+    }
+
+    const requestId = notification.metadata.request_id
+    if (typeof requestId === 'string') {
+      requestIds.add(requestId)
+    }
+  }
+
+  return requestIds
+}
+
+export async function markMessageNotificationsAsReadForRequest(
+  requestId: string,
+  notifications: AppNotification[],
+): Promise<string[]> {
+  const unreadNotificationIds = notifications
+    .filter(
+      (notification) =>
+        notification.notification_type === NOTIFICATION_TYPE_REQUEST_MESSAGE &&
+        !notification.is_read &&
+        notification.metadata.request_id === requestId,
+    )
+    .map((notification) => notification.id)
+
+  const markedIds: string[] = []
+
+  for (const notificationId of unreadNotificationIds) {
+    const result = await markNotificationAsRead(notificationId)
+    if (result.ok) {
+      markedIds.push(notificationId)
+    }
+  }
+
+  return markedIds
 }

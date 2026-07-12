@@ -17,18 +17,20 @@ const sampleRequests = [
   },
 ]
 
+const baseProps = {
+  requests: sampleRequests,
+  archivingRequestId: null,
+  unreadReminderRequestIds: new Set<string>(),
+  unreadMessageRequestIds: new Set<string>(),
+  requestIdsWithMessages: new Set<string>(),
+  reminderSummariesByRequestId: new Map(),
+  onArchive: vi.fn(),
+  onOpenDetails: vi.fn(),
+}
+
 describe('ManagerRecentRequestsTable', () => {
   it('shows an enabled archive action for every request row regardless of status', () => {
-    render(
-      <ManagerRecentRequestsTable
-        requests={sampleRequests}
-        archivingRequestId={null}
-        unreadReminderRequestIds={new Set()}
-        reminderSummariesByRequestId={new Map()}
-        onArchive={vi.fn()}
-        onOpenDetails={vi.fn()}
-      />,
-    )
+    render(<ManagerRecentRequestsTable {...baseProps} />)
 
     const archiveButtons = screen.getAllByRole('button', { name: /העבר לארכיון אישי בקשה של/ })
     expect(archiveButtons).toHaveLength(sampleRequests.length)
@@ -38,16 +40,7 @@ describe('ManagerRecentRequestsTable', () => {
   })
 
   it('shows the request description in the same column as the secretary table', () => {
-    render(
-      <ManagerRecentRequestsTable
-        requests={sampleRequests}
-        archivingRequestId={null}
-        unreadReminderRequestIds={new Set()}
-        reminderSummariesByRequestId={new Map()}
-        onArchive={vi.fn()}
-        onOpenDetails={vi.fn()}
-      />,
-    )
+    render(<ManagerRecentRequestsTable {...baseProps} />)
 
     expect(screen.getByRole('columnheader', { name: 'תיאור' })).toBeInTheDocument()
     expect(screen.getByText('היעדרות ביום ראשון')).toBeInTheDocument()
@@ -56,9 +49,7 @@ describe('ManagerRecentRequestsTable', () => {
   it('shows reminder count and latest timestamp on the request row', () => {
     render(
       <ManagerRecentRequestsTable
-        requests={sampleRequests}
-        archivingRequestId={null}
-        unreadReminderRequestIds={new Set()}
+        {...baseProps}
         reminderSummariesByRequestId={
           new Map([
             [
@@ -71,8 +62,6 @@ describe('ManagerRecentRequestsTable', () => {
             ],
           ])
         }
-        onArchive={vi.fn()}
-        onOpenDetails={vi.fn()}
       />,
     )
 
@@ -82,9 +71,7 @@ describe('ManagerRecentRequestsTable', () => {
   it('keeps reminder history visible after notifications are read', () => {
     render(
       <ManagerRecentRequestsTable
-        requests={sampleRequests}
-        archivingRequestId={null}
-        unreadReminderRequestIds={new Set()}
+        {...baseProps}
         reminderSummariesByRequestId={
           new Map([
             [
@@ -97,12 +84,23 @@ describe('ManagerRecentRequestsTable', () => {
             ],
           ])
         }
-        onArchive={vi.fn()}
-        onOpenDetails={vi.fn()}
       />,
     )
 
     expect(screen.getByText('התקבלה תזכורת · 2')).toBeInTheDocument()
     expect(screen.queryByText('חדש')).not.toBeInTheDocument()
+  })
+
+  it('highlights unread conversation per request id set', () => {
+    const { container } = render(
+      <ManagerRecentRequestsTable
+        {...baseProps}
+        unreadMessageRequestIds={new Set(['req-1'])}
+        requestIdsWithMessages={new Set(['req-1'])}
+      />,
+    )
+
+    expect(container.querySelector('.ds-table__row--unread-conversation')).toBeTruthy()
+    expect(screen.getByText('הודעה חדשה')).toBeInTheDocument()
   })
 })

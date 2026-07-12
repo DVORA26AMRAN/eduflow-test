@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 
 import { DashboardShell } from '../components/dashboard/DashboardShell'
 
@@ -21,6 +21,7 @@ import {
 } from '../components/dashboard/dashboardNav'
 
 import { useDashboardSectionNavigation } from '../hooks/useDashboardSectionNavigation'
+import { useUnreadRequestMessageNotifications } from '../hooks/useUnreadRequestMessageNotifications'
 
 import { TeacherAnalyticsSection } from '../components/teacher/TeacherAnalyticsSection'
 
@@ -97,6 +98,21 @@ export function TeacherDashboardPage({ profile, onLogout }: TeacherDashboardPage
 
 
   const showSection = useDashboardSectionNavigation(setActiveSectionId)
+
+  const {
+    unreadMessageRequestIds,
+    requestIdsWithMessages,
+    markConversationAsRead,
+    registerRequestHasMessages,
+  } = useUnreadRequestMessageNotifications()
+
+  const handleConversationOpened = useCallback(
+    async (requestId: string) => {
+      registerRequestHasMessages(requestId)
+      return markConversationAsRead(requestId)
+    },
+    [markConversationAsRead, registerRequestHasMessages],
+  )
 
 
 
@@ -248,6 +264,10 @@ export function TeacherDashboardPage({ profile, onLogout }: TeacherDashboardPage
 
             onArchived={handleArchiveChanged}
 
+            unreadMessageRequestIds={unreadMessageRequestIds}
+            requestIdsWithMessages={requestIdsWithMessages}
+            onConversationOpened={handleConversationOpened}
+
             requestNavigationIntent={requestNavigationIntent}
 
             onRequestNavigationIntentConsumed={() => setRequestNavigationIntent(null)}
@@ -288,7 +308,12 @@ export function TeacherDashboardPage({ profile, onLogout }: TeacherDashboardPage
 
         >
 
-          <TeacherArchiveSection refreshToken={archiveRefreshToken} />
+          <TeacherArchiveSection
+            refreshToken={archiveRefreshToken}
+            unreadMessageRequestIds={unreadMessageRequestIds}
+            requestIdsWithMessages={requestIdsWithMessages}
+            onConversationOpened={handleConversationOpened}
+          />
 
         </DashboardSectionPanel>
 

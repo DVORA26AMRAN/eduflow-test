@@ -8,6 +8,7 @@ import { formatRequestDateTime } from '../../utils/requests'
 import { Modal } from '../ui/Modal'
 import { RequestReminderRowIndicator } from './RequestReminderRowIndicator'
 import { RequestDetailsAttachmentsSection } from './RequestDetailsAttachmentsSection'
+import { RequestDetailsConversationSection } from './RequestDetailsConversationSection'
 import { RequestDetailsHistorySection } from './RequestDetailsHistorySection'
 import { RequestDetailsNotesSection } from './RequestDetailsNotesSection'
 import { RequestDetailsSummaryFields } from './RequestDetailsSummaryFields'
@@ -22,6 +23,7 @@ type RequestDetailsModalProps = {
   reminderSummary?: RequestReminderSummary
   teacherReminderState?: TeacherRequestReminderState
   hasUnreadReminder?: boolean
+  onConversationOpened?: () => void
   actions?: ReactNode
   showHistory?: boolean
   showNotes?: boolean
@@ -37,6 +39,7 @@ export function RequestDetailsModal({
   reminderSummary,
   teacherReminderState,
   hasUnreadReminder = false,
+  onConversationOpened,
   actions,
   showHistory = true,
   showNotes = false,
@@ -134,6 +137,12 @@ export function RequestDetailsModal({
         {showNotes ? (
           <RequestDetailsNotesSection requestId={request.id} isActive={isOpen} />
         ) : null}
+
+        <RequestDetailsConversationSection
+          requestId={request.id}
+          isActive={isOpen}
+          onConversationOpened={onConversationOpened}
+        />
 
         {actions ? <footer className="request-details__actions">{actions}</footer> : null}
       </div>

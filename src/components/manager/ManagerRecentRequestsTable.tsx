@@ -8,6 +8,7 @@ import {
 } from '../../utils/requests'
 import { RequestSubjectMessagePreview } from '../requests/RequestSubjectMessagePreview'
 import { RequestDescriptionCell } from '../requests/RequestDescriptionCell'
+import { RequestConversationRowIndicator } from '../requests/RequestConversationRowIndicator'
 import { RequestReminderRowIndicator } from '../requests/RequestReminderRowIndicator'
 import { RequestArchiveTrashButton } from '../requests/RequestArchiveTrashButton'
 
@@ -15,6 +16,8 @@ type ManagerRecentRequestsTableProps = {
   requests: ManagerRecentRequest[]
   archivingRequestId: string | null
   unreadReminderRequestIds: ReadonlySet<string>
+  unreadMessageRequestIds: ReadonlySet<string>
+  requestIdsWithMessages: ReadonlySet<string>
   reminderSummariesByRequestId: ReadonlyMap<string, RequestReminderSummary>
   highlightedRequestId?: string | null
   onArchive: (request: ManagerRecentRequest) => void
@@ -25,6 +28,8 @@ export function ManagerRecentRequestsTable({
   requests,
   archivingRequestId,
   unreadReminderRequestIds,
+  unreadMessageRequestIds = new Set(),
+  requestIdsWithMessages = new Set(),
   reminderSummariesByRequestId,
   highlightedRequestId = null,
   onArchive,
@@ -47,6 +52,8 @@ export function ManagerRecentRequestsTable({
           {requests.map((request) => {
             const reminderSummary = reminderSummariesByRequestId.get(request.id)
             const hasUnreadReminder = unreadReminderRequestIds.has(request.id)
+            const hasUnreadConversation = unreadMessageRequestIds.has(request.id)
+            const hasConversation = requestIdsWithMessages.has(request.id)
 
             return (
             <tr
@@ -54,6 +61,7 @@ export function ManagerRecentRequestsTable({
               data-request-id={request.id}
               className={[
                 'ds-table__row--clickable',
+                hasUnreadConversation ? 'ds-table__row--unread-conversation' : '',
                 hasUnreadReminder
                   ? 'manager-dashboard__row--reminder-received'
                   : highlightedRequestId === request.id
@@ -83,15 +91,21 @@ export function ManagerRecentRequestsTable({
                 )}
               </td>
               <td>
-                <RequestReminderRowIndicator
-                  summary={reminderSummary}
-                  hasUnreadReminder={hasUnreadReminder}
-                  badgeClassName="manager-dashboard__reminder-badge"
-                  metaClassName="manager-dashboard__reminder-meta"
-                />
-                <span className={`ds-table__status ds-table__status--${request.status}`}>
-                  {translateRequestStatus(request.status)}
-                </span>
+                <div className="request-row__status-cell">
+                  <RequestConversationRowIndicator
+                    hasConversation={hasConversation}
+                    hasUnreadConversation={hasUnreadConversation}
+                  />
+                  <RequestReminderRowIndicator
+                    summary={reminderSummary}
+                    hasUnreadReminder={hasUnreadReminder}
+                    badgeClassName="manager-dashboard__reminder-badge"
+                    metaClassName="manager-dashboard__reminder-meta"
+                  />
+                  <span className={`ds-table__status ds-table__status--${request.status}`}>
+                    {translateRequestStatus(request.status)}
+                  </span>
+                </div>
               </td>
               <td>{formatRequestDate(request.created_at)}</td>
               <td>
