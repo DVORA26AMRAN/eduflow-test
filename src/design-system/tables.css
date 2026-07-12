@@ -104,3 +104,16 @@
   justify-content: flex-start;
   gap: var(--ds-label-gap);
 }
+
+.ds-table__description {
+  display: inline-block;
+  max-width: min(28rem, 40vw);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  vertical-align: top;
+}
+
+.ds-table__description--empty {
+  color: var(--ds-color-text-secondary);
+}

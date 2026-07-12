@@ -11,6 +11,7 @@ const sampleRequests = [
     id: 'req-1',
     teacher_full_name: 'מורה א',
     request_type: 'absence' as const,
+    description: 'היעדרות ביום ראשון',
     status: 'in_progress' as const,
     created_at: '2026-07-01T10:00:00.000Z',
   },
@@ -33,6 +34,21 @@ describe('ManagerRecentRequestsTable', () => {
     archiveButtons.forEach((button) => {
       expect(button).toBeEnabled()
     })
+  })
+
+  it('shows the request description in the same column as the secretary table', () => {
+    render(
+      <ManagerRecentRequestsTable
+        requests={sampleRequests}
+        archivingRequestId={null}
+        unreadReminderRequestIds={new Set()}
+        reminderSummariesByRequestId={new Map()}
+        onArchive={vi.fn()}
+      />,
+    )
+
+    expect(screen.getByRole('columnheader', { name: 'תיאור' })).toBeInTheDocument()
+    expect(screen.getByText('היעדרות ביום ראשון')).toBeInTheDocument()
   })
 
   it('shows reminder count and latest timestamp on the request row', () => {

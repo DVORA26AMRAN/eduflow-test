@@ -19,6 +19,7 @@ export type ManagerRecentRequest = {
   id: string
   teacher_full_name: string
   request_type: RequestType
+  description: string
   status: RequestStatus
   created_at: string
 }

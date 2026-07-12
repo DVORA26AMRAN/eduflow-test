@@ -5,6 +5,7 @@ import {
   translateRequestStatus,
   translateRequestType,
 } from '../../utils/requests'
+import { RequestDescriptionCell } from '../requests/RequestDescriptionCell'
 import { RequestReminderRowIndicator } from '../requests/RequestReminderRowIndicator'
 import { RequestArchiveTrashButton } from '../requests/RequestArchiveTrashButton'
 
@@ -32,6 +33,7 @@ export function ManagerRecentRequestsTable({
           <tr>
             <th>מורה</th>
             <th>סוג בקשה</th>
+            <th>תיאור</th>
             <th>סטטוס</th>
             <th>תאריך</th>
             <th>פעולות</th>
@@ -56,6 +58,9 @@ export function ManagerRecentRequestsTable({
             >
               <td>{request.teacher_full_name}</td>
               <td>{translateRequestType(request.request_type)}</td>
+              <td>
+                <RequestDescriptionCell description={request.description} />
+              </td>
               <td>
                 <RequestReminderRowIndicator
                   summary={reminderSummary}

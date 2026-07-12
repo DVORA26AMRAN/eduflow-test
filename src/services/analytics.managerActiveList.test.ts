@@ -93,6 +93,11 @@ describe('manager active list independence from institutional archive', () => {
     expect(managerRecentSectionSource).not.toContain('archived_at')
   })
 
+  it('loads description in the existing recent requests query', () => {
+    expect(recentRequestsFn).toContain('description')
+    expect(recentRequestsFn).not.toMatch(/loadRecentRequests[\s\S]*await supabase[\s\S]*await supabase/)
+  })
+
   it('permits manager SELECT on institution requests regardless of archived_at', () => {
     expect(managerSelectPolicySource).toContain('requests_manager_select_institution')
     expect(managerSelectPolicySource).not.toContain('archived_at')

@@ -38,6 +38,7 @@ function extractTeacherFullName(users: unknown): string | null {
 function parseManagerRecentRequest(row: {
   id: unknown
   request_type: unknown
+  description: unknown
   status: unknown
   created_at: unknown
   users: unknown
@@ -46,6 +47,7 @@ function parseManagerRecentRequest(row: {
 
   if (
     typeof row.id !== 'string' ||
+    typeof row.description !== 'string' ||
     typeof row.created_at !== 'string' ||
     typeof row.request_type !== 'string' ||
     typeof row.status !== 'string' ||
@@ -60,6 +62,7 @@ function parseManagerRecentRequest(row: {
     id: row.id,
     teacher_full_name: teacherFullName,
     request_type: row.request_type,
+    description: row.description,
     status: row.status,
     created_at: row.created_at,
   }
@@ -188,7 +191,7 @@ export async function loadRecentRequests(): Promise<LoadRecentRequestsResult> {
   let query = supabase
     .from('requests')
     .select(
-      'id, request_type, status, created_at, users!created_by_user_id(full_name)',
+      'id, request_type, description, status, created_at, users!created_by_user_id(full_name)',
     )
     .order('created_at', { ascending: false })
     .limit(5)

@@ -6,6 +6,7 @@ import {
   translateRequestStatus,
   translateRequestType,
 } from '../../utils/requests'
+import { RequestDescriptionCell } from '../requests/RequestDescriptionCell'
 import { RequestReminderRowIndicator } from '../requests/RequestReminderRowIndicator'
 import { SecretaryRequestAttachmentCell } from './SecretaryRequestAttachmentCell'
 
@@ -88,7 +89,9 @@ export function SecretaryRequestsTable({
             >
               <td>{request.teacher_full_name}</td>
               <td>{translateRequestType(request.request_type)}</td>
-              <td>{request.description}</td>
+              <td>
+                <RequestDescriptionCell description={request.description} />
+              </td>
               <td>
                 <div className="secretary-dashboard__status-cell">
                   <RequestReminderRowIndicator
