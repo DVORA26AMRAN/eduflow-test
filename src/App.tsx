@@ -461,7 +461,12 @@ function App() {
   }
 
   if (currentProfile.role === 'platform_admin') {
-    return <PlatformAdminDashboardPage profile={currentProfile} onLogout={logout} />
+    return (
+      <PlatformAdminDashboardPage
+        profile={currentProfile}
+        onLogout={logout}
+      />
+    )
   }
 
   if (currentProfile.role === 'secretary') {

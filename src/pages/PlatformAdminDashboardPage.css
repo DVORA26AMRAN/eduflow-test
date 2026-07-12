@@ -1,7 +1,13 @@
-.platform-admin-dashboard {
-  width: 100%;
-  max-width: 760px;
-  margin: 0 auto;
-  padding: var(--ds-page-padding);
-  box-sizing: border-box;
-}
+.platform-admin-dashboard {
+  width: 100%;
+  max-width: 760px;
+  margin: 0 auto;
+  padding: var(--ds-page-padding);
+  box-sizing: border-box;
+}
+
+.platform-admin-dashboard__user-management-entry {
+  display: flex;
+  justify-content: flex-start;
+  margin-bottom: var(--ds-card-gap);
+}

@@ -25,6 +25,8 @@ import type {
 import type { AuthenticatedUserProfile, InstitutionUser, UserRole } from '../types/user'
 import './ManagerDashboardPage.css'
 
+const TEAM_MANAGEMENT_SECTION_ID = 'team'
+
 type ManagerDashboardPageProps = {
   profile: AuthenticatedUserProfile
   newUserName: string
@@ -42,7 +44,7 @@ type ManagerDashboardPageProps = {
 const managerNavItems: DashboardNavItem[] = [
   { id: 'stats', label: 'נתונים', icon: <NavChartIcon /> },
   { id: 'recentActivity', label: 'פעילות אחרונה', icon: <NavActivityIcon /> },
-  { id: 'team', label: 'ניהול צוות', icon: <NavUsersIcon /> },
+  { id: TEAM_MANAGEMENT_SECTION_ID, label: 'ניהול משתמשים', icon: <NavUsersIcon /> },
 ]
 
 export function ManagerDashboardPage({
@@ -273,7 +275,7 @@ export function ManagerDashboardPage({
 
         <section
           id="manager-team"
-          data-section-id="team"
+          data-section-id={TEAM_MANAGEMENT_SECTION_ID}
           className="manager-dashboard__shell-section"
           tabIndex={-1}
         >

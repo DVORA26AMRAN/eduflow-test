@@ -1,6 +1,6 @@
 .dashboard-shell {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) 272px;
+  display: flex;
+  flex-direction: column;
   gap: var(--ds-card-gap);
   width: 100%;
   max-width: 1400px;
@@ -37,7 +37,11 @@
   opacity: 0.9;
 }
 
-.dashboard-shell__content {
+.dashboard-shell__layout {
+  display: grid;
+  grid-template-columns: 272px minmax(0, 1fr);
+  gap: var(--ds-card-gap);
+  align-items: start;
   min-width: 0;
   position: relative;
   z-index: 1;
@@ -50,13 +54,19 @@
   display: flex;
   flex-direction: column;
   gap: var(--ds-card-gap);
-  min-height: calc(100svh - var(--ds-page-padding));
+  min-height: 0;
   padding: var(--ds-card-padding);
   border: 1px solid var(--ds-color-border);
-  border-radius: var(--ds-radius-xl) 0 0 var(--ds-radius-xl);
+  border-radius: 0 var(--ds-radius-xl) var(--ds-radius-xl) 0;
   background: var(--ds-color-surface);
   box-shadow: var(--ds-shadow-sm);
   z-index: 2;
+}
+
+.dashboard-shell__content {
+  min-width: 0;
+  position: relative;
+  z-index: 1;
 }
 
 .dashboard-shell__brand {
@@ -75,6 +85,13 @@
   margin: var(--ds-label-gap) 0 0;
   font-size: var(--ds-font-size-sm);
   color: var(--ds-color-text-secondary);
+}
+
+.dashboard-shell__school-name {
+  margin: var(--ds-label-gap) 0 0;
+  font-size: var(--ds-font-size-sm);
+  font-weight: var(--ds-font-weight-medium);
+  color: var(--ds-color-text-primary);
 }
 
 .dashboard-shell__nav {
@@ -144,13 +161,16 @@
 
 @media (max-width: 1024px) {
   .dashboard-shell {
-    grid-template-columns: 1fr;
     padding: var(--ds-page-padding-compact);
+  }
+
+  .dashboard-shell__layout {
+    grid-template-columns: 1fr;
+    min-width: 0;
   }
 
   .dashboard-shell__sidebar {
     position: static;
-    min-height: auto;
     border-radius: var(--ds-radius-xl);
   }
 
