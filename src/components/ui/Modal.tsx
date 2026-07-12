@@ -7,7 +7,10 @@ import {
   type RefObject,
 } from 'react'
 import { createPortal } from 'react-dom'
+import { useBodyScrollLock } from '../../utils/bodyScrollLock'
 import './Modal.css'
+
+export type ModalSize = 'small' | 'medium' | 'large' | 'auto'
 
 type ModalProps = {
   isOpen: boolean
@@ -15,6 +18,7 @@ type ModalProps = {
   children: ReactNode
   onClose: () => void
   closeLabel?: string
+  size?: ModalSize
 }
 
 const FOCUSABLE_SELECTOR =
@@ -71,21 +75,6 @@ function useFocusTrap(containerRef: RefObject<HTMLElement | null>, isActive: boo
   }, [containerRef, isActive])
 }
 
-function useBodyScrollLock(isLocked: boolean) {
-  useEffect(() => {
-    if (!isLocked) {
-      return
-    }
-
-    const previousOverflow = document.body.style.overflow
-    document.body.style.overflow = 'hidden'
-
-    return () => {
-      document.body.style.overflow = previousOverflow
-    }
-  }, [isLocked])
-}
-
 function ModalPortal({ children }: { children: ReactNode }) {
   return createPortal(children, document.body)
 }
@@ -95,12 +84,17 @@ function getPageDirection(): 'rtl' | 'ltr' {
   return dir === 'ltr' ? 'ltr' : 'rtl'
 }
 
+function getModalSizeClassName(size: ModalSize): string {
+  return `ds-modal--${size}`
+}
+
 export function Modal({
   isOpen,
   title,
   children,
   onClose,
   closeLabel = 'סגירת חלון',
+  size = 'medium',
 }: ModalProps) {
   const titleId = useId()
   const panelRef = useRef<HTMLDivElement>(null)
@@ -145,7 +139,7 @@ export function Modal({
       >
         <div
           ref={panelRef}
-          className="ds-modal"
+          className={`ds-modal ${getModalSizeClassName(size)}`}
           role="dialog"
           aria-modal="true"
           aria-labelledby={titleId}
@@ -179,6 +173,9 @@ type ConfirmDialogProps = {
   confirmLabel: string
   onContinue: () => void
   onConfirm: () => void
+  closeOnBackdropClick?: boolean
+  continueDisabled?: boolean
+  confirmDisabled?: boolean
 }
 
 export function ConfirmDialog({
@@ -189,12 +186,16 @@ export function ConfirmDialog({
   confirmLabel,
   onContinue,
   onConfirm,
+  closeOnBackdropClick = false,
+  continueDisabled = false,
+  confirmDisabled = false,
 }: ConfirmDialogProps) {
   const titleId = useId()
   const panelRef = useRef<HTMLDivElement>(null)
   const pageDirection = getPageDirection()
 
   useFocusTrap(panelRef, isOpen)
+  useBodyScrollLock(isOpen)
 
   useEffect(() => {
     if (!isOpen) {
@@ -204,39 +205,71 @@ export function ConfirmDialog({
     function handleKeyDown(event: KeyboardEvent) {
       if (event.key === 'Escape') {
         event.preventDefault()
-        onContinue()
+        if (!continueDisabled) {
+          onContinue()
+        }
       }
     }
 
     document.addEventListener('keydown', handleKeyDown)
     return () => document.removeEventListener('keydown', handleKeyDown)
-  }, [isOpen, onContinue])
+  }, [isOpen, onContinue, continueDisabled])
 
   if (!isOpen) {
     return null
   }
 
+  function handleBackdropClick(event: MouseEvent<HTMLDivElement>) {
+    if (!closeOnBackdropClick || continueDisabled || confirmDisabled) {
+      return
+    }
+
+    if (event.target === event.currentTarget) {
+      onContinue()
+    }
+  }
+
   return (
     <ModalPortal>
-      <div className="ds-modal__confirm-overlay" dir={pageDirection} role="presentation">
+      <div
+        className="ds-modal-overlay ds-modal-overlay--confirm"
+        dir={pageDirection}
+        onClick={handleBackdropClick}
+        role="presentation"
+      >
         <div
           ref={panelRef}
-          className="ds-modal__confirm-panel"
+          className="ds-modal ds-modal--small ds-modal--confirm"
           role="alertdialog"
           aria-modal="true"
           aria-labelledby={titleId}
+          onClick={(event) => event.stopPropagation()}
         >
-          <h3 id={titleId} className="ds-modal__title">
-            {title}
-          </h3>
-          <p className="ds-form-message">{message}</p>
-          <div className="ds-modal__confirm-actions">
-            <button type="button" className="ds-btn ds-btn--secondary" onClick={onContinue}>
-              {continueLabel}
-            </button>
-            <button type="button" className="ds-btn ds-btn--primary" onClick={onConfirm}>
-              {confirmLabel}
-            </button>
+          <div className="ds-modal__header ds-modal__header--confirm">
+            <h3 id={titleId} className="ds-modal__title">
+              {title}
+            </h3>
+          </div>
+          <div className="ds-modal__body ds-modal__body--confirm">
+            <p className="ds-form-message">{message}</p>
+            <div className="ds-modal__confirm-actions">
+              <button
+                type="button"
+                className="ds-btn ds-btn--secondary"
+                onClick={onContinue}
+                disabled={continueDisabled}
+              >
+                {continueLabel}
+              </button>
+              <button
+                type="button"
+                className="ds-btn ds-btn--primary"
+                onClick={onConfirm}
+                disabled={confirmDisabled}
+              >
+                {confirmLabel}
+              </button>
+            </div>
           </div>
         </div>
       </div>

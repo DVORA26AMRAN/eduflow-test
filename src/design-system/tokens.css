@@ -181,7 +181,14 @@
   --ds-layer-dashboard-background: 0;
   --ds-layer-dashboard-content: 1;
   --ds-layer-dashboard-sidebar: 2;
-  --ds-layer-modal-backdrop: 10;
-  --ds-layer-modal: 11;
-  --ds-layer-modal-confirm: 12;
+  --ds-layer-modal-backdrop: 1000;
+  --ds-layer-modal: 1001;
+  --ds-layer-modal-confirm: 1002;
+
+  /* Modal sizing */
+  --ds-modal-width-small: 480px;
+  --ds-modal-width-medium: 640px;
+  --ds-modal-width-large: 840px;
+  --ds-modal-max-height: 90dvh;
+  --ds-modal-safe-area-inset: env(safe-area-inset-bottom, 0px);
 }

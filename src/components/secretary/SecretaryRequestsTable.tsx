@@ -1,5 +1,6 @@
 import type { RequestStatus, SecretaryInboxRequest } from '../../types/request'
 import type { RequestReminderSummary } from '../../types/requestReminder'
+import { handleRequestRowActivate } from '../../utils/requestTableRowInteraction'
 import {
   formatRequestDate,
   REQUEST_STATUS_OPTIONS,
@@ -21,8 +22,7 @@ type SecretaryRequestsTableProps = {
   reminderSummariesByRequestId: ReadonlyMap<string, RequestReminderSummary>
   highlightedRequestId?: string | null
   onStatusChange: (requestId: string, status: RequestStatus) => void
-  onShowHistory: (requestId: string) => void
-  onShowNotes: (requestId: string) => void
+  onOpenDetails: (request: SecretaryInboxRequest, rowElement: HTMLTableRowElement) => void
   onArchive: (request: SecretaryInboxRequest) => void
 }
 
@@ -40,8 +40,7 @@ export function SecretaryRequestsTable({
   reminderSummariesByRequestId,
   highlightedRequestId = null,
   onStatusChange,
-  onShowHistory,
-  onShowNotes,
+  onOpenDetails,
   onArchive,
 }: SecretaryRequestsTableProps) {
   if (requests.length === 0) {
@@ -80,12 +79,22 @@ export function SecretaryRequestsTable({
             <tr
               key={request.id}
               data-request-id={request.id}
-              className={
+              className={[
+                'ds-table__row--clickable',
                 hasUnreadReminder
                   ? 'secretary-dashboard__row--reminder-received'
                   : highlightedRequestId === request.id
                     ? 'secretary-dashboard__row--reminder-received'
-                    : undefined
+                    : '',
+              ]
+                .filter(Boolean)
+                .join(' ')}
+              tabIndex={0}
+              onClick={(event) =>
+                handleRequestRowActivate(event, (row) => onOpenDetails(request, row))
+              }
+              onKeyDown={(event) =>
+                handleRequestRowActivate(event, (row) => onOpenDetails(request, row))
               }
             >
               <td>{request.teacher_full_name}</td>
@@ -142,14 +151,20 @@ export function SecretaryRequestsTable({
                   <button
                     type="button"
                     className="ds-btn ds-btn--secondary secretary-dashboard__history-button"
-                    onClick={() => onShowHistory(request.id)}
+                    onClick={(event) => {
+                      event.stopPropagation()
+                      onOpenDetails(request, event.currentTarget.closest('tr') as HTMLTableRowElement)
+                    }}
                   >
                     היסטוריה
                   </button>
                   <button
                     type="button"
                     className="ds-btn ds-btn--secondary secretary-dashboard__notes-button"
-                    onClick={() => onShowNotes(request.id)}
+                    onClick={(event) => {
+                      event.stopPropagation()
+                      onOpenDetails(request, event.currentTarget.closest('tr') as HTMLTableRowElement)
+                    }}
                   >
                     הערות
                   </button>

@@ -41,6 +41,7 @@ describe('SecretaryRequestsTable reminder rows', () => {
         onShowHistory={vi.fn()}
         onShowNotes={vi.fn()}
         onArchive={vi.fn()}
+        onOpenDetails={vi.fn()}
       />,
     )
 
@@ -72,6 +73,7 @@ describe('SecretaryRequestsTable reminder rows', () => {
         onShowHistory={vi.fn()}
         onShowNotes={vi.fn()}
         onArchive={vi.fn()}
+        onOpenDetails={vi.fn()}
       />,
     )
 

@@ -13,16 +13,17 @@ import {
   loadRequestNotes,
   updateRequestNote,
 } from '../../services/notes'
-import { Modal } from '../ui/Modal'
-import { RequestNoteItem } from './RequestNoteItem'
+import { RequestNoteItem } from '../secretary/RequestNoteItem'
 
-type RequestNotesPanelProps = {
-  isOpen: boolean
-  requestId: string | null
-  onClose: () => void
+type RequestDetailsNotesSectionProps = {
+  requestId: string
+  isActive: boolean
 }
 
-export function RequestNotesPanel({ isOpen, requestId, onClose }: RequestNotesPanelProps) {
+export function RequestDetailsNotesSection({
+  requestId,
+  isActive,
+}: RequestDetailsNotesSectionProps) {
   const [notes, setNotes] = useState<RequestNote[]>([])
   const [isLoading, setIsLoading] = useState(false)
   const [loadError, setLoadError] = useState('')
@@ -32,10 +33,6 @@ export function RequestNotesPanel({ isOpen, requestId, onClose }: RequestNotesPa
   const [actionMessageIsError, setActionMessageIsError] = useState(false)
 
   const fetchNotes = useCallback(async () => {
-    if (!requestId) {
-      return
-    }
-
     setIsLoading(true)
     setLoadError('')
     setActionMessage('')
@@ -53,7 +50,7 @@ export function RequestNotesPanel({ isOpen, requestId, onClose }: RequestNotesPa
   }, [requestId])
 
   useEffect(() => {
-    if (!isOpen || !requestId) {
+    if (!isActive) {
       return
     }
 
@@ -63,13 +60,9 @@ export function RequestNotesPanel({ isOpen, requestId, onClose }: RequestNotesPa
       setActionMessageIsError(false)
       void fetchNotes()
     })
-  }, [isOpen, requestId, fetchNotes])
+  }, [isActive, fetchNotes])
 
   async function handleCreateNote() {
-    if (!requestId) {
-      return
-    }
-
     const trimmedText = newNoteText.trim()
     if (!trimmedText) {
       return
@@ -98,10 +91,6 @@ export function RequestNotesPanel({ isOpen, requestId, onClose }: RequestNotesPa
   }
 
   async function handleUpdateNote(noteId: string, noteText: string): Promise<boolean> {
-    if (!requestId) {
-      return false
-    }
-
     setIsSaving(true)
     setActionMessage('')
 
@@ -146,13 +135,9 @@ export function RequestNotesPanel({ isOpen, requestId, onClose }: RequestNotesPa
   }
 
   return (
-    <Modal
-      isOpen={isOpen && requestId !== null}
-      size="medium"
-      title="הערות פנימיות"
-      closeLabel="סגירת הערות"
-      onClose={onClose}
-    >
+    <section className="request-details__section" aria-label="הערות פנימיות">
+      <h3 className="request-details__section-title">הערות פנימיות</h3>
+
       <div className="secretary-dashboard__notes-paper">
         {isLoading && (
           <p className="ds-form-message secretary-dashboard__notes-status">{NOTES_LOADING_MESSAGE}</p>
@@ -223,6 +208,6 @@ export function RequestNotesPanel({ isOpen, requestId, onClose }: RequestNotesPa
           {actionMessage}
         </p>
       )}
-    </Modal>
+    </section>
   )
 }

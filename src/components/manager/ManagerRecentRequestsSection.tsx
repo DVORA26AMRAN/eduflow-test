@@ -7,7 +7,11 @@ import { loadInstitutionRequestReminderSummaries, subscribeToInstitutionRequestR
 import type { RequestReminderSummary } from '../../types/requestReminder'
 import { useRequestReminderNavigationEffect } from '../../hooks/useRequestReminderNavigationEffect'
 import { NavClipboardIcon } from '../dashboard/dashboardNav'
+import type { RequestDetailsManagerRequest } from '../../types/requestDetails'
+import { RequestArchiveTrashButton } from '../requests/RequestArchiveTrashButton'
+import { RequestDetailsModal } from '../requests/RequestDetailsModal'
 import { DashboardCollapsibleSection } from '../dashboard/DashboardCollapsibleSection'
+import { ConfirmDialog } from '../ui/Modal'
 import { ManagerRecentRequestsTable } from './ManagerRecentRequestsTable'
 
 type ManagerRecentRequestsSectionProps = {
@@ -36,6 +40,10 @@ export function ManagerRecentRequestsSection({
   const [statusMessageIsError, setStatusMessageIsError] = useState(false)
   const [archivingRequestId, setArchivingRequestId] = useState<string | null>(null)
   const [archiveDialogRequest, setArchiveDialogRequest] = useState<ManagerRecentRequest | null>(
+    null,
+  )
+  const [detailsRequest, setDetailsRequest] = useState<RequestDetailsManagerRequest | null>(null)
+  const [detailsReturnFocusElement, setDetailsReturnFocusElement] = useState<HTMLElement | null>(
     null,
   )
   const [reminderSummariesByRequestId, setReminderSummariesByRequestId] = useState<
@@ -130,6 +138,15 @@ export function ManagerRecentRequestsSection({
     setArchiveDialogRequest(request)
   }
 
+  function handleOpenDetails(request: ManagerRecentRequest, rowElement: HTMLTableRowElement) {
+    setDetailsReturnFocusElement(rowElement)
+    setDetailsRequest({ ...request, role: 'manager' })
+  }
+
+  function handleCloseDetails() {
+    setDetailsRequest(null)
+  }
+
   function handleCloseArchiveDialog() {
     if (archivingRequestId !== null) {
       return
@@ -162,6 +179,9 @@ export function ManagerRecentRequestsSection({
     setStatusMessage('הבקשה הועברה לארכיון האישי שלך.')
     setStatusMessageIsError(false)
     setArchiveDialogRequest(null)
+    setDetailsRequest((current) =>
+      current?.id === archiveDialogRequest.id ? null : current,
+    )
     onArchived()
   }
 
@@ -204,50 +224,45 @@ export function ManagerRecentRequestsSection({
             reminderSummariesByRequestId={reminderSummariesByRequestId}
             highlightedRequestId={highlightedRequestId}
             onArchive={handleOpenArchiveDialog}
+            onOpenDetails={handleOpenDetails}
           />
         )}
       </DashboardCollapsibleSection>
 
       {archiveDialogRequest && (
-        <div
-          className="manager-dashboard__archive-confirm-overlay"
-          onClick={handleCloseArchiveDialog}
-          role="presentation"
-        >
-          <div
-            className="manager-dashboard__archive-confirm-panel ds-card"
-            onClick={(event) => event.stopPropagation()}
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="manager-archive-confirm-title"
-          >
-            <h3 id="manager-archive-confirm-title" className="manager-dashboard__section-title">
-              להעביר לארכיון האישי?
-            </h3>
-            <p className="ds-form-message">
-              הבקשה תוסר מתצוגת הבקשות הפעילות שלך בלבד ותופיע ב&quot;הארכיון שלי&quot;.
-              הבקשה תישאר פעילה עבור שאר המשתמשים במערכת.
-            </p>
-            <div className="manager-dashboard__archive-confirm-actions">
-              <button
-                type="button"
-                className="ds-btn ds-btn--secondary"
-                onClick={handleCloseArchiveDialog}
-                disabled={archivingRequestId !== null}
-              >
-                ביטול
-              </button>
-              <button
-                type="button"
-                className="ds-btn ds-btn--primary"
-                onClick={handleConfirmArchive}
-                disabled={archivingRequestId !== null}
-              >
-                {archivingRequestId !== null ? 'מעביר...' : 'כן, להעביר לארכיון'}
-              </button>
-            </div>
-          </div>
-        </div>
+        <ConfirmDialog
+          isOpen
+          title="להעביר לארכיון האישי?"
+          message='הבקשה תוסר מתצוגת הבקשות הפעילות שלך בלבד ותופיע ב"הארכיון שלי". הבקשה תישאר פעילה עבור שאר המשתמשים במערכת.'
+          continueLabel="ביטול"
+          confirmLabel={archivingRequestId !== null ? 'מעביר...' : 'כן, להעביר לארכיון'}
+          closeOnBackdropClick
+          continueDisabled={archivingRequestId !== null}
+          confirmDisabled={archivingRequestId !== null}
+          onContinue={handleCloseArchiveDialog}
+          onConfirm={handleConfirmArchive}
+        />
+      )}
+
+      {detailsRequest && (
+        <RequestDetailsModal
+          isOpen
+          request={detailsRequest}
+          returnFocusElement={detailsReturnFocusElement}
+          reminderSummary={reminderSummariesByRequestId.get(detailsRequest.id)}
+          hasUnreadReminder={unreadReminderRequestIds.has(detailsRequest.id)}
+          showHistory
+          showNotes={false}
+          onClose={handleCloseDetails}
+          actions={
+            <RequestArchiveTrashButton
+              teacherName={detailsRequest.teacher_full_name}
+              isArchiving={archivingRequestId === detailsRequest.id}
+              isDisabled={archivingRequestId !== null && archivingRequestId !== detailsRequest.id}
+              onArchive={() => handleOpenArchiveDialog(detailsRequest)}
+            />
+          }
+        />
       )}
     </section>
   )

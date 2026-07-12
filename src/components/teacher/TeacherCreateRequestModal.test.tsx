@@ -2,13 +2,14 @@ import { cleanup, fireEvent, render, screen, within } from '@testing-library/rea
 import userEvent from '@testing-library/user-event'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { TeacherCreateRequestModal } from './TeacherCreateRequestModal'
+import { resetBodyScrollLockForTests } from '../../utils/bodyScrollLock'
 
 const onClose = vi.fn()
 const onSubmit = vi.fn()
 
 afterEach(() => {
   cleanup()
-  document.body.style.overflow = ''
+  resetBodyScrollLockForTests()
   vi.clearAllMocks()
 })
 
@@ -161,6 +162,7 @@ describe('TeacherCreateRequestModal', () => {
   it('locks background scrolling while the modal is open', () => {
     renderModal()
 
+    expect(document.body.style.position).toBe('fixed')
     expect(document.body.style.overflow).toBe('hidden')
   })
 

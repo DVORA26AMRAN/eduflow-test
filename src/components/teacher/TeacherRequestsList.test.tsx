@@ -5,6 +5,7 @@ import { TeacherRequestsList } from './TeacherRequestsList'
 
 const onArchive = vi.fn()
 const onSendReminder = vi.fn()
+const onOpenDetails = vi.fn()
 
 afterEach(() => {
   cleanup()
@@ -14,6 +15,7 @@ afterEach(() => {
 beforeEach(() => {
   onArchive.mockReset()
   onSendReminder.mockReset()
+  onOpenDetails.mockReset()
 })
 
 const baseProps = {
@@ -22,6 +24,7 @@ const baseProps = {
   reminderStatesByRequestId: new Map(),
   onArchive,
   onSendReminder,
+  onOpenDetails,
 }
 
 describe('TeacherRequestsList reminder bell', () => {
@@ -150,5 +153,31 @@ describe('TeacherRequestsList reminder bell', () => {
 
     expect(onSendReminder).toHaveBeenCalledTimes(1)
     expect(onSendReminder.mock.calls[0][0].id).toBe('req-new')
+  })
+
+  it('opens details when clicking the row but not when clicking the reminder bell', async () => {
+    const user = userEvent.setup()
+    render(
+      <TeacherRequestsList
+        {...baseProps}
+        requests={[
+          {
+            id: 'req-new',
+            request_type: 'absence',
+            description: 'בקשה חדשה',
+            status: 'new',
+            created_at: '2026-07-01T10:00:00.000Z',
+          },
+        ]}
+      />,
+    )
+
+    await user.click(screen.getByText('בקשה חדשה'))
+    expect(onOpenDetails).toHaveBeenCalledTimes(1)
+    expect(onOpenDetails.mock.calls[0][0].id).toBe('req-new')
+
+    await user.click(screen.getByRole('button', { name: 'שליחת תזכורת לבקשה חדשה' }))
+    expect(onOpenDetails).toHaveBeenCalledTimes(1)
+    expect(onSendReminder).toHaveBeenCalledTimes(1)
   })
 })

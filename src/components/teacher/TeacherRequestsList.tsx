@@ -1,6 +1,7 @@
 import type { TeacherRequest } from '../../types/request'
 import type { TeacherRequestReminderState } from '../../types/requestReminder'
 import { canSendRequestReminder } from '../../services/requestReminders'
+import { handleRequestRowActivate } from '../../utils/requestTableRowInteraction'
 import { RequestReminderBellButton } from '../requests/RequestReminderBellButton'
 import { translateRecipientRole } from '../../utils/generalRequestDisplay'
 import {
@@ -16,6 +17,7 @@ type TeacherRequestsListProps = {
   reminderStatesByRequestId: ReadonlyMap<string, TeacherRequestReminderState>
   onArchive: (request: TeacherRequest) => void
   onSendReminder: (request: TeacherRequest) => void
+  onOpenDetails: (request: TeacherRequest, rowElement: HTMLTableRowElement) => void
 }
 
 export function TeacherRequestsList({
@@ -25,6 +27,7 @@ export function TeacherRequestsList({
   reminderStatesByRequestId,
   onArchive,
   onSendReminder,
+  onOpenDetails,
 }: TeacherRequestsListProps) {
   if (requests.length === 0) {
     return (
@@ -59,7 +62,14 @@ export function TeacherRequestsList({
             const showReminderBell = canSendRequestReminder(request.status)
 
             return (
-              <tr key={request.id}>
+              <tr
+                key={request.id}
+                data-request-id={request.id}
+                className="ds-table__row--clickable"
+                tabIndex={0}
+                onClick={(event) => handleRequestRowActivate(event, (row) => onOpenDetails(request, row))}
+                onKeyDown={(event) => handleRequestRowActivate(event, (row) => onOpenDetails(request, row))}
+              >
                 <td>{translateRequestType(request.request_type)}</td>
                 <td>
                   <span className={`ds-table__status ds-table__status--${request.status}`}>

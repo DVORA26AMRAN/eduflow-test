@@ -1,5 +1,6 @@
 import type { ManagerRecentRequest } from '../../types/analytics'
 import type { RequestReminderSummary } from '../../types/requestReminder'
+import { handleRequestRowActivate } from '../../utils/requestTableRowInteraction'
 import {
   formatRequestDate,
   translateRequestStatus,
@@ -17,6 +18,7 @@ type ManagerRecentRequestsTableProps = {
   reminderSummariesByRequestId: ReadonlyMap<string, RequestReminderSummary>
   highlightedRequestId?: string | null
   onArchive: (request: ManagerRecentRequest) => void
+  onOpenDetails: (request: ManagerRecentRequest, rowElement: HTMLTableRowElement) => void
 }
 
 export function ManagerRecentRequestsTable({
@@ -26,6 +28,7 @@ export function ManagerRecentRequestsTable({
   reminderSummariesByRequestId,
   highlightedRequestId = null,
   onArchive,
+  onOpenDetails,
 }: ManagerRecentRequestsTableProps) {
   return (
     <div className="ds-table-wrapper manager-dashboard__table-wrapper">
@@ -49,12 +52,22 @@ export function ManagerRecentRequestsTable({
             <tr
               key={request.id}
               data-request-id={request.id}
-              className={
+              className={[
+                'ds-table__row--clickable',
                 hasUnreadReminder
                   ? 'manager-dashboard__row--reminder-received'
                   : highlightedRequestId === request.id
                     ? 'manager-dashboard__row--reminder-received'
-                    : undefined
+                    : '',
+              ]
+                .filter(Boolean)
+                .join(' ')}
+              tabIndex={0}
+              onClick={(event) =>
+                handleRequestRowActivate(event, (row) => onOpenDetails(request, row))
+              }
+              onKeyDown={(event) =>
+                handleRequestRowActivate(event, (row) => onOpenDetails(request, row))
               }
             >
               <td>{request.teacher_full_name}</td>

@@ -3,15 +3,19 @@ import type { RequestPayload, RequestType, GeneralRequestRecipientRole, TeacherR
 import { REQUEST_CREATED_ATTACHMENT_UPLOAD_FAILED_MESSAGE } from '../../types/attachment'
 import { uploadRequestAttachment } from '../../services/attachments'
 import { archiveRequest, createTeacherRequest, loadTeacherRequests } from '../../services/requests'
-import {
-  loadTeacherRequestReminderStates,
-  sendRequestReminder,
-} from '../../services/requestReminders'
+import { canSendRequestReminder, sendRequestReminder } from '../../services/requestReminders'
 import type { TeacherRequestReminderState } from '../../types/requestReminder'
 import { REQUEST_REMINDER_COOLDOWN_HOURS } from '../../types/requestReminder'
 import { NavClipboardIcon, NavInboxIcon } from '../dashboard/dashboardNav'
 import { DashboardCollapsibleSection } from '../dashboard/DashboardCollapsibleSection'
+import {
+  loadTeacherRequestReminderStates,
+} from '../../services/requestReminders'
+import type { RequestDetailsTeacherRequest } from '../../types/requestDetails'
+import { RequestDetailsModal } from '../requests/RequestDetailsModal'
+import { RequestReminderBellButton } from '../requests/RequestReminderBellButton'
 import { TeacherCreateRequestModal } from './TeacherCreateRequestModal'
+import { ConfirmDialog } from '../ui/Modal'
 import { TeacherRequestCategorySelector } from './TeacherRequestCategorySelector'
 import { TeacherRequestsList } from './TeacherRequestsList'
 
@@ -48,6 +52,10 @@ export function TeacherRequestsSection({ refreshToken, onArchived }: TeacherRequ
     Map<string, TeacherRequestReminderState>
   >(new Map())
   const [archiveDialogRequest, setArchiveDialogRequest] = useState<TeacherRequest | null>(null)
+  const [detailsRequest, setDetailsRequest] = useState<RequestDetailsTeacherRequest | null>(null)
+  const [detailsReturnFocusElement, setDetailsReturnFocusElement] = useState<HTMLElement | null>(
+    null,
+  )
 
   const fetchRequests = useCallback(async () => {
     setIsLoading(true)
@@ -155,6 +163,15 @@ export function TeacherRequestsSection({ refreshToken, onArchived }: TeacherRequ
     setArchiveDialogRequest(request)
   }
 
+  function handleOpenDetails(request: TeacherRequest, rowElement: HTMLTableRowElement) {
+    setDetailsReturnFocusElement(rowElement)
+    setDetailsRequest({ ...request, role: 'teacher' })
+  }
+
+  function handleCloseDetails() {
+    setDetailsRequest(null)
+  }
+
   function handleCloseArchiveDialog() {
     if (archivingRequestId !== null) {
       return
@@ -185,6 +202,9 @@ export function TeacherRequestsSection({ refreshToken, onArchived }: TeacherRequ
     )
     setSubmitMessage('הבקשה הועברה לארכיון בהצלחה.')
     setArchiveDialogRequest(null)
+    setDetailsRequest((current) =>
+      current?.id === archiveDialogRequest.id ? null : current,
+    )
     onArchived()
   }
 
@@ -278,6 +298,7 @@ export function TeacherRequestsSection({ refreshToken, onArchived }: TeacherRequ
               reminderStatesByRequestId={reminderStatesByRequestId}
               onArchive={handleOpenArchiveDialog}
               onSendReminder={handleSendReminder}
+              onOpenDetails={handleOpenDetails}
             />
           )}
         </div>
@@ -294,45 +315,59 @@ export function TeacherRequestsSection({ refreshToken, onArchived }: TeacherRequ
         />
       )}
 
-      {archiveDialogRequest && (
-        <div
-          className="teacher-dashboard__archive-confirm-overlay"
-          onClick={handleCloseArchiveDialog}
-          role="presentation"
-        >
-          <div
-            className="teacher-dashboard__archive-confirm-panel ds-card"
-            onClick={(event) => event.stopPropagation()}
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="teacher-archive-confirm-title"
-          >
-            <h3 id="teacher-archive-confirm-title" className="teacher-dashboard__subsection-title">
-              להעביר לארכיון?
-            </h3>
-            <p className="ds-form-message">
-              הבקשה תוסר מרשימת הבקשות הפעילות ותופיע ב&quot;הארכיון שלי&quot;.
-            </p>
-            <div className="teacher-dashboard__archive-confirm-actions">
+      {detailsRequest && (
+        <RequestDetailsModal
+          isOpen
+          request={detailsRequest}
+          returnFocusElement={detailsReturnFocusElement}
+          teacherReminderState={reminderStatesByRequestId.get(detailsRequest.id)}
+          showHistory
+          showNotes={false}
+          onClose={handleCloseDetails}
+          actions={
+            <>
+              <RequestReminderBellButton
+                requestStatus={detailsRequest.status}
+                isVisible={canSendRequestReminder(detailsRequest.status)}
+                isDisabled={
+                  archivingRequestId !== null ||
+                  remindingRequestId !== null ||
+                  Boolean(reminderStatesByRequestId.get(detailsRequest.id)?.next_reminder_available_at)
+                }
+                isSending={remindingRequestId === detailsRequest.id}
+                disabledReason={
+                  reminderStatesByRequestId.get(detailsRequest.id)?.next_reminder_available_at
+                    ? 'ניתן לשלוח תזכורת נוספת רק לאחר תקופת ההמתנה'
+                    : undefined
+                }
+                onSendReminder={() => void handleSendReminder(detailsRequest)}
+              />
               <button
                 type="button"
                 className="ds-btn ds-btn--secondary"
-                onClick={handleCloseArchiveDialog}
-                disabled={archivingRequestId !== null}
+                onClick={() => handleOpenArchiveDialog(detailsRequest)}
+                disabled={archivingRequestId !== null || remindingRequestId !== null}
               >
-                ביטול
+                העבר לארכיון
               </button>
-              <button
-                type="button"
-                className="ds-btn ds-btn--primary"
-                onClick={handleConfirmArchive}
-                disabled={archivingRequestId !== null}
-              >
-                {archivingRequestId !== null ? 'מעביר...' : 'כן, להעביר לארכיון'}
-              </button>
-            </div>
-          </div>
-        </div>
+            </>
+          }
+        />
+      )}
+
+      {archiveDialogRequest && (
+        <ConfirmDialog
+          isOpen
+          title="להעביר לארכיון?"
+          message='הבקשה תוסר מרשימת הבקשות הפעילות ותופיע ב"הארכיון שלי".'
+          continueLabel="ביטול"
+          confirmLabel={archivingRequestId !== null ? 'מעביר...' : 'כן, להעביר לארכיון'}
+          closeOnBackdropClick
+          continueDisabled={archivingRequestId !== null}
+          confirmDisabled={archivingRequestId !== null}
+          onContinue={handleCloseArchiveDialog}
+          onConfirm={handleConfirmArchive}
+        />
       )}
     </section>
   )

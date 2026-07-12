@@ -484,30 +484,6 @@
   white-space: nowrap;
 }
 
-.teacher-dashboard__archive-confirm-overlay {
-  position: fixed;
-  inset: 0;
-  z-index: 1000;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: var(--ds-card-padding);
-  background: rgba(26, 21, 35, 0.4);
-}
-
-.teacher-dashboard__archive-confirm-panel {
-  width: 100%;
-  max-width: 520px;
-  padding: var(--ds-card-padding);
-  text-align: right;
-}
-
-.teacher-dashboard__archive-confirm-actions {
-  display: flex;
-  justify-content: flex-start;
-  gap: var(--ds-control-gap);
-}
-
 @media (max-width: 768px) {
   .teacher-dashboard {
     padding: var(--ds-page-padding-compact);
@@ -560,14 +536,5 @@
 
   .teacher-dashboard__archive-details-row {
     grid-template-columns: 1fr;
-  }
-
-  .teacher-dashboard__archive-confirm-panel {
-    padding: var(--ds-card-padding);
-  }
-
-  .teacher-dashboard__archive-confirm-actions {
-    flex-direction: column;
-    align-items: stretch;
   }
 }

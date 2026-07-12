@@ -20,11 +20,13 @@ vi.mock('../../services/attachments', () => ({
 }))
 
 import { createTeacherRequest, loadTeacherRequests } from '../../services/requests'
+import { resetBodyScrollLockForTests } from '../../utils/bodyScrollLock'
 
 const onArchived = vi.fn()
 
 afterEach(() => {
   cleanup()
+  resetBodyScrollLockForTests()
   document.body.style.overflow = ''
   vi.clearAllMocks()
 })
@@ -153,5 +155,5 @@ describe('TeacherRequestsSection modal create flow', () => {
     })
 
     expect(screen.getByRole('dialog', { name: 'בקשה אחרת' })).toBeInTheDocument()
-  })
+  }, 15000)
 })

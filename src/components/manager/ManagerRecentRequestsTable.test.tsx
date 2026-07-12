@@ -26,6 +26,7 @@ describe('ManagerRecentRequestsTable', () => {
         unreadReminderRequestIds={new Set()}
         reminderSummariesByRequestId={new Map()}
         onArchive={vi.fn()}
+        onOpenDetails={vi.fn()}
       />,
     )
 
@@ -44,6 +45,7 @@ describe('ManagerRecentRequestsTable', () => {
         unreadReminderRequestIds={new Set()}
         reminderSummariesByRequestId={new Map()}
         onArchive={vi.fn()}
+        onOpenDetails={vi.fn()}
       />,
     )
 
@@ -70,6 +72,7 @@ describe('ManagerRecentRequestsTable', () => {
           ])
         }
         onArchive={vi.fn()}
+        onOpenDetails={vi.fn()}
       />,
     )
 
@@ -95,6 +98,7 @@ describe('ManagerRecentRequestsTable', () => {
           ])
         }
         onArchive={vi.fn()}
+        onOpenDetails={vi.fn()}
       />,
     )
 

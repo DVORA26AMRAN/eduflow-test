@@ -53,6 +53,7 @@ export function TeacherCreateRequestModal({
     <>
       <Modal
         isOpen
+        size="large"
         title={getRequestTypeTitle(requestType)}
         onClose={attemptClose}
         closeLabel="סגירת טופס בקשה"

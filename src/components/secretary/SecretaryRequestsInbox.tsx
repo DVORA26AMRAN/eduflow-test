@@ -1,27 +1,26 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import type {
   RequestStatus,
-  RequestStatusHistoryEntry,
   SecretaryInboxFilters,
   SecretaryInboxRequest,
 } from '../../types/request'
 import type { ReminderNavigationIntent } from '../../types/reminderNavigation'
 import {
   archiveRequestAsSecretary,
-  loadRequestStatusHistory,
   loadSecretaryRequests,
   updateRequestStatus,
 } from '../../services/requests'
 import { loadRequestAttachmentRequestIds } from '../../services/attachments'
 import { loadInstitutionRequestReminderSummaries, subscribeToInstitutionRequestReminders, unsubscribeFromInstitutionRequestReminders, upsertReminderSummary } from '../../services/requestReminders'
 import type { RequestReminderSummary } from '../../types/requestReminder'
-import { filterSecretaryInboxRequests } from '../../utils/requests'
+import { filterSecretaryInboxRequests, REQUEST_STATUS_OPTIONS } from '../../utils/requests'
+import type { RequestDetailsSecretaryRequest } from '../../types/requestDetails'
+import { RequestDetailsModal } from '../requests/RequestDetailsModal'
 import { SECRETARY_INBOX_DEFAULT_FILTERS, shouldResetSecretaryInboxFilters } from '../../utils/reminderNavigation'
 import { useRequestReminderNavigationEffect } from '../../hooks/useRequestReminderNavigationEffect'
 import { NavInboxIcon } from '../dashboard/dashboardNav'
 import { DashboardCollapsibleSection } from '../dashboard/DashboardCollapsibleSection'
-import { RequestStatusHistoryPanel } from './RequestStatusHistoryPanel'
-import { RequestNotesPanel } from './RequestNotesPanel'
+import { ConfirmDialog } from '../ui/Modal'
 import { SecretaryRequestsFilters } from './SecretaryRequestsFilters'
 import { SecretaryRequestsTable } from './SecretaryRequestsTable'
 
@@ -51,14 +50,13 @@ export function SecretaryRequestsInbox({
   const [updatingRequestId, setUpdatingRequestId] = useState<string | null>(null)
   const [statusMessage, setStatusMessage] = useState('')
   const [statusMessageIsError, setStatusMessageIsError] = useState(false)
-  const [historyRequestId, setHistoryRequestId] = useState<string | null>(null)
-  const [historyEntries, setHistoryEntries] = useState<RequestStatusHistoryEntry[]>([])
-  const [isHistoryLoading, setIsHistoryLoading] = useState(false)
-  const [historyError, setHistoryError] = useState('')
   const [requestIdsWithAttachments, setRequestIdsWithAttachments] = useState<
     ReadonlySet<string>
   >(new Set())
-  const [notesRequestId, setNotesRequestId] = useState<string | null>(null)
+  const [detailsRequest, setDetailsRequest] = useState<RequestDetailsSecretaryRequest | null>(null)
+  const [detailsReturnFocusElement, setDetailsReturnFocusElement] = useState<HTMLElement | null>(
+    null,
+  )
   const [archivingRequestId, setArchivingRequestId] = useState<string | null>(null)
   const [archiveDialogRequest, setArchiveDialogRequest] = useState<SecretaryInboxRequest | null>(
     null,
@@ -205,41 +203,20 @@ export function SecretaryRequestsInbox({
         request.id === requestId ? { ...request, status } : request,
       ),
     )
+    setDetailsRequest((current) =>
+      current?.id === requestId ? { ...current, status } : current,
+    )
     setStatusMessage('סטטוס הבקשה עודכן בהצלחה.')
     setStatusMessageIsError(false)
   }
 
-  function handleCloseHistory() {
-    setHistoryRequestId(null)
-    setHistoryEntries([])
-    setHistoryError('')
-    setIsHistoryLoading(false)
+  function handleOpenDetails(request: SecretaryInboxRequest, rowElement: HTMLTableRowElement) {
+    setDetailsReturnFocusElement(rowElement)
+    setDetailsRequest({ ...request, role: 'secretary' })
   }
 
-  async function handleShowHistory(requestId: string) {
-    setHistoryRequestId(requestId)
-    setHistoryEntries([])
-    setHistoryError('')
-    setIsHistoryLoading(true)
-
-    const result = await loadRequestStatusHistory(requestId)
-
-    setIsHistoryLoading(false)
-
-    if (!result.ok) {
-      setHistoryError(result.errorMessage)
-      return
-    }
-
-    setHistoryEntries(result.entries)
-  }
-
-  function handleCloseNotes() {
-    setNotesRequestId(null)
-  }
-
-  function handleShowNotes(requestId: string) {
-    setNotesRequestId(requestId)
+  function handleCloseDetails() {
+    setDetailsRequest(null)
   }
 
   function handleOpenArchiveDialog(request: SecretaryInboxRequest) {
@@ -279,6 +256,9 @@ export function SecretaryRequestsInbox({
     setStatusMessage('הבקשה הועברה לארכיון המוסדי בהצלחה.')
     setStatusMessageIsError(false)
     setArchiveDialogRequest(null)
+    setDetailsRequest((current) =>
+      current?.id === archiveDialogRequest.id ? null : current,
+    )
     onArchived()
   }
 
@@ -320,70 +300,74 @@ export function SecretaryRequestsInbox({
             reminderSummariesByRequestId={reminderSummariesByRequestId}
             highlightedRequestId={highlightedRequestId}
             onStatusChange={handleStatusChange}
-            onShowHistory={handleShowHistory}
-            onShowNotes={handleShowNotes}
+            onOpenDetails={handleOpenDetails}
             onArchive={handleOpenArchiveDialog}
           />
         )}
       </DashboardCollapsibleSection>
 
       {archiveDialogRequest && (
-        <div
-          className="secretary-dashboard__archive-confirm-overlay"
-          onClick={handleCloseArchiveDialog}
-          role="presentation"
-        >
-          <div
-            className="secretary-dashboard__archive-confirm-panel ds-card"
-            onClick={(event) => event.stopPropagation()}
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="secretary-archive-confirm-title"
-          >
-            <h3
-              id="secretary-archive-confirm-title"
-              className="secretary-dashboard__section-title"
-            >
-              להעביר לארכיון מוסדי?
-            </h3>
-            <p className="ds-form-message">
-              הבקשה תוסר מתיבת הבקשות הפעילות ותופיע בארכיון המוסדי.
-            </p>
-            <div className="secretary-dashboard__archive-confirm-actions">
-              <button
-                type="button"
-                className="ds-btn ds-btn--secondary"
-                onClick={handleCloseArchiveDialog}
-                disabled={archivingRequestId !== null}
-              >
-                ביטול
-              </button>
-              <button
-                type="button"
-                className="ds-btn ds-btn--primary"
-                onClick={handleConfirmArchive}
-                disabled={archivingRequestId !== null}
-              >
-                {archivingRequestId !== null ? 'מעביר...' : 'כן, להעביר לארכיון'}
-              </button>
-            </div>
-          </div>
-        </div>
+        <ConfirmDialog
+          isOpen
+          title="להעביר לארכיון מוסדי?"
+          message="הבקשה תוסר מתיבת הבקשות הפעילות ותופיע בארכיון המוסדי."
+          continueLabel="ביטול"
+          confirmLabel={archivingRequestId !== null ? 'מעביר...' : 'כן, להעביר לארכיון'}
+          closeOnBackdropClick
+          continueDisabled={archivingRequestId !== null}
+          confirmDisabled={archivingRequestId !== null}
+          onContinue={handleCloseArchiveDialog}
+          onConfirm={handleConfirmArchive}
+        />
       )}
 
-      <RequestStatusHistoryPanel
-        isOpen={historyRequestId !== null}
-        isLoading={isHistoryLoading}
-        errorMessage={historyError}
-        entries={historyEntries}
-        onClose={handleCloseHistory}
-      />
-
-      <RequestNotesPanel
-        isOpen={notesRequestId !== null}
-        requestId={notesRequestId}
-        onClose={handleCloseNotes}
-      />
+      {detailsRequest && (
+        <RequestDetailsModal
+          isOpen
+          request={detailsRequest}
+          returnFocusElement={detailsReturnFocusElement}
+          hasAttachment={requestIdsWithAttachments.has(detailsRequest.id)}
+          reminderSummary={reminderSummariesByRequestId.get(detailsRequest.id)}
+          hasUnreadReminder={unreadReminderRequestIds.has(detailsRequest.id)}
+          showHistory
+          showNotes
+          onClose={handleCloseDetails}
+          actions={
+            <>
+              <label className="request-details__status-field">
+                <span className="ds-label">עדכון סטטוס</span>
+                <select
+                  className="secretary-dashboard__input secretary-dashboard__status-select"
+                  value={detailsRequest.status}
+                  onChange={(event) =>
+                    void handleStatusChange(
+                      detailsRequest.id,
+                      event.target.value as RequestStatus,
+                    )
+                  }
+                  disabled={updatingRequestId === detailsRequest.id || archivingRequestId !== null}
+                >
+                  {REQUEST_STATUS_OPTIONS.map((option) => (
+                    <option key={option.value} value={option.value}>
+                      {option.label}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              {(detailsRequest.status === 'completed' || detailsRequest.status === 'rejected') && (
+                <button
+                  type="button"
+                  className="ds-btn ds-btn--secondary"
+                  onClick={() => handleOpenArchiveDialog(detailsRequest)}
+                  disabled={archivingRequestId !== null}
+                >
+                  {archivingRequestId === detailsRequest.id ? 'מעביר...' : 'העבר לארכיון'}
+                </button>
+              )}
+            </>
+          }
+        />
+      )}
     </section>
   )
 }
