@@ -8,11 +8,7 @@
 }
 
 .manager-dashboard__shell-section {
-  scroll-margin-top: var(--ds-card-gap);
-}
-
-.manager-dashboard__shell-section:not(:last-child) {
-  margin-bottom: var(--ds-accordion-card-gap);
+  outline: none;
 }
 
 .manager-dashboard__shell-section:focus {

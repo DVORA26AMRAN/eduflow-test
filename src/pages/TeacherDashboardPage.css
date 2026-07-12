@@ -14,11 +14,7 @@
 }
 
 .teacher-dashboard__shell-section {
-  scroll-margin-top: var(--ds-card-gap);
-}
-
-.teacher-dashboard__shell-section:not(:last-child) {
-  margin-bottom: var(--ds-accordion-card-gap);
+  outline: none;
 }
 
 .teacher-dashboard__shell-section:focus {

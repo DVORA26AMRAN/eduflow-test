@@ -1,134 +1,303 @@
 import { useEffect, useState } from 'react'
+
 import { DashboardShell } from '../components/dashboard/DashboardShell'
+
+import { DashboardSectionPanel } from '../components/dashboard/DashboardSectionPanel'
+
 import {
+
   NavArchiveIcon,
+
   NavBellIcon,
+
+  NavChartIcon,
+
   NavClipboardIcon,
+
   NavUsersIcon,
+
   type DashboardNavItem,
+
 } from '../components/dashboard/dashboardNav'
+
+import { useDashboardSectionNavigation } from '../hooks/useDashboardSectionNavigation'
+
+import { TeacherAnalyticsSection } from '../components/teacher/TeacherAnalyticsSection'
+
 import { TeacherArchiveSection } from '../components/teacher/TeacherArchiveSection'
+
 import { TeacherNotificationsSection } from '../components/teacher/TeacherNotificationsSection'
+
 import { TeacherRequestsSection } from '../components/teacher/TeacherRequestsSection'
+
 import { TeacherSubstituteBoardSection } from '../components/teacher/TeacherSubstituteBoardSection'
+
+import { loadTeacherRequestReminderStates } from '../services/requestReminders'
+
+import {
+
+  DASHBOARD_OVERVIEW_SECTION_ID,
+
+  type DashboardRequestNavigationIntent,
+
+} from '../types/dashboardAnalytics'
+
+import type { TeacherRequestReminderState } from '../types/requestReminder'
+
 import type { AuthenticatedUserProfile } from '../types/user'
+
 import './TeacherDashboardPage.css'
 
+
+
 type TeacherDashboardPageProps = {
+
   profile: AuthenticatedUserProfile
+
   onLogout: () => void
+
 }
+
+
 
 const teacherNavItems: DashboardNavItem[] = [
+
+  { id: DASHBOARD_OVERVIEW_SECTION_ID, label: 'סקירה כללית', icon: <NavChartIcon /> },
+
   { id: 'notifications', label: 'התראות', icon: <NavBellIcon /> },
+
   { id: 'requests', label: 'בקשות', icon: <NavClipboardIcon /> },
+
   { id: 'substituteBoard', label: 'לוח מילויי מקום', icon: <NavUsersIcon /> },
+
   { id: 'archive', label: 'הארכיון שלי', icon: <NavArchiveIcon /> },
+
 ]
 
+
+
 export function TeacherDashboardPage({ profile, onLogout }: TeacherDashboardPageProps) {
-  const [activeSectionId, setActiveSectionId] = useState<string>('notifications')
+
+  const [activeSectionId, setActiveSectionId] = useState<string>(DASHBOARD_OVERVIEW_SECTION_ID)
+
   const [archiveRefreshToken, setArchiveRefreshToken] = useState(0)
 
-  function handleSectionSelect(sectionId: string) {
-    const target = document.querySelector<HTMLElement>(
-      `.teacher-dashboard [data-section-id="${sectionId}"]`,
-    )
-    if (!target) {
-      return
-    }
+  const [analyticsRefreshToken, setAnalyticsRefreshToken] = useState(0)
 
-    setActiveSectionId(sectionId)
-    target.scrollIntoView({ behavior: 'smooth', block: 'start' })
-    requestAnimationFrame(() => target.focus({ preventScroll: true }))
+  const [requestNavigationIntent, setRequestNavigationIntent] =
+
+    useState<DashboardRequestNavigationIntent | null>(null)
+
+  const [reminderStatesByRequestId, setReminderStatesByRequestId] = useState<
+
+    Map<string, TeacherRequestReminderState>
+
+  >(new Map())
+
+
+
+  const showSection = useDashboardSectionNavigation(setActiveSectionId)
+
+
+
+  function handleNavigateToRequests(intent: DashboardRequestNavigationIntent) {
+
+    setRequestNavigationIntent(intent)
+
+    showSection('requests')
+
   }
+
+
 
   useEffect(() => {
-    const sections = Array.from(
-      document.querySelectorAll<HTMLElement>('.teacher-dashboard [data-section-id]'),
-    )
 
-    if (sections.length === 0) {
-      return
+    let isCancelled = false
+
+
+
+    async function fetchReminderStates() {
+
+      const result = await loadTeacherRequestReminderStates()
+
+      if (isCancelled || !result.ok) {
+
+        return
+
+      }
+
+
+
+      setReminderStatesByRequestId(
+
+        new Map(result.states.map((state) => [state.request_id, state])),
+
+      )
+
     }
 
-    const observer = new IntersectionObserver(
-      (entries) => {
-        const visibleEntries = entries.filter((entry) => entry.isIntersecting)
-        if (visibleEntries.length === 0) {
-          return
-        }
 
-        const mostVisible = visibleEntries.sort(
-          (a, b) => b.intersectionRatio - a.intersectionRatio,
-        )[0]
-        const sectionId = mostVisible.target.getAttribute('data-section-id')
-        if (sectionId) {
-          setActiveSectionId(sectionId)
-        }
-      },
-      { threshold: [0.3, 0.6], rootMargin: '-15% 0px -55% 0px' },
-    )
 
-    sections.forEach((section) => observer.observe(section))
+    void fetchReminderStates()
 
-    return () => observer.disconnect()
-  }, [])
+
+
+    return () => {
+
+      isCancelled = true
+
+    }
+
+  }, [archiveRefreshToken, analyticsRefreshToken])
+
+
 
   function handleArchiveChanged() {
+
     setArchiveRefreshToken((value) => value + 1)
+
+    setAnalyticsRefreshToken((value) => value + 1)
+
   }
 
+
+
   return (
+
     <DashboardShell
+
       roleLabel="אזור המורה"
+
       subtitle="ברוכה הבאה לאזור המורה ב־EduFlow."
+
       profile={profile}
+
       navItems={teacherNavItems}
+
       activeSectionId={activeSectionId}
-      onSectionSelect={handleSectionSelect}
+
+      onSectionSelect={showSection}
+
       onLogout={onLogout}
+
     >
+
       <div dir="rtl" className="teacher-dashboard">
-        <section
-          id="teacher-notifications"
-          data-section-id="notifications"
-          className="teacher-dashboard__shell-section"
-          tabIndex={-1}
-        >
-          <TeacherNotificationsSection />
-        </section>
 
-        <section
-          id="teacher-requests"
-          data-section-id="requests"
+        <DashboardSectionPanel
+
+          id="teacher-overview"
+
+          sectionId={DASHBOARD_OVERVIEW_SECTION_ID}
+
+          activeSectionId={activeSectionId}
+
           className="teacher-dashboard__shell-section"
-          tabIndex={-1}
+
         >
-          <TeacherRequestsSection
-            refreshToken={archiveRefreshToken}
-            onArchived={handleArchiveChanged}
+
+          <TeacherAnalyticsSection
+
+            refreshToken={analyticsRefreshToken + archiveRefreshToken}
+
+            reminderStatesByRequestId={reminderStatesByRequestId}
+
+            onNavigateToRequests={handleNavigateToRequests}
+
+            onReminderSent={() => setAnalyticsRefreshToken((value) => value + 1)}
+
           />
-        </section>
 
-        <section
+        </DashboardSectionPanel>
+
+
+
+        <DashboardSectionPanel
+
+          id="teacher-notifications"
+
+          sectionId="notifications"
+
+          activeSectionId={activeSectionId}
+
+          className="teacher-dashboard__shell-section"
+
+        >
+
+          <TeacherNotificationsSection />
+
+        </DashboardSectionPanel>
+
+
+
+        <DashboardSectionPanel
+
+          id="teacher-requests"
+
+          sectionId="requests"
+
+          activeSectionId={activeSectionId}
+
+          className="teacher-dashboard__shell-section"
+
+        >
+
+          <TeacherRequestsSection
+
+            refreshToken={archiveRefreshToken}
+
+            onArchived={handleArchiveChanged}
+
+            requestNavigationIntent={requestNavigationIntent}
+
+            onRequestNavigationIntentConsumed={() => setRequestNavigationIntent(null)}
+
+          />
+
+        </DashboardSectionPanel>
+
+
+
+        <DashboardSectionPanel
+
           id="teacher-substitute-board"
-          data-section-id="substituteBoard"
-          className="teacher-dashboard__shell-section"
-          tabIndex={-1}
-        >
-          <TeacherSubstituteBoardSection />
-        </section>
 
-        <section
-          id="teacher-archive"
-          data-section-id="archive"
+          sectionId="substituteBoard"
+
+          activeSectionId={activeSectionId}
+
           className="teacher-dashboard__shell-section"
-          tabIndex={-1}
+
         >
+
+          <TeacherSubstituteBoardSection />
+
+        </DashboardSectionPanel>
+
+
+
+        <DashboardSectionPanel
+
+          id="teacher-archive"
+
+          sectionId="archive"
+
+          activeSectionId={activeSectionId}
+
+          className="teacher-dashboard__shell-section"
+
+        >
+
           <TeacherArchiveSection refreshToken={archiveRefreshToken} />
-        </section>
+
+        </DashboardSectionPanel>
+
       </div>
+
     </DashboardShell>
+
   )
+
 }
+
+

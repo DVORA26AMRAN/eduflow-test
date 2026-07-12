@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from 'react'
-import type { RequestPayload, RequestType, GeneralRequestRecipientRole, TeacherRequest } from '../../types/request'
+import type { DashboardRequestNavigationIntent } from '../../types/dashboardAnalytics'
+import type { RequestPayload, RequestType, GeneralRequestRecipientRole, RequestStatus, TeacherRequest } from '../../types/request'
 import { REQUEST_CREATED_ATTACHMENT_UPLOAD_FAILED_MESSAGE } from '../../types/attachment'
 import { uploadRequestAttachment } from '../../services/attachments'
 import { archiveRequest, createTeacherRequest, loadTeacherRequests } from '../../services/requests'
@@ -22,6 +23,8 @@ import { TeacherRequestsList } from './TeacherRequestsList'
 type TeacherRequestsSectionProps = {
   refreshToken: number
   onArchived: () => void
+  requestNavigationIntent?: DashboardRequestNavigationIntent | null
+  onRequestNavigationIntentConsumed?: () => void
 }
 
 function getSubmitMessageClassName(message: string): string {
@@ -36,13 +39,49 @@ function getSubmitMessageClassName(message: string): string {
   return 'ds-form-message'
 }
 
-export function TeacherRequestsSection({ refreshToken, onArchived }: TeacherRequestsSectionProps) {
+export function TeacherRequestsSection({
+  refreshToken,
+  onArchived,
+  requestNavigationIntent = null,
+  onRequestNavigationIntentConsumed,
+}: TeacherRequestsSectionProps) {
   const [requests, setRequests] = useState<TeacherRequest[]>([])
+  const [listStatusFilter, setListStatusFilter] = useState<RequestStatus | 'all'>('all')
+  const [listTypeFilter, setListTypeFilter] = useState<RequestType | 'all'>('all')
   const [isLoading, setIsLoading] = useState(true)
   const [loadError, setLoadError] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [submitMessage, setSubmitMessage] = useState('')
   const [requestsListVersion, setRequestsListVersion] = useState(0)
+  useEffect(() => {
+    if (!requestNavigationIntent) {
+      return
+    }
+
+    queueMicrotask(() => {
+      if (requestNavigationIntent.requestStatus) {
+        setListStatusFilter(requestNavigationIntent.requestStatus)
+      }
+
+      if (requestNavigationIntent.requestType) {
+        setListTypeFilter(requestNavigationIntent.requestType)
+      }
+
+      onRequestNavigationIntentConsumed?.()
+    })
+  }, [requestNavigationIntent, onRequestNavigationIntentConsumed])
+
+  const visibleRequests = requests.filter((request) => {
+    if (listStatusFilter !== 'all' && request.status !== listStatusFilter) {
+      return false
+    }
+
+    if (listTypeFilter !== 'all' && request.request_type !== listTypeFilter) {
+      return false
+    }
+
+    return true
+  })
   const [formKey, setFormKey] = useState(0)
   const [activeRequestType, setActiveRequestType] = useState<RequestType | null>(null)
   const [selectedCategoryType, setSelectedCategoryType] = useState<RequestType | ''>('')
@@ -292,7 +331,7 @@ export function TeacherRequestsSection({ refreshToken, onArchived }: TeacherRequ
 
           {!isLoading && !loadError && (
             <TeacherRequestsList
-              requests={requests}
+              requests={visibleRequests}
               archivingRequestId={archivingRequestId}
               remindingRequestId={remindingRequestId}
               reminderStatesByRequestId={reminderStatesByRequestId}

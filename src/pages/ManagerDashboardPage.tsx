@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { DashboardShell } from '../components/dashboard/DashboardShell'
+import { DashboardSectionPanel } from '../components/dashboard/DashboardSectionPanel'
 import {
   NavActivityIcon,
   NavArchiveIcon,
@@ -8,30 +9,30 @@ import {
   NavUsersIcon,
   type DashboardNavItem,
 } from '../components/dashboard/dashboardNav'
+import { ManagerAnalyticsSection } from '../components/manager/ManagerAnalyticsSection'
 import { ManagerArchiveSection } from '../components/manager/ManagerArchiveSection'
 import { ManagerRecentActivitySection } from '../components/manager/ManagerRecentActivitySection'
 import { ManagerRecentRequestsSection } from '../components/manager/ManagerRecentRequestsSection'
-import { ManagerRequestTypeDistribution } from '../components/manager/ManagerRequestTypeDistribution'
-import { ManagerStatsCards } from '../components/manager/ManagerStatsCards'
 import { TeamManagementSection } from '../components/manager/TeamManagementSection'
 import { useAdminReminderNotifications } from '../hooks/useAdminReminderNotifications'
+import { useDashboardSectionNavigation } from '../hooks/useDashboardSectionNavigation'
 import { useReminderBellNavigation } from '../hooks/useReminderBellNavigation'
-import {
-  loadManagerAnalytics,
-  loadRecentRequestActivity,
-} from '../services/analytics'
+import { loadRecentRequestActivity } from '../services/analytics'
 import { loadInstitutionUsers } from '../services/institutionUsers'
+import { loadInstitutionRequestReminderSummaries } from '../services/requestReminders'
 import { resolveManagerReminderRequestLocation } from '../services/reminderRequestLocation'
+import {
+  DASHBOARD_OVERVIEW_SECTION_ID,
+  type DashboardRequestNavigationIntent,
+} from '../types/dashboardAnalytics'
+import type { ManagerRecentActivityEntry } from '../types/analytics'
+import type { RequestReminderSummary } from '../types/requestReminder'
+import type { AuthenticatedUserProfile, InstitutionUser, UserRole } from '../types/user'
 import {
   REMINDER_BELL_NAV_ID,
   REMINDER_NAV_ARIA_LABEL,
   REMINDER_NAV_LABEL,
 } from '../utils/reminderNavigation'
-import type {
-  ManagerAnalytics,
-  ManagerRecentActivityEntry,
-} from '../types/analytics'
-import type { AuthenticatedUserProfile, InstitutionUser, UserRole } from '../types/user'
 import './ManagerDashboardPage.css'
 
 const TEAM_MANAGEMENT_SECTION_ID = 'team'
@@ -67,16 +68,19 @@ export function ManagerDashboardPage({
   const [users, setUsers] = useState<InstitutionUser[]>([])
   const [isUsersLoading, setIsUsersLoading] = useState(true)
   const [usersError, setUsersError] = useState('')
-  const [analytics, setAnalytics] = useState<ManagerAnalytics | null>(null)
-  const [isAnalyticsLoading, setIsAnalyticsLoading] = useState(true)
-  const [analyticsError, setAnalyticsError] = useState('')
   const [recentActivity, setRecentActivity] = useState<ManagerRecentActivityEntry[]>([])
   const [isRecentActivityLoading, setIsRecentActivityLoading] = useState(true)
   const [recentActivityError, setRecentActivityError] = useState('')
   const [archiveRefreshToken, setArchiveRefreshToken] = useState(0)
-  const [activeSectionId, setActiveSectionId] = useState<string>('stats')
+  const [analyticsRefreshToken, setAnalyticsRefreshToken] = useState(0)
+  const [activeSectionId, setActiveSectionId] = useState<string>(DASHBOARD_OVERVIEW_SECTION_ID)
+  const [reminderSummariesByRequestId, setReminderSummariesByRequestId] = useState<
+    Map<string, RequestReminderSummary>
+  >(new Map())
   const [liveAnnouncement, setLiveAnnouncement] = useState('')
   const announcementTimeoutRef = useRef<number | null>(null)
+
+  const showSection = useDashboardSectionNavigation(setActiveSectionId)
 
   const {
     unreadCount,
@@ -84,19 +88,6 @@ export function ManagerDashboardPage({
     getNewestUnreadReminder,
     markReminderNotificationAsRead,
   } = useAdminReminderNotifications()
-
-  const scrollToSection = useCallback((sectionId: string) => {
-    const target = document.querySelector<HTMLElement>(
-      `.manager-dashboard [data-section-id="${sectionId}"]`,
-    )
-    if (!target) {
-      return
-    }
-
-    setActiveSectionId(sectionId)
-    target.scrollIntoView({ behavior: 'smooth', block: 'start' })
-    requestAnimationFrame(() => target.focus({ preventScroll: true }))
-  }, [])
 
   const announceNavigation = useCallback((message: string) => {
     setLiveAnnouncement(message)
@@ -118,7 +109,7 @@ export function ManagerDashboardPage({
     handleReminderNavigationComplete,
   } = useReminderBellNavigation({
     role: 'institution_manager',
-    scrollToSection,
+    scrollToSection: showSection,
     resolveLocation: resolveManagerReminderRequestLocation,
     getNewestUnreadReminder,
     markReminderNotificationAsRead,
@@ -127,7 +118,7 @@ export function ManagerDashboardPage({
 
   const managerNavItems: DashboardNavItem[] = useMemo(() => {
     const items: DashboardNavItem[] = [
-      { id: 'stats', label: 'נתונים', icon: <NavChartIcon /> },
+      { id: DASHBOARD_OVERVIEW_SECTION_ID, label: 'סקירה כללית', icon: <NavChartIcon /> },
     ]
 
     if (unreadCount > 0) {
@@ -153,8 +144,9 @@ export function ManagerDashboardPage({
     return items
   }, [handleReminderBellClick, unreadCount])
 
-  function handleSectionSelect(sectionId: string) {
-    scrollToSection(sectionId)
+  function handleNavigateToRecentActivity(intent: DashboardRequestNavigationIntent) {
+    void intent
+    showSection('recentActivity')
   }
 
   useEffect(() => {
@@ -190,36 +182,6 @@ export function ManagerDashboardPage({
   useEffect(() => {
     let isCancelled = false
 
-    async function fetchAnalytics() {
-      setIsAnalyticsLoading(true)
-      setAnalyticsError('')
-
-      const result = await loadManagerAnalytics()
-
-      if (isCancelled) {
-        return
-      }
-
-      if (!result.ok) {
-        setAnalytics(null)
-        setAnalyticsError(result.errorMessage)
-      } else {
-        setAnalytics(result.analytics)
-      }
-
-      setIsAnalyticsLoading(false)
-    }
-
-    void fetchAnalytics()
-
-    return () => {
-      isCancelled = true
-    }
-  }, [usersListVersion, archiveRefreshToken])
-
-  useEffect(() => {
-    let isCancelled = false
-
     async function fetchRecentActivity() {
       setIsRecentActivityLoading(true)
       setRecentActivityError('')
@@ -247,41 +209,31 @@ export function ManagerDashboardPage({
     }
   }, [usersListVersion, archiveRefreshToken])
 
-  function handleRequestArchived() {
-    setArchiveRefreshToken((token) => token + 1)
-  }
-
   useEffect(() => {
-    const sections = Array.from(
-      document.querySelectorAll<HTMLElement>('.manager-dashboard [data-section-id]'),
-    )
+    let isCancelled = false
 
-    if (sections.length === 0) {
-      return
+    async function fetchReminderSummaries() {
+      const result = await loadInstitutionRequestReminderSummaries()
+      if (isCancelled || !result.ok) {
+        return
+      }
+
+      setReminderSummariesByRequestId(
+        new Map(result.summaries.map((summary) => [summary.request_id, summary])),
+      )
     }
 
-    const observer = new IntersectionObserver(
-      (entries) => {
-        const visibleEntries = entries.filter((entry) => entry.isIntersecting)
-        if (visibleEntries.length === 0) {
-          return
-        }
+    void fetchReminderSummaries()
 
-        const mostVisible = visibleEntries.sort(
-          (a, b) => b.intersectionRatio - a.intersectionRatio,
-        )[0]
-        const sectionId = mostVisible.target.getAttribute('data-section-id')
-        if (sectionId) {
-          setActiveSectionId(sectionId)
-        }
-      },
-      { threshold: [0.3, 0.6], rootMargin: '-15% 0px -55% 0px' },
-    )
+    return () => {
+      isCancelled = true
+    }
+  }, [archiveRefreshToken, analyticsRefreshToken, unreadCount])
 
-    sections.forEach((section) => observer.observe(section))
-
-    return () => observer.disconnect()
-  }, [])
+  function handleRequestArchived() {
+    setArchiveRefreshToken((token) => token + 1)
+    setAnalyticsRefreshToken((token) => token + 1)
+  }
 
   useEffect(() => {
     return () => {
@@ -298,7 +250,7 @@ export function ManagerDashboardPage({
       profile={profile}
       navItems={managerNavItems}
       activeSectionId={activeSectionId}
-      onSectionSelect={handleSectionSelect}
+      onSectionSelect={showSection}
       onLogout={onLogout}
     >
       <div dir="rtl" className="manager-dashboard">
@@ -306,30 +258,24 @@ export function ManagerDashboardPage({
           {liveAnnouncement}
         </div>
 
-        <section
-          id="manager-stats"
-          data-section-id="stats"
+        <DashboardSectionPanel
+          id="manager-overview"
+          sectionId={DASHBOARD_OVERVIEW_SECTION_ID}
+          activeSectionId={activeSectionId}
           className="manager-dashboard__shell-section"
-          tabIndex={-1}
         >
-          <ManagerStatsCards
-            analytics={analytics}
-            isLoading={isAnalyticsLoading}
-            errorMessage={analyticsError}
+          <ManagerAnalyticsSection
+            refreshToken={analyticsRefreshToken + archiveRefreshToken + usersListVersion}
+            reminderSummariesByRequestId={reminderSummariesByRequestId}
+            onNavigateToRecentActivity={handleNavigateToRecentActivity}
           />
+        </DashboardSectionPanel>
 
-          <ManagerRequestTypeDistribution
-            analytics={analytics}
-            isLoading={isAnalyticsLoading}
-            errorMessage={analyticsError}
-          />
-        </section>
-
-        <section
+        <DashboardSectionPanel
           id="manager-recent-activity"
-          data-section-id="recentActivity"
+          sectionId="recentActivity"
+          activeSectionId={activeSectionId}
           className="manager-dashboard__shell-section"
-          tabIndex={-1}
         >
           <div className="manager-dashboard__insights">
             <ManagerRecentRequestsSection
@@ -348,26 +294,26 @@ export function ManagerDashboardPage({
               errorMessage={recentActivityError}
             />
           </div>
-        </section>
+        </DashboardSectionPanel>
 
-        <section
+        <DashboardSectionPanel
           id="manager-archive"
-          data-section-id={MANAGER_ARCHIVE_SECTION_ID}
+          sectionId={MANAGER_ARCHIVE_SECTION_ID}
+          activeSectionId={activeSectionId}
           className="manager-dashboard__shell-section"
-          tabIndex={-1}
         >
           <ManagerArchiveSection
             refreshToken={archiveRefreshToken}
             reminderNavigationIntent={navigationIntent}
             onReminderNavigationComplete={handleReminderNavigationComplete}
           />
-        </section>
+        </DashboardSectionPanel>
 
-        <section
+        <DashboardSectionPanel
           id="manager-team"
-          data-section-id={TEAM_MANAGEMENT_SECTION_ID}
+          sectionId={TEAM_MANAGEMENT_SECTION_ID}
+          activeSectionId={activeSectionId}
           className="manager-dashboard__shell-section"
-          tabIndex={-1}
         >
           <TeamManagementSection
             users={users}
@@ -382,7 +328,7 @@ export function ManagerDashboardPage({
             onNewUserRoleChange={onNewUserRoleChange}
             onCreateUser={onCreateUser}
           />
-        </section>
+        </DashboardSectionPanel>
       </div>
     </DashboardShell>
   )

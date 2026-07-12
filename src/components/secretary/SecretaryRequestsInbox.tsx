@@ -1,9 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import type {
-  RequestStatus,
-  SecretaryInboxFilters,
-  SecretaryInboxRequest,
-} from '../../types/request'
+import type { RequestStatus, SecretaryInboxFilters, SecretaryInboxRequest } from '../../types/request'
+import type { DashboardRequestNavigationIntent } from '../../types/dashboardAnalytics'
 import type { ReminderNavigationIntent } from '../../types/reminderNavigation'
 import {
   archiveRequestAsSecretary,
@@ -33,6 +30,8 @@ type SecretaryRequestsInboxProps = {
   reminderNavigationIntent?: ReminderNavigationIntent | null
   highlightedRequestId?: string | null
   onReminderNavigationComplete?: (token: number, found: boolean) => void
+  requestNavigationIntent?: DashboardRequestNavigationIntent | null
+  onRequestNavigationIntentConsumed?: () => void
 }
 
 export function SecretaryRequestsInbox({
@@ -42,6 +41,8 @@ export function SecretaryRequestsInbox({
   reminderNavigationIntent = null,
   highlightedRequestId = null,
   onReminderNavigationComplete,
+  requestNavigationIntent = null,
+  onRequestNavigationIntentConsumed,
 }: SecretaryRequestsInboxProps) {
   const [requests, setRequests] = useState<SecretaryInboxRequest[]>([])
   const [filters, setFilters] = useState<SecretaryInboxFilters>(defaultFilters)
@@ -173,6 +174,21 @@ export function SecretaryRequestsInbox({
     revealRequest: revealReminderRequest,
     onComplete: handleReminderNavigationComplete,
   })
+
+  useEffect(() => {
+    if (!requestNavigationIntent) {
+      return
+    }
+
+    queueMicrotask(() => {
+      setFilters((currentFilters) => ({
+        ...currentFilters,
+        requestStatus: requestNavigationIntent.requestStatus ?? currentFilters.requestStatus,
+        requestType: requestNavigationIntent.requestType ?? currentFilters.requestType,
+      }))
+      onRequestNavigationIntentConsumed?.()
+    })
+  }, [requestNavigationIntent, onRequestNavigationIntentConsumed])
 
   const emptyMessage =
     requests.length === 0
