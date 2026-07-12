@@ -5,12 +5,25 @@ import { uploadRequestAttachment } from '../../services/attachments'
 import { archiveRequest, createTeacherRequest, loadTeacherRequests } from '../../services/requests'
 import { NavClipboardIcon, NavInboxIcon } from '../dashboard/dashboardNav'
 import { DashboardCollapsibleSection } from '../dashboard/DashboardCollapsibleSection'
-import { CreateRequestForm } from './CreateRequestForm'
+import { TeacherCreateRequestModal } from './TeacherCreateRequestModal'
+import { TeacherRequestCategorySelector } from './TeacherRequestCategorySelector'
 import { TeacherRequestsList } from './TeacherRequestsList'
 
 type TeacherRequestsSectionProps = {
   refreshToken: number
   onArchived: () => void
+}
+
+function getSubmitMessageClassName(message: string): string {
+  if (message.includes('בהצלחה')) {
+    return 'ds-form-message ds-form-message--success'
+  }
+
+  if (message.includes('נכשל')) {
+    return 'ds-form-message ds-form-message--error'
+  }
+
+  return 'ds-form-message'
 }
 
 export function TeacherRequestsSection({ refreshToken, onArchived }: TeacherRequestsSectionProps) {
@@ -21,6 +34,8 @@ export function TeacherRequestsSection({ refreshToken, onArchived }: TeacherRequ
   const [submitMessage, setSubmitMessage] = useState('')
   const [requestsListVersion, setRequestsListVersion] = useState(0)
   const [formKey, setFormKey] = useState(0)
+  const [activeRequestType, setActiveRequestType] = useState<RequestType | null>(null)
+  const [selectedCategoryType, setSelectedCategoryType] = useState<RequestType | ''>('')
   const [archivingRequestId, setArchivingRequestId] = useState<string | null>(null)
   const [archiveDialogRequest, setArchiveDialogRequest] = useState<TeacherRequest | null>(null)
 
@@ -45,6 +60,25 @@ export function TeacherRequestsSection({ refreshToken, onArchived }: TeacherRequ
       void fetchRequests()
     })
   }, [fetchRequests, requestsListVersion, refreshToken])
+
+  function handleSelectRequestType(requestType: RequestType) {
+    if (isSubmitting || activeRequestType !== null) {
+      return
+    }
+
+    setSelectedCategoryType(requestType)
+    setSubmitMessage('')
+    setActiveRequestType(requestType)
+  }
+
+  function handleCloseCreateModal() {
+    if (isSubmitting) {
+      return
+    }
+
+    setActiveRequestType(null)
+    setFormKey((key) => key + 1)
+  }
 
   async function handleCreateRequest(input: {
     requestType: RequestType
@@ -79,6 +113,7 @@ export function TeacherRequestsSection({ refreshToken, onArchived }: TeacherRequ
         setSubmitMessage(REQUEST_CREATED_ATTACHMENT_UPLOAD_FAILED_MESSAGE)
         setFormKey((key) => key + 1)
         setRequestsListVersion((version) => version + 1)
+        setActiveRequestType(null)
         return
       }
     } else {
@@ -88,6 +123,8 @@ export function TeacherRequestsSection({ refreshToken, onArchived }: TeacherRequ
     setSubmitMessage('בקשה נשלחה בהצלחה.')
     setFormKey((key) => key + 1)
     setRequestsListVersion((version) => version + 1)
+    setActiveRequestType(null)
+    setSelectedCategoryType('')
   }
 
   function handleOpenArchiveDialog(request: TeacherRequest) {
@@ -132,12 +169,17 @@ export function TeacherRequestsSection({ refreshToken, onArchived }: TeacherRequ
     <section className="teacher-dashboard__requests">
       <DashboardCollapsibleSection title="הבקשות שלי" icon={<NavClipboardIcon />}>
         <div className="ds-card teacher-dashboard__create-card">
-          <CreateRequestForm
-            key={formKey}
-            isSubmitting={isSubmitting}
-            submitMessage={submitMessage}
-            onSubmit={handleCreateRequest}
+          <h3 className="teacher-dashboard__subsection-title">פתיחת בקשה חדשה</h3>
+
+          <TeacherRequestCategorySelector
+            selectedType={selectedCategoryType}
+            isDisabled={isSubmitting || activeRequestType !== null}
+            onSelect={handleSelectRequestType}
           />
+
+          {submitMessage && activeRequestType === null && (
+            <p className={getSubmitMessageClassName(submitMessage)}>{submitMessage}</p>
+          )}
         </div>
 
         <div className="ds-card teacher-dashboard__list-card">
@@ -163,6 +205,17 @@ export function TeacherRequestsSection({ refreshToken, onArchived }: TeacherRequ
           )}
         </div>
       </DashboardCollapsibleSection>
+
+      {activeRequestType && (
+        <TeacherCreateRequestModal
+          requestType={activeRequestType}
+          formKey={formKey}
+          isSubmitting={isSubmitting}
+          submitMessage={submitMessage}
+          onClose={handleCloseCreateModal}
+          onSubmit={handleCreateRequest}
+        />
+      )}
 
       {archiveDialogRequest && (
         <div

@@ -18,7 +18,7 @@
   position: fixed;
   inset: 0;
   pointer-events: none;
-  z-index: 0;
+  z-index: var(--ds-layer-dashboard-background);
 }
 
 .dashboard-shell::before {
@@ -44,7 +44,7 @@
   align-items: start;
   min-width: 0;
   position: relative;
-  z-index: 1;
+  z-index: var(--ds-layer-dashboard-content);
 }
 
 .dashboard-shell__sidebar {
@@ -60,13 +60,13 @@
   border-radius: 0 var(--ds-radius-xl) var(--ds-radius-xl) 0;
   background: var(--ds-color-surface);
   box-shadow: var(--ds-shadow-sm);
-  z-index: 2;
+  z-index: var(--ds-layer-dashboard-sidebar);
 }
 
 .dashboard-shell__content {
   min-width: 0;
   position: relative;
-  z-index: 1;
+  z-index: var(--ds-layer-dashboard-content);
 }
 
 .dashboard-shell__brand {

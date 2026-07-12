@@ -176,4 +176,12 @@
   --ds-font-weight-medium: 500;
   --ds-font-weight-semibold: 600;
   --ds-font-weight-bold: 700;
+
+  /* Layering */
+  --ds-layer-dashboard-background: 0;
+  --ds-layer-dashboard-content: 1;
+  --ds-layer-dashboard-sidebar: 2;
+  --ds-layer-modal-backdrop: 10;
+  --ds-layer-modal: 11;
+  --ds-layer-modal-confirm: 12;
 }

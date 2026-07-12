@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import type { RequestPayload, RequestType } from '../../types/request'
 import { REQUEST_ATTACHMENT_ACCEPT } from '../../types/attachment'
 import { validateRequestAttachment } from '../../services/attachments'
@@ -12,6 +12,7 @@ import {
   validateBudgetForm,
   type BudgetFormFields,
 } from '../../utils/budget'
+import { isCreateRequestFormDirty } from '../../utils/createRequestForm'
 import { isRequestType } from '../../utils/requests'
 import { TeacherAbsenceRequestFields } from './TeacherAbsenceRequestFields'
 import { TeacherBudgetRequestFields } from './TeacherBudgetRequestFields'
@@ -20,6 +21,10 @@ import { TeacherRequestCategorySelector } from './TeacherRequestCategorySelector
 type CreateRequestFormProps = {
   isSubmitting: boolean
   submitMessage: string
+  initialRequestType?: RequestType
+  hideCategorySelector?: boolean
+  onCancel?: () => void
+  onDirtyChange?: (isDirty: boolean) => void
   onSubmit: (input: {
     requestType: RequestType
     description: string
@@ -60,15 +65,30 @@ function getSubmitMessageClassName(message: string): string {
 export function CreateRequestForm({
   isSubmitting,
   submitMessage,
+  initialRequestType,
+  hideCategorySelector = false,
+  onCancel,
+  onDirtyChange,
   onSubmit,
 }: CreateRequestFormProps) {
-  const [requestType, setRequestType] = useState<RequestType | ''>('')
+  const [requestType, setRequestType] = useState<RequestType | ''>(initialRequestType ?? '')
   const [description, setDescription] = useState('')
   const [absenceFields, setAbsenceFields] = useState<AbsenceFormFields>(emptyAbsenceFields)
   const [budgetFields, setBudgetFields] = useState<BudgetFormFields>(emptyBudgetFields)
   const [attachmentFile, setAttachmentFile] = useState<File | null>(null)
   const [validationMessage, setValidationMessage] = useState('')
   const fileInputRef = useRef<HTMLInputElement>(null)
+
+  useEffect(() => {
+    onDirtyChange?.(
+      isCreateRequestFormDirty({
+        description,
+        absenceFields,
+        budgetFields,
+        attachmentFile,
+      }),
+    )
+  }, [description, absenceFields, budgetFields, attachmentFile, onDirtyChange])
 
   function handleSubmit() {
     setValidationMessage('')
@@ -201,15 +221,19 @@ export function CreateRequestForm({
 
   return (
     <>
-      <h3 className="teacher-dashboard__subsection-title">פתיחת בקשה חדשה</h3>
+      {!hideCategorySelector && (
+        <>
+          <h3 className="teacher-dashboard__subsection-title">פתיחת בקשה חדשה</h3>
 
-      <TeacherRequestCategorySelector
-        selectedType={requestType}
-        isDisabled={isSubmitting}
-        onSelect={handleRequestTypeSelect}
-      />
+          <TeacherRequestCategorySelector
+            selectedType={requestType}
+            isDisabled={isSubmitting}
+            onSelect={handleRequestTypeSelect}
+          />
+        </>
+      )}
 
-      {requestType === 'absence' && (
+      {hideCategorySelector && requestType === 'absence' && (
         <TeacherAbsenceRequestFields
           absenceDate={absenceFields.absenceDate}
           absenceReason={absenceFields.absenceReason}
@@ -225,7 +249,7 @@ export function CreateRequestForm({
         />
       )}
 
-      {requestType === 'budget_or_equipment' && (
+      {hideCategorySelector && requestType === 'budget_or_equipment' && (
         <TeacherBudgetRequestFields
           budgetDetails={budgetFields.budgetDetails}
           requestedAmount={budgetFields.requestedAmount}
@@ -239,7 +263,7 @@ export function CreateRequestForm({
         />
       )}
 
-      {requestType === 'substitute_teacher' && (
+      {hideCategorySelector && requestType === 'substitute_teacher' && (
         <div className="ds-fieldset">
           <label className="ds-field" htmlFor="request-description">
             <span className="ds-label">תיאור הבקשה</span>
@@ -256,7 +280,7 @@ export function CreateRequestForm({
         </div>
       )}
 
-      {requestType !== '' && (
+      {hideCategorySelector && requestType !== '' && (
         <div className="ds-fieldset teacher-dashboard__upload-fieldset">
           <label className="ds-field" htmlFor="request-attachment">
             <span className="ds-label">קובץ מצורף</span>
@@ -274,8 +298,18 @@ export function CreateRequestForm({
         </div>
       )}
 
-      {requestType !== '' && (
+      {hideCategorySelector && requestType !== '' && (
         <div className="ds-form-actions">
+          {onCancel && (
+            <button
+              type="button"
+              className="ds-btn ds-btn--secondary"
+              onClick={onCancel}
+              disabled={isSubmitting}
+            >
+              ביטול
+            </button>
+          )}
           <button
             type="button"
             className="ds-btn ds-btn--primary teacher-dashboard__submit"
