@@ -6,6 +6,7 @@ import {
   translateRequestStatus,
   translateRequestType,
 } from '../../utils/requests'
+import { RequestSubjectMessagePreview } from '../requests/RequestSubjectMessagePreview'
 import { RequestDescriptionCell } from '../requests/RequestDescriptionCell'
 import { RequestReminderRowIndicator } from '../requests/RequestReminderRowIndicator'
 import { SecretaryRequestAttachmentCell } from './SecretaryRequestAttachmentCell'
@@ -90,7 +91,14 @@ export function SecretaryRequestsTable({
               <td>{request.teacher_full_name}</td>
               <td>{translateRequestType(request.request_type)}</td>
               <td>
-                <RequestDescriptionCell description={request.description} />
+                {request.request_type === 'general_request' ? (
+                  <RequestSubjectMessagePreview
+                    subject={request.description}
+                    requestPayload={request.request_payload}
+                  />
+                ) : (
+                  <RequestDescriptionCell description={request.description} />
+                )}
               </td>
               <td>
                 <div className="secretary-dashboard__status-cell">

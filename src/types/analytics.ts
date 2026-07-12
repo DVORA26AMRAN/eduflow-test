@@ -1,4 +1,4 @@
-import type { RequestStatus, RequestType } from './request'
+import type { RequestStatus, RequestType, RequestPayload } from './request'
 
 export type ManagerAnalytics = {
   activeTeachersCount: number
@@ -12,6 +12,7 @@ export type ManagerAnalytics = {
     absence: number
     budget_or_equipment: number
     substitute_teacher: number
+    general_request: number
   }
 }
 
@@ -22,6 +23,7 @@ export type ManagerRecentRequest = {
   description: string
   status: RequestStatus
   created_at: string
+  request_payload?: RequestPayload
 }
 
 export type ManagerRecentActivityEntry = {

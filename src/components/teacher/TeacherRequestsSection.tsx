@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react'
-import type { RequestPayload, RequestType, TeacherRequest } from '../../types/request'
+import type { RequestPayload, RequestType, GeneralRequestRecipientRole, TeacherRequest } from '../../types/request'
 import { REQUEST_CREATED_ATTACHMENT_UPLOAD_FAILED_MESSAGE } from '../../types/attachment'
 import { uploadRequestAttachment } from '../../services/attachments'
 import { archiveRequest, createTeacherRequest, loadTeacherRequests } from '../../services/requests'
@@ -105,6 +105,7 @@ export function TeacherRequestsSection({ refreshToken, onArchived }: TeacherRequ
     requestType: RequestType
     description: string
     requestPayload?: RequestPayload
+    recipientRole?: GeneralRequestRecipientRole
     attachmentFile: File | null
   }) {
     setSubmitMessage('')
@@ -114,6 +115,7 @@ export function TeacherRequestsSection({ refreshToken, onArchived }: TeacherRequ
       requestType: input.requestType,
       description: input.description,
       requestPayload: input.requestPayload,
+      recipientRole: input.recipientRole,
     })
 
     if (!result.ok) {

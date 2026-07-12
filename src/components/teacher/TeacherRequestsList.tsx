@@ -2,6 +2,7 @@ import type { TeacherRequest } from '../../types/request'
 import type { TeacherRequestReminderState } from '../../types/requestReminder'
 import { canSendRequestReminder } from '../../services/requestReminders'
 import { RequestReminderBellButton } from '../requests/RequestReminderBellButton'
+import { translateRecipientRole } from '../../utils/generalRequestDisplay'
 import {
   formatRequestDate,
   translateRequestStatus,
@@ -66,7 +67,18 @@ export function TeacherRequestsList({
                   </span>
                 </td>
                 <td>{formatRequestDate(request.created_at)}</td>
-                <td>{request.description}</td>
+                <td>
+                  {request.request_type === 'general_request' && request.recipient_role ? (
+                    <div className="teacher-dashboard__request-summary">
+                      <span className="teacher-dashboard__request-recipient">
+                        נמען: {translateRecipientRole(request.recipient_role)}
+                      </span>
+                      <span>{request.description}</span>
+                    </div>
+                  ) : (
+                    request.description
+                  )}
+                </td>
                 <td>
                   <div className="ds-table__row-actions">
                     <RequestReminderBellButton

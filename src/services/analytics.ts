@@ -3,6 +3,7 @@ import type {
   ManagerRecentActivityEntry,
   ManagerRecentRequest,
 } from '../types/analytics'
+import type { RequestPayload } from '../types/request'
 import { isRequestStatus, isRequestType } from '../utils/requests'
 import { loadManagerPersonalArchivedRequestIds } from './managerPersonalArchive'
 import { supabase } from './supabase'
@@ -35,6 +36,14 @@ function extractTeacherFullName(users: unknown): string | null {
   return null
 }
 
+function parseRequestPayload(value: unknown): RequestPayload {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) {
+    return {}
+  }
+
+  return value as RequestPayload
+}
+
 function parseManagerRecentRequest(row: {
   id: unknown
   request_type: unknown
@@ -42,6 +51,7 @@ function parseManagerRecentRequest(row: {
   status: unknown
   created_at: unknown
   users: unknown
+  request_payload?: unknown
 }): ManagerRecentRequest | null {
   const teacherFullName = extractTeacherFullName(row.users)
 
@@ -65,6 +75,7 @@ function parseManagerRecentRequest(row: {
     description: row.description,
     status: row.status,
     created_at: row.created_at,
+    request_payload: parseRequestPayload(row.request_payload),
   }
 }
 
@@ -106,6 +117,7 @@ function createEmptyAnalytics(): ManagerAnalytics {
       absence: 0,
       budget_or_equipment: 0,
       substitute_teacher: 0,
+      general_request: 0,
     },
   }
 }
@@ -191,7 +203,7 @@ export async function loadRecentRequests(): Promise<LoadRecentRequestsResult> {
   let query = supabase
     .from('requests')
     .select(
-      'id, request_type, description, status, created_at, users!created_by_user_id(full_name)',
+      'id, request_type, description, status, created_at, request_payload, users!created_by_user_id(full_name)',
     )
     .order('created_at', { ascending: false })
     .limit(5)

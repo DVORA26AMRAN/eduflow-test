@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import type { RequestPayload, RequestType } from '../../types/request'
+import type { RequestPayload, RequestType, GeneralRequestFormFields, GeneralRequestRecipientRole } from '../../types/request'
 import { REQUEST_ATTACHMENT_ACCEPT } from '../../types/attachment'
 import { validateRequestAttachment } from '../../services/attachments'
 import {
@@ -12,10 +12,15 @@ import {
   validateBudgetForm,
   type BudgetFormFields,
 } from '../../utils/budget'
+import {
+  buildGeneralRequestDescription,
+  validateGeneralRequestForm,
+} from '../../utils/generalRequest'
 import { isCreateRequestFormDirty } from '../../utils/createRequestForm'
 import { isRequestType } from '../../utils/requests'
 import { TeacherAbsenceRequestFields } from './TeacherAbsenceRequestFields'
 import { TeacherBudgetRequestFields } from './TeacherBudgetRequestFields'
+import { TeacherGeneralRequestFields } from './TeacherGeneralRequestFields'
 import { TeacherRequestCategorySelector } from './TeacherRequestCategorySelector'
 
 type CreateRequestFormProps = {
@@ -29,8 +34,15 @@ type CreateRequestFormProps = {
     requestType: RequestType
     description: string
     requestPayload?: RequestPayload
+    recipientRole?: GeneralRequestRecipientRole
     attachmentFile: File | null
   }) => void
+}
+
+const emptyGeneralRequestFields: GeneralRequestFormFields = {
+  recipientRole: '',
+  subject: '',
+  message: '',
 }
 
 const emptyAbsenceFields: AbsenceFormFields = {
@@ -75,6 +87,8 @@ export function CreateRequestForm({
   const [description, setDescription] = useState('')
   const [absenceFields, setAbsenceFields] = useState<AbsenceFormFields>(emptyAbsenceFields)
   const [budgetFields, setBudgetFields] = useState<BudgetFormFields>(emptyBudgetFields)
+  const [generalRequestFields, setGeneralRequestFields] =
+    useState<GeneralRequestFormFields>(emptyGeneralRequestFields)
   const [attachmentFile, setAttachmentFile] = useState<File | null>(null)
   const [validationMessage, setValidationMessage] = useState('')
   const fileInputRef = useRef<HTMLInputElement>(null)
@@ -85,10 +99,11 @@ export function CreateRequestForm({
         description,
         absenceFields,
         budgetFields,
+        generalRequestFields,
         attachmentFile,
       }),
     )
-  }, [description, absenceFields, budgetFields, attachmentFile, onDirtyChange])
+  }, [description, absenceFields, budgetFields, generalRequestFields, attachmentFile, onDirtyChange])
 
   function handleSubmit() {
     setValidationMessage('')
@@ -138,6 +153,37 @@ export function CreateRequestForm({
       return
     }
 
+    if (requestType === 'general_request') {
+      const generalValidation = validateGeneralRequestForm(generalRequestFields)
+      if (!generalValidation.ok) {
+        setValidationMessage(generalValidation.errorMessage)
+        return
+      }
+
+      onSubmit({
+        requestType,
+        description: buildGeneralRequestDescription(generalValidation.subject),
+        requestPayload: generalValidation.payload,
+        recipientRole: generalRequestFields.recipientRole as GeneralRequestRecipientRole,
+        attachmentFile,
+      })
+      return
+    }
+
+    if (requestType === 'substitute_teacher') {
+      if (!description.trim()) {
+        setValidationMessage('נא להזין תיאור בקשה.')
+        return
+      }
+
+      onSubmit({
+        requestType,
+        description: description.trim(),
+        attachmentFile,
+      })
+      return
+    }
+
     if (!description.trim()) {
       setValidationMessage('נא להזין תיאור בקשה.')
       return
@@ -160,6 +206,14 @@ export function CreateRequestForm({
 
     if (value !== 'budget_or_equipment') {
       setBudgetFields(emptyBudgetFields)
+    }
+
+    if (value !== 'general_request') {
+      setGeneralRequestFields(emptyGeneralRequestFields)
+    }
+
+    if (value !== 'substitute_teacher') {
+      setDescription('')
     }
   }
 
@@ -260,6 +314,36 @@ export function CreateRequestForm({
           onBankAccountDetailsChange={(value) =>
             updateBudgetField('bankAccountDetails', value)
           }
+        />
+      )}
+
+      {hideCategorySelector && requestType === 'general_request' && (
+        <TeacherGeneralRequestFields
+          recipientRole={generalRequestFields.recipientRole}
+          subject={generalRequestFields.subject}
+          message={generalRequestFields.message}
+          isDisabled={isSubmitting}
+          onRecipientRoleChange={(value) => {
+            setGeneralRequestFields((currentFields) => ({
+              ...currentFields,
+              recipientRole: value,
+            }))
+            setValidationMessage('')
+          }}
+          onSubjectChange={(value) => {
+            setGeneralRequestFields((currentFields) => ({
+              ...currentFields,
+              subject: value,
+            }))
+            setValidationMessage('')
+          }}
+          onMessageChange={(value) => {
+            setGeneralRequestFields((currentFields) => ({
+              ...currentFields,
+              message: value,
+            }))
+            setValidationMessage('')
+          }}
         />
       )}
 

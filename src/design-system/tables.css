@@ -117,3 +117,19 @@
 .ds-table__description--empty {
   color: var(--ds-color-text-secondary);
 }
+
+.ds-table__request-preview {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  max-width: min(28rem, 40vw);
+}
+
+.ds-table__message-preview {
+  margin: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--ds-color-text-secondary);
+  font-size: var(--ds-font-size-sm);
+}

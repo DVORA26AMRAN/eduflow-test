@@ -1,12 +1,15 @@
 import type {
   ArchivedTeacherRequest,
   CreateRequestInput,
+  GeneralRequestRecipientRole,
+  RequestPayload,
   RequestStatus,
   RequestStatusHistoryEntry,
   SecretaryArchivedRequest,
   SecretaryInboxRequest,
   TeacherRequest,
 } from '../types/request'
+import { isGeneralRequestRecipientRole } from '../utils/generalRequestDisplay'
 import { isRequestStatus, isRequestType } from '../utils/requests'
 import { supabase } from './supabase'
 
@@ -68,12 +71,30 @@ async function loadCurrentUserInstitutionId(
   return { ok: true, institutionId: data.institution_id }
 }
 
+function parseRecipientRole(value: unknown): GeneralRequestRecipientRole | null {
+  if (typeof value !== 'string' || !isGeneralRequestRecipientRole(value)) {
+    return null
+  }
+
+  return value
+}
+
+function parseRequestPayload(value: unknown): RequestPayload {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) {
+    return {}
+  }
+
+  return value as RequestPayload
+}
+
 function parseTeacherRequest(row: {
   id: unknown
   request_type: unknown
   description: unknown
   status: unknown
   created_at: unknown
+  recipient_role?: unknown
+  request_payload?: unknown
 }): TeacherRequest | null {
   if (
     typeof row.id !== 'string' ||
@@ -93,13 +114,15 @@ function parseTeacherRequest(row: {
     description: row.description,
     status: row.status,
     created_at: row.created_at,
+    recipient_role: parseRecipientRole(row.recipient_role),
+    request_payload: parseRequestPayload(row.request_payload),
   }
 }
 
 export async function loadTeacherRequests(): Promise<LoadTeacherRequestsResult> {
   const { data, error } = await supabase
     .from('requests')
-    .select('id, request_type, description, status, created_at')
+    .select('id, request_type, description, status, created_at, recipient_role, request_payload')
     .is('archived_at', null)
     .order('created_at', { ascending: false })
 
@@ -207,6 +230,7 @@ function parseSecretaryInboxRequest(row: {
   status: unknown
   created_at: unknown
   users: unknown
+  request_payload?: unknown
 }): SecretaryInboxRequest | null {
   const teacherFullName = extractTeacherFullName(row.users)
 
@@ -230,6 +254,7 @@ function parseSecretaryInboxRequest(row: {
     status: row.status,
     created_at: row.created_at,
     teacher_full_name: teacherFullName,
+    request_payload: parseRequestPayload(row.request_payload),
   }
 }
 
@@ -237,7 +262,7 @@ export async function loadSecretaryRequests(): Promise<LoadSecretaryRequestsResu
   const { data, error } = await supabase
     .from('requests')
     .select(
-      'id, request_type, description, status, created_at, users!created_by_user_id(full_name)',
+      'id, request_type, description, status, created_at, request_payload, users!created_by_user_id(full_name)',
     )
     .is('archived_at', null)
     .order('created_at', { ascending: false })
@@ -594,6 +619,7 @@ export async function createTeacherRequest(
       request_type: input.requestType,
       description: input.description.trim(),
       request_payload: input.requestPayload ?? {},
+      recipient_role: input.recipientRole ?? null,
     })
     .select('id')
     .single()

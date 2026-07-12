@@ -352,6 +352,30 @@
   max-width: 280px;
 }
 
+.teacher-dashboard__recipient-options {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--ds-control-gap);
+}
+
+.teacher-dashboard__recipient-option {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--ds-label-gap);
+  cursor: pointer;
+}
+
+.teacher-dashboard__request-summary {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.teacher-dashboard__request-recipient {
+  color: var(--ds-color-text-secondary);
+  font-size: var(--ds-font-size-sm);
+}
+
 .teacher-dashboard__create-card,
 .teacher-dashboard__list-card {
   padding: var(--ds-card-padding);

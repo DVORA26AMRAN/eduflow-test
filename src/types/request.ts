@@ -1,4 +1,6 @@
-export type RequestType = 'absence' | 'budget_or_equipment' | 'substitute_teacher'
+export type RequestType = 'absence' | 'budget_or_equipment' | 'substitute_teacher' | 'general_request'
+
+export type GeneralRequestRecipientRole = 'secretary' | 'institution_manager'
 
 export type AbsenceReason =
   | 'sick_leave'
@@ -19,9 +21,20 @@ export type BudgetOrEquipmentRequestPayload = {
   bank_account_details: string | null
 }
 
+export type GeneralRequestPayload = {
+  message: string
+}
+
+export type GeneralRequestFormFields = {
+  recipientRole: GeneralRequestRecipientRole | ''
+  subject: string
+  message: string
+}
+
 export type RequestPayload =
   | AbsenceRequestPayload
   | BudgetOrEquipmentRequestPayload
+  | GeneralRequestPayload
   | Record<string, never>
 
 export type RequestStatus = 'new' | 'in_progress' | 'completed' | 'rejected'
@@ -32,6 +45,8 @@ export type TeacherRequest = {
   description: string
   status: RequestStatus
   created_at: string
+  recipient_role?: GeneralRequestRecipientRole | null
+  request_payload?: RequestPayload
 }
 
 export type ArchivedTeacherRequest = TeacherRequest & {
@@ -49,6 +64,7 @@ export type CreateRequestInput = {
   requestType: RequestType
   description: string
   requestPayload?: RequestPayload
+  recipientRole?: GeneralRequestRecipientRole
 }
 
 export type SecretaryInboxRequest = {
@@ -58,6 +74,7 @@ export type SecretaryInboxRequest = {
   status: RequestStatus
   created_at: string
   teacher_full_name: string
+  request_payload?: RequestPayload
 }
 
 export type SecretaryInboxFilters = {

@@ -18,6 +18,7 @@ const REQUEST_TYPE_ROWS: { type: RequestType; label: string }[] = [
   { type: 'absence', label: 'היעדרויות' },
   { type: 'budget_or_equipment', label: 'תקציב / ציוד' },
   { type: 'substitute_teacher', label: 'מילויי מקום' },
+  { type: 'general_request', label: 'בקשה אחרת' },
 ]
 
 export function ManagerRequestTypeDistribution({

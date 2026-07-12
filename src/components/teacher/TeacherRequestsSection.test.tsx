@@ -16,6 +16,7 @@ vi.mock('../../services/requestReminders', () => ({
 
 vi.mock('../../services/attachments', () => ({
   uploadRequestAttachment: vi.fn(),
+  validateRequestAttachment: vi.fn(() => ({ ok: true })),
 }))
 
 import { createTeacherRequest, loadTeacherRequests } from '../../services/requests'
@@ -45,6 +46,12 @@ async function expandRequestsSection(user: ReturnType<typeof userEvent.setup>) {
   await user.click(screen.getByRole('button', { name: 'הבקשות שלי' }))
 }
 
+async function fillGeneralRequestForm(user: ReturnType<typeof userEvent.setup>) {
+  await user.click(screen.getByRole('radio', { name: 'מזכירה' }))
+  await user.type(screen.getByLabelText('נושא'), 'נושא לבדיקה')
+  await user.type(screen.getByLabelText('הודעה'), 'הודעה לבדיקה')
+}
+
 describe('TeacherRequestsSection modal create flow', () => {
   it('does not render request fields inline before a category is selected', async () => {
     const user = userEvent.setup({ delay: null })
@@ -53,8 +60,18 @@ describe('TeacherRequestsSection modal create flow', () => {
 
     expect(screen.getByText('פתיחת בקשה חדשה')).toBeInTheDocument()
     expect(screen.queryByLabelText('תאריך היעדרות')).not.toBeInTheDocument()
-    expect(screen.queryByLabelText('תיאור הבקשה')).not.toBeInTheDocument()
+    expect(screen.queryByLabelText('נושא')).not.toBeInTheDocument()
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+  })
+
+  it('does not show מילוי מקום as a teacher request category card', async () => {
+    const user = userEvent.setup({ delay: null })
+    renderSection()
+    await expandRequestsSection(user)
+
+    expect(screen.queryByRole('radio', { name: /מילוי מקום/ })).not.toBeInTheDocument()
+    expect(screen.getByRole('radio', { name: /בקשה אחרת/ })).toBeInTheDocument()
+    expect(screen.getByText('פנייה חופשית למזכירה או למנהלת')).toBeInTheDocument()
   })
 
   it('opens the selected request type inside a modal for every category', async () => {
@@ -65,7 +82,7 @@ describe('TeacherRequestsSection modal create flow', () => {
     const categories = [
       { name: /היעדרויות/, fieldLabel: 'תאריך היעדרות', dialogName: 'היעדרויות' },
       { name: /בקשת תקציב/, fieldLabel: 'פירוט הבקשה', dialogName: 'בקשת תקציב / ציוד' },
-      { name: /מילוי מקום/, fieldLabel: 'תיאור הבקשה', dialogName: 'מילוי מקום' },
+      { name: /בקשה אחרת/, fieldLabel: 'נושא', dialogName: 'בקשה אחרת' },
     ]
 
     for (const category of categories) {
@@ -85,11 +102,11 @@ describe('TeacherRequestsSection modal create flow', () => {
     await user.click(screen.getByRole('radio', { name: /היעדרויות/ }))
     expect(screen.getAllByRole('dialog')).toHaveLength(1)
 
-    const substituteCategory = screen.getByRole('radio', { name: /מילוי מקום/ })
-    expect(substituteCategory).toBeDisabled()
+    const generalRequestCategory = screen.getByRole('radio', { name: /בקשה אחרת/ })
+    expect(generalRequestCategory).toBeDisabled()
   })
 
-  it('closes the modal and refreshes requests after a successful submit', async () => {
+  it('closes the modal and refreshes requests after a successful general request submit', async () => {
     const user = userEvent.setup({ delay: null })
     vi.mocked(createTeacherRequest).mockResolvedValue({
       ok: true,
@@ -99,15 +116,20 @@ describe('TeacherRequestsSection modal create flow', () => {
     renderSection()
     await expandRequestsSection(user)
 
-    await user.click(screen.getByRole('radio', { name: /מילוי מקום/ }))
-    await user.type(screen.getByLabelText('תיאור הבקשה'), 'בקשה חדשה')
+    await user.click(screen.getByRole('radio', { name: /בקשה אחרת/ }))
+    await fillGeneralRequestForm(user)
     await user.click(screen.getByRole('button', { name: 'שליחת בקשה' }))
 
     await waitFor(() => {
       expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
     })
 
-    expect(createTeacherRequest).toHaveBeenCalledTimes(1)
+    expect(createTeacherRequest).toHaveBeenCalledWith({
+      requestType: 'general_request',
+      description: 'נושא לבדיקה',
+      requestPayload: { message: 'הודעה לבדיקה' },
+      recipientRole: 'secretary',
+    })
     expect(loadTeacherRequests).toHaveBeenCalledTimes(2)
     expect(screen.getByText('בקשה נשלחה בהצלחה.')).toBeInTheDocument()
   })
@@ -122,14 +144,14 @@ describe('TeacherRequestsSection modal create flow', () => {
     renderSection()
     await expandRequestsSection(user)
 
-    await user.click(screen.getByRole('radio', { name: /מילוי מקום/ }))
-    await user.type(screen.getByLabelText('תיאור הבקשה'), 'בקשה חדשה')
+    await user.click(screen.getByRole('radio', { name: /בקשה אחרת/ }))
+    await fillGeneralRequestForm(user)
     await user.click(screen.getByRole('button', { name: 'שליחת בקשה' }))
 
     await waitFor(() => {
       expect(screen.getAllByText('שליחת הבקשה נכשלה')).toHaveLength(1)
     })
 
-    expect(screen.getByRole('dialog', { name: 'מילוי מקום' })).toBeInTheDocument()
+    expect(screen.getByRole('dialog', { name: 'בקשה אחרת' })).toBeInTheDocument()
   })
 })

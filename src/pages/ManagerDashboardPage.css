@@ -179,6 +179,10 @@
   background: #5b9ea8;
 }
 
+.manager-dashboard__type-distribution-bar--general_request {
+  background: #c27b4a;
+}
+
 .manager-dashboard__insights {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
