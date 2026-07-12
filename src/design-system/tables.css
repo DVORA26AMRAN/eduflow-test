@@ -16,7 +16,7 @@
 
 .ds-table th,
 .ds-table td {
-  padding: var(--ds-space-4) var(--ds-space-4);
+  padding: var(--ds-control-gap) var(--ds-control-gap);
   border-bottom: 1px solid var(--ds-color-border);
   vertical-align: middle;
   color: var(--ds-color-text-primary);
@@ -47,7 +47,7 @@
 }
 
 .ds-table__empty {
-  padding: var(--ds-space-8);
+  padding: var(--ds-section-gap);
   text-align: center;
   color: var(--ds-color-text-secondary);
 }
@@ -57,7 +57,7 @@
   align-items: center;
   justify-content: center;
   min-height: 28px;
-  padding: 4px 12px;
+  padding: var(--ds-label-gap) var(--ds-control-gap);
   border-radius: var(--ds-radius-pill);
   font-size: var(--ds-font-size-sm);
   font-weight: var(--ds-font-weight-semibold);
@@ -102,5 +102,5 @@
   flex-wrap: wrap;
   align-items: center;
   justify-content: flex-start;
-  gap: var(--ds-space-2);
+  gap: var(--ds-label-gap);
 }

@@ -1,0 +1,7 @@
+.platform-admin-dashboard {
+  width: 100%;
+  max-width: 760px;
+  margin: 0 auto;
+  padding: var(--ds-page-padding);
+  box-sizing: border-box;
+}

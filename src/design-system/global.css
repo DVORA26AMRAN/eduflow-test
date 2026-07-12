@@ -17,7 +17,7 @@ body {
   margin: 0;
   min-height: 100svh;
   font-family: var(--ds-font-family);
-  font-size: var(--ds-font-size-base);
+  font-size: var(--ds-font-size-body);
   line-height: var(--ds-line-height-base);
   color: var(--ds-color-text-primary);
   background-color: var(--ds-color-background);
@@ -50,16 +50,29 @@ h3,
 h4,
 h5,
 h6 {
-  margin-block: 0 var(--ds-space-3);
+  margin-block: 0 var(--ds-label-gap);
   font-family: var(--ds-font-family);
   font-weight: var(--ds-font-weight-semibold);
   line-height: var(--ds-line-height-tight);
   color: var(--ds-color-text-primary);
 }
 
+h1 {
+  font-size: var(--ds-font-size-page-title);
+}
+
+h2 {
+  font-size: var(--ds-font-size-section-title);
+}
+
+h3 {
+  font-size: var(--ds-font-size-card-title);
+}
+
 p {
   margin-block: 0;
   color: var(--ds-color-text-secondary);
+  line-height: var(--ds-line-height-secondary);
 }
 
 a {

@@ -1,17 +1,50 @@
 import type { Session } from '@supabase/supabase-js'
-import type { PrimaryRole, ProfileLoadDebugInfo, ProfileLoadResult } from '../types/user'
+import type {
+  AuthenticatedUserProfile,
+  PrimaryRole,
+  ProfileLoadDebugInfo,
+  ProfileLoadResult,
+} from '../types/user'
+import type { School } from '../types/school'
 import { supabase, supabaseAnonKey, supabaseUrl } from './supabase'
 
 function isPrimaryRole(value: unknown): value is PrimaryRole {
   return (
     value === 'institution_manager' ||
     value === 'secretary' ||
-    value === 'teacher'
+    value === 'teacher' ||
+    value === 'platform_admin'
   )
 }
 
 function logProfileDebug(label: string, payload: unknown) {
   console.log(`[profile] ${label}`, payload)
+}
+
+function parseInstitutionRow(value: unknown): School | null {
+  const row = Array.isArray(value) ? value[0] : value
+  if (!row || typeof row !== 'object') {
+    return null
+  }
+
+  const institution = row as {
+    id?: unknown
+    name?: unknown
+    logo_url?: unknown
+    logo_updated_at?: unknown
+  }
+
+  if (typeof institution.id !== 'string' || typeof institution.name !== 'string') {
+    return null
+  }
+
+  return {
+    id: institution.id,
+    name: institution.name,
+    logoUrl: typeof institution.logo_url === 'string' ? institution.logo_url : null,
+    logoUpdatedAt:
+      typeof institution.logo_updated_at === 'string' ? institution.logo_updated_at : null,
+  }
 }
 
 export async function logAuthState(source: string) {
@@ -36,7 +69,7 @@ export async function logAuthState(source: string) {
   })
 }
 
-export async function loadCurrentUserRole(
+export async function loadCurrentUserProfile(
   session: Session,
   source: string,
 ): Promise<ProfileLoadResult> {
@@ -54,14 +87,12 @@ export async function loadCurrentUserRole(
     dataWasNull: false,
   }
 
-  logProfileDebug('loadCurrentUserRole start', {
+  logProfileDebug('loadCurrentUserProfile start', {
     source,
     userId: queryUserId,
     hasAccessToken: !!accessToken,
-    accessTokenPrefix: accessToken?.slice(0, 12) ?? null,
-    query: "from('users').select('primary_role').eq('id', userId).maybeSingle()",
-    filterColumn: 'id',
-    filterValue: queryUserId,
+    query:
+      "from('users').select('id, full_name, primary_role, institution_id, institutions(id, name, logo_url, logo_updated_at)')",
   })
 
   if (!accessToken) {
@@ -82,15 +113,8 @@ export async function loadCurrentUserRole(
 
   const queryUrl =
     `${supabaseUrl}/rest/v1/users` +
-    `?select=primary_role` +
+    `?select=id,full_name,primary_role,institution_id,institutions(id,name,logo_url,logo_updated_at)` +
     `&id=eq.${encodeURIComponent(queryUserId)}`
-
-  logProfileDebug('users query request', {
-    source,
-    method: 'GET',
-    url: queryUrl,
-    authorizationUsesUserJwt: true,
-  })
 
   const response = await fetch(queryUrl, {
     headers: {
@@ -142,21 +166,20 @@ export async function loadCurrentUserRole(
   }
 
   const rows = Array.isArray(responseBody) ? responseBody : []
-  const row = rows[0] as { primary_role?: unknown } | undefined
-  const primaryRole = row?.primary_role
-
-  logProfileDebug('users query parsed row', {
-    source,
-    rowCount: rows.length,
-    primaryRole,
-    primaryRoleType: typeof primaryRole,
-  })
+  const row = rows[0] as
+    | {
+        id?: unknown
+        full_name?: unknown
+        primary_role?: unknown
+        institution_id?: unknown
+        institutions?: unknown
+      }
+    | undefined
 
   if (rows.length === 0 || row === undefined) {
     console.error('[profile] no users row returned for authenticated user', {
       source,
       userId: queryUserId,
-      authUserId: sessionUserId,
     })
     return {
       ok: false,
@@ -169,26 +192,70 @@ export async function loadCurrentUserRole(
     }
   }
 
-  if (!isPrimaryRole(primaryRole)) {
-    console.error('[profile] invalid or missing primary_role', {
+  if (
+    typeof row.id !== 'string' ||
+    typeof row.full_name !== 'string' ||
+    !isPrimaryRole(row.primary_role)
+  ) {
+    console.error('[profile] invalid user profile row', {
       source,
       userId: queryUserId,
-      primaryRole,
       row,
-      rows,
     })
     return {
       ok: false,
       debug: {
         ...baseDebug,
-        errorMessage: `primary_role לא תקין: ${String(primaryRole)}`,
+        errorMessage: 'נתוני פרופיל המשתמש אינם תקינים',
         errorCode: null,
-        dataWasNull: primaryRole == null,
+        dataWasNull: true,
       },
     }
   }
 
-  return { ok: true, role: primaryRole }
+  const school = parseInstitutionRow(row.institutions)
+
+  if (row.primary_role !== 'platform_admin' && school === null) {
+    console.error('[profile] institution missing for non-platform user', {
+      source,
+      userId: queryUserId,
+      institutionId: row.institution_id,
+    })
+    return {
+      ok: false,
+      debug: {
+        ...baseDebug,
+        errorMessage: 'לא נמצא מוסד משויך למשתמש',
+        errorCode: null,
+        dataWasNull: true,
+      },
+    }
+  }
+
+  const profile: AuthenticatedUserProfile = {
+    id: row.id,
+    fullName: row.full_name,
+    role: row.primary_role,
+    school,
+  }
+
+  return { ok: true, profile }
+}
+
+/** @deprecated Use loadCurrentUserProfile */
+export async function loadCurrentUserRole(
+  session: Session,
+  source: string,
+): Promise<
+  | { ok: true; role: PrimaryRole }
+  | { ok: false; debug: ProfileLoadDebugInfo }
+> {
+  const result = await loadCurrentUserProfile(session, source)
+  if (!result.ok) {
+    return result
+  }
+
+  return { ok: true, role: result.profile.role }
 }
 
 export { logProfileDebug }

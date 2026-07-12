@@ -1,5 +1,4 @@
 import { useEffect, useState } from 'react'
-import organizationLogo from '../assets/images/logo.png.png'
 import { DashboardShell } from '../components/dashboard/DashboardShell'
 import {
   NavArchiveIcon,
@@ -12,9 +11,11 @@ import { TeacherArchiveSection } from '../components/teacher/TeacherArchiveSecti
 import { TeacherNotificationsSection } from '../components/teacher/TeacherNotificationsSection'
 import { TeacherRequestsSection } from '../components/teacher/TeacherRequestsSection'
 import { TeacherSubstituteBoardSection } from '../components/teacher/TeacherSubstituteBoardSection'
+import type { AuthenticatedUserProfile } from '../types/user'
 import './TeacherDashboardPage.css'
 
 type TeacherDashboardPageProps = {
+  profile: AuthenticatedUserProfile
   onLogout: () => void
 }
 
@@ -25,7 +26,7 @@ const teacherNavItems: DashboardNavItem[] = [
   { id: 'archive', label: 'הארכיון שלי', icon: <NavArchiveIcon /> },
 ]
 
-export function TeacherDashboardPage({ onLogout }: TeacherDashboardPageProps) {
+export function TeacherDashboardPage({ profile, onLogout }: TeacherDashboardPageProps) {
   const [activeSectionId, setActiveSectionId] = useState<string>('notifications')
   const [archiveRefreshToken, setArchiveRefreshToken] = useState(0)
 
@@ -82,7 +83,7 @@ export function TeacherDashboardPage({ onLogout }: TeacherDashboardPageProps) {
     <DashboardShell
       roleLabel="אזור המורה"
       subtitle="ברוכה הבאה לאזור המורה ב־EduFlow."
-      logoSrc={organizationLogo}
+      profile={profile}
       navItems={teacherNavItems}
       activeSectionId={activeSectionId}
       onSectionSelect={handleSectionSelect}

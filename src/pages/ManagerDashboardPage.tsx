@@ -1,5 +1,4 @@
 import { useEffect, useState } from 'react'
-import organizationLogo from '../assets/images/logo.png.png'
 import { DashboardShell } from '../components/dashboard/DashboardShell'
 import {
   NavActivityIcon,
@@ -23,10 +22,11 @@ import type {
   ManagerRecentActivityEntry,
   ManagerRecentRequest,
 } from '../types/analytics'
-import type { InstitutionUser, UserRole } from '../types/user'
+import type { AuthenticatedUserProfile, InstitutionUser, UserRole } from '../types/user'
 import './ManagerDashboardPage.css'
 
 type ManagerDashboardPageProps = {
+  profile: AuthenticatedUserProfile
   newUserName: string
   newUserEmail: string
   newUserRole: UserRole
@@ -46,6 +46,7 @@ const managerNavItems: DashboardNavItem[] = [
 ]
 
 export function ManagerDashboardPage({
+  profile,
   newUserName,
   newUserEmail,
   newUserRole,
@@ -223,7 +224,7 @@ export function ManagerDashboardPage({
     <DashboardShell
       roleLabel="אזור מנהלת"
       subtitle="ברוכה הבאה ל־EduFlow."
-      logoSrc={organizationLogo}
+      profile={profile}
       navItems={managerNavItems}
       activeSectionId={activeSectionId}
       onSectionSelect={handleSectionSelect}

@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react'
+import type { AuthenticatedUserProfile } from '../../types/user'
 import './DashboardShell.css'
 import { DashboardTopHeader } from './DashboardTopHeader'
 import type { DashboardNavItem } from './dashboardNav'
@@ -6,7 +7,7 @@ import type { DashboardNavItem } from './dashboardNav'
 type DashboardShellProps = {
   roleLabel: string
   subtitle: string
-  logoSrc: string
+  profile: AuthenticatedUserProfile
   navItems: DashboardNavItem[]
   activeSectionId: string
   onSectionSelect: (sectionId: string) => void
@@ -17,7 +18,7 @@ type DashboardShellProps = {
 export function DashboardShell({
   roleLabel,
   subtitle,
-  logoSrc,
+  profile,
   navItems,
   activeSectionId,
   onSectionSelect,
@@ -30,7 +31,8 @@ export function DashboardShell({
         <DashboardTopHeader
           welcomeMessage="ברוכה הבאה"
           roleSubtitle={roleLabel}
-          userDisplayName="משתמש/ת מחובר/ת"
+          userDisplayName={profile.fullName}
+          school={profile.school}
           onLogout={onLogout}
           showSearch
         />
@@ -39,8 +41,10 @@ export function DashboardShell({
 
       <aside className="dashboard-shell__sidebar" aria-label={`ניווט ${roleLabel}`}>
         <header className="dashboard-shell__brand">
-          <img className="dashboard-shell__logo" src={logoSrc} alt="לוגו הארגון" />
           <p className="dashboard-shell__subtitle">{subtitle}</p>
+          {profile.school ? (
+            <p className="dashboard-shell__school-name">{profile.school.name}</p>
+          ) : null}
         </header>
 
         <nav className="dashboard-shell__nav" aria-label="ניווט חלקים בדף">

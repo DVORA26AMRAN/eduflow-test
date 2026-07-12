@@ -1,5 +1,4 @@
 import { useEffect, useState } from 'react'
-import organizationLogo from '../assets/images/logo.png.png'
 import { DashboardShell } from '../components/dashboard/DashboardShell'
 import {
   NavArchiveIcon,
@@ -10,9 +9,11 @@ import {
 import { SecretaryArchiveSection } from '../components/secretary/SecretaryArchiveSection'
 import { SecretaryRequestsInbox } from '../components/secretary/SecretaryRequestsInbox'
 import { SecretarySubstituteApprovalsSection } from '../components/secretary/SecretarySubstituteApprovalsSection'
+import type { AuthenticatedUserProfile } from '../types/user'
 import './SecretaryDashboardPage.css'
 
 type SecretaryDashboardPageProps = {
+  profile: AuthenticatedUserProfile
   onLogout: () => void
 }
 
@@ -22,7 +23,7 @@ const secretaryNavItems: DashboardNavItem[] = [
   { id: 'institutionalArchive', label: 'ארכיון מוסדי', icon: <NavArchiveIcon /> },
 ]
 
-export function SecretaryDashboardPage({ onLogout }: SecretaryDashboardPageProps) {
+export function SecretaryDashboardPage({ profile, onLogout }: SecretaryDashboardPageProps) {
   const [activeSectionId, setActiveSectionId] = useState<string>('substituteApprovals')
   const [archiveRefreshToken, setArchiveRefreshToken] = useState(0)
 
@@ -79,7 +80,7 @@ export function SecretaryDashboardPage({ onLogout }: SecretaryDashboardPageProps
     <DashboardShell
       roleLabel="אזור המזכירה"
       subtitle="ברוכה הבאה לאזור המזכירה ב־EduFlow."
-      logoSrc={organizationLogo}
+      profile={profile}
       navItems={secretaryNavItems}
       activeSectionId={activeSectionId}
       onSectionSelect={handleSectionSelect}

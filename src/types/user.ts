@@ -1,11 +1,20 @@
+import type { School } from './school'
+
 export type UserRole = 'teacher' | 'secretary'
 
-export type PrimaryRole = 'institution_manager' | 'secretary' | 'teacher'
+export type PrimaryRole = 'institution_manager' | 'secretary' | 'teacher' | 'platform_admin'
 
 export type InstitutionUser = {
   full_name: string
   email: string
   primary_role: PrimaryRole
+}
+
+export type AuthenticatedUserProfile = {
+  id: string
+  fullName: string
+  role: PrimaryRole
+  school: School | null
 }
 
 export type ProfileLoadDebugInfo = {
@@ -18,5 +27,5 @@ export type ProfileLoadDebugInfo = {
 }
 
 export type ProfileLoadResult =
-  | { ok: true; role: PrimaryRole }
+  | { ok: true; profile: AuthenticatedUserProfile }
   | { ok: false; debug: ProfileLoadDebugInfo }

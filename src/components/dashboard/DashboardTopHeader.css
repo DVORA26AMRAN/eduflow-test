@@ -2,9 +2,9 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: var(--ds-space-5);
-  margin-bottom: var(--ds-space-6);
-  padding: var(--ds-space-5);
+  gap: var(--ds-control-gap);
+  margin-bottom: var(--ds-control-gap);
+  padding: var(--ds-card-padding);
   border: 1px solid var(--ds-color-border);
   border-radius: var(--ds-radius-xl);
   background: var(--ds-color-surface);
@@ -15,6 +15,24 @@
   min-width: 0;
 }
 
+.dashboard-top-header__school-brand {
+  display: flex;
+  align-items: center;
+  gap: var(--ds-control-gap);
+  min-width: 0;
+}
+
+.dashboard-top-header__school-copy {
+  min-width: 0;
+}
+
+.dashboard-top-header__school-name {
+  margin: 0 0 var(--ds-label-gap);
+  font-size: var(--ds-font-size-sm);
+  font-weight: var(--ds-font-weight-semibold);
+  color: var(--ds-color-text-primary);
+}
+
 .dashboard-top-header__welcome {
   margin: 0;
   font-size: var(--ds-font-size-sm);
@@ -23,15 +41,15 @@
 }
 
 .dashboard-top-header__role {
-  margin: var(--ds-space-1) 0 0;
-  font-size: var(--ds-font-size-xl);
+  margin: var(--ds-label-gap) 0 0;
+  font-size: var(--ds-font-size-section-title);
   font-weight: var(--ds-font-weight-medium);
   line-height: var(--ds-line-height-tight);
   color: var(--ds-color-text-primary);
 }
 
 .dashboard-top-header__user {
-  margin: var(--ds-space-2) 0 0;
+  margin: var(--ds-label-gap) 0 0;
   font-size: var(--ds-font-size-sm);
   color: var(--ds-color-text-secondary);
 }
@@ -40,16 +58,16 @@
   display: flex;
   align-items: center;
   justify-content: flex-start;
-  gap: var(--ds-space-3);
+  gap: var(--ds-control-gap);
   flex-shrink: 0;
 }
 
 .dashboard-top-header__search {
   display: inline-flex;
   align-items: center;
-  gap: var(--ds-space-3);
+  gap: var(--ds-control-gap);
   min-width: min(360px, 48vw);
-  padding: 0 var(--ds-space-4) 0 var(--ds-space-3);
+  padding: 0 var(--ds-control-gap) 0 var(--ds-label-gap);
   border: 1px solid var(--ds-color-border);
   border-radius: var(--ds-radius-pill);
   background: var(--ds-color-surface-soft);

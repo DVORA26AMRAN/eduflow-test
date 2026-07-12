@@ -1,0 +1,49 @@
+.platform-admin-logo {
+  padding: var(--ds-card-padding);
+}
+
+.platform-admin-logo__title {
+  margin: 0 0 var(--ds-card-gap);
+  font-size: var(--ds-font-size-xl);
+  color: var(--ds-color-text-primary);
+}
+
+.platform-admin-logo__field {
+  margin-bottom: var(--ds-card-gap);
+}
+
+.platform-admin-logo__preview {
+  display: flex;
+  align-items: center;
+  gap: var(--ds-control-gap);
+  margin-bottom: var(--ds-card-gap);
+}
+
+.platform-admin-logo__school-name {
+  margin: 0;
+  font-size: var(--ds-font-size-lg);
+  font-weight: var(--ds-font-weight-medium);
+  color: var(--ds-color-text-primary);
+}
+
+.platform-admin-logo__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--ds-control-gap);
+}
+
+.platform-admin-logo__upload-button {
+  position: relative;
+  overflow: hidden;
+}
+
+.platform-admin-logo__file-input {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  cursor: pointer;
+}
+
+.platform-admin-logo__file-input:disabled {
+  cursor: not-allowed;
+}

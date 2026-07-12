@@ -6,6 +6,7 @@ import { ProfileLoadErrorPage } from './components/ProfileLoadErrorPage'
 import { LoginPage } from './pages/LoginPage'
 import { ManagerDashboardPage } from './pages/ManagerDashboardPage'
 import { PasswordSetupPage } from './pages/PasswordSetupPage'
+import { PlatformAdminDashboardPage } from './pages/PlatformAdminDashboardPage'
 import { SecretaryDashboardPage } from './pages/SecretaryDashboardPage'
 import { TeacherDashboardPage } from './pages/TeacherDashboardPage'
 import {
@@ -13,10 +14,10 @@ import {
   detectAuthCallback,
   hasCompletedPasswordSetup,
 } from './services/auth'
-import { loadCurrentUserRole, logAuthState, logProfileDebug } from './services/profile'
+import { loadCurrentUserProfile, logAuthState, logProfileDebug } from './services/profile'
 import { PENDING_PASSWORD_SETUP_KEY, supabase } from './services/supabase'
 import type {
-  PrimaryRole,
+  AuthenticatedUserProfile,
   ProfileLoadDebugInfo,
   UserRole,
 } from './types/user'
@@ -32,7 +33,7 @@ function App() {
   const [profileLoadDebug, setProfileLoadDebug] = useState<ProfileLoadDebugInfo | null>(
     null,
   )
-  const [currentRole, setCurrentRole] = useState<PrimaryRole | null>(null)
+  const [currentProfile, setCurrentProfile] = useState<AuthenticatedUserProfile | null>(null)
 
   const [newPassword, setNewPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
@@ -46,7 +47,7 @@ function App() {
 
   const profileLoadRequestId = useRef(0)
   const loadedProfileUserId = useRef<string | null>(null)
-  const loadedProfileRole = useRef<PrimaryRole | null>(null)
+  const loadedProfile = useRef<AuthenticatedUserProfile | null>(null)
 
   async function syncAuthenticatedSession(
     session: Session | null,
@@ -61,13 +62,13 @@ function App() {
       hasSession: !!session,
       sessionUserId: session?.user.id ?? null,
       loadedProfileUserId: loadedProfileUserId.current,
-      loadedProfileRole: loadedProfileRole.current,
+      loadedProfileRole: loadedProfile.current?.role ?? null,
     })
 
     if (!session?.user) {
       loadedProfileUserId.current = null
-      loadedProfileRole.current = null
-      setCurrentRole(null)
+      loadedProfile.current = null
+      setCurrentProfile(null)
       setNeedsPasswordSetup(false)
       setProfileLoadError('')
       setProfileLoadDebug(null)
@@ -90,7 +91,7 @@ function App() {
         setupComplete,
       })
       setNeedsPasswordSetup(true)
-      setCurrentRole(null)
+      setCurrentProfile(null)
       setProfileLoadError('')
       setProfileLoadDebug(null)
       setIsProfileLoading(false)
@@ -99,14 +100,14 @@ function App() {
 
     if (
       loadedProfileUserId.current === session.user.id &&
-      loadedProfileRole.current !== null
+      loadedProfile.current !== null
     ) {
       logProfileDebug('profile already loaded for user, skipping reload', {
         source,
         userId: session.user.id,
-        role: loadedProfileRole.current,
+        role: loadedProfile.current.role,
       })
-      setCurrentRole(loadedProfileRole.current)
+      setCurrentProfile(loadedProfile.current)
       setNeedsPasswordSetup(false)
       setProfileLoadError('')
       setProfileLoadDebug(null)
@@ -122,7 +123,7 @@ function App() {
     await logAuthState(`${source}:before-users-query`)
 
     try {
-      const result = await loadCurrentUserRole(session, source)
+      const result = await loadCurrentUserProfile(session, source)
 
       if (requestId !== profileLoadRequestId.current) {
         logProfileDebug('stale profile load ignored', {
@@ -137,23 +138,23 @@ function App() {
       if (!result.ok) {
         if (
           loadedProfileUserId.current === session.user.id &&
-          loadedProfileRole.current !== null
+          loadedProfile.current !== null
         ) {
           console.warn('[profile] ignoring failure because profile already loaded', {
             source,
             userId: session.user.id,
-            role: loadedProfileRole.current,
+            role: loadedProfile.current.role,
             debug: result.debug,
           })
-          setCurrentRole(loadedProfileRole.current)
+          setCurrentProfile(loadedProfile.current)
           setProfileLoadError('')
           setProfileLoadDebug(null)
           return
         }
 
         loadedProfileUserId.current = null
-        loadedProfileRole.current = null
-        setCurrentRole(null)
+        loadedProfile.current = null
+        setCurrentProfile(null)
         setProfileLoadError('לא ניתן לטעון את פרופיל המשתמש.')
         setProfileLoadDebug(result.debug)
 
@@ -167,8 +168,8 @@ function App() {
       }
 
       loadedProfileUserId.current = session.user.id
-      loadedProfileRole.current = result.role
-      setCurrentRole(result.role)
+      loadedProfile.current = result.profile
+      setCurrentProfile(result.profile)
       setProfileLoadError('')
       setProfileLoadDebug(null)
 
@@ -176,7 +177,7 @@ function App() {
         source,
         requestId,
         userId: session.user.id,
-        role: result.role,
+        role: result.profile.role,
       })
     } catch (error) {
       if (requestId !== profileLoadRequestId.current) {
@@ -190,8 +191,8 @@ function App() {
       }
 
       loadedProfileUserId.current = null
-      loadedProfileRole.current = null
-      setCurrentRole(null)
+      loadedProfile.current = null
+      setCurrentProfile(null)
       setProfileLoadError('לא ניתן לטעון את פרופיל המשתמש.')
       setProfileLoadDebug({
         sessionUserId: session.user.id,
@@ -256,8 +257,8 @@ function App() {
     setProfileLoadError('')
     setProfileLoadDebug(null)
     loadedProfileUserId.current = null
-    loadedProfileRole.current = null
-    setCurrentRole(null)
+    loadedProfile.current = null
+    setCurrentProfile(null)
 
     const { data, error } = await supabase.auth.signInWithPassword({
       email,
@@ -332,8 +333,8 @@ function App() {
     setConfirmPassword('')
     setMessage('הסיסמה נשמרה בהצלחה. אפשר להתחבר למערכת.')
     loadedProfileUserId.current = null
-    loadedProfileRole.current = null
-    setCurrentRole(null)
+    loadedProfile.current = null
+    setCurrentProfile(null)
 
     await supabase.auth.signOut()
   }
@@ -406,9 +407,9 @@ function App() {
   async function logout() {
     profileLoadRequestId.current += 1
     loadedProfileUserId.current = null
-    loadedProfileRole.current = null
+    loadedProfile.current = null
     await supabase.auth.signOut()
-    setCurrentRole(null)
+    setCurrentProfile(null)
     setProfileLoadError('')
     setProfileLoadDebug(null)
     setIsProfileLoading(false)
@@ -446,7 +447,7 @@ function App() {
     )
   }
 
-  if (!currentRole) {
+  if (!currentProfile) {
     return (
       <LoginPage
         email={email}
@@ -459,16 +460,21 @@ function App() {
     )
   }
 
-  if (currentRole === 'secretary') {
-    return <SecretaryDashboardPage onLogout={logout} />
+  if (currentProfile.role === 'platform_admin') {
+    return <PlatformAdminDashboardPage profile={currentProfile} onLogout={logout} />
   }
 
-  if (currentRole === 'teacher') {
-    return <TeacherDashboardPage onLogout={logout} />
+  if (currentProfile.role === 'secretary') {
+    return <SecretaryDashboardPage profile={currentProfile} onLogout={logout} />
+  }
+
+  if (currentProfile.role === 'teacher') {
+    return <TeacherDashboardPage profile={currentProfile} onLogout={logout} />
   }
 
   return (
     <ManagerDashboardPage
+      profile={currentProfile}
       newUserName={newUserName}
       newUserEmail={newUserEmail}
       newUserRole={newUserRole}

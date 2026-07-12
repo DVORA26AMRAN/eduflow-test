@@ -10,7 +10,7 @@
   width: 100vw;
   min-height: 100svh;
   max-height: 100svh;
-  padding: var(--ds-space-6) var(--ds-space-5);
+  padding: var(--ds-page-padding-compact);
   text-align: right;
   box-sizing: border-box;
   overflow-x: hidden;
@@ -94,7 +94,7 @@
   display: grid;
   /* RTL: first column (login card) sits on the RIGHT; second (visual) on the LEFT */
   grid-template-columns: minmax(360px, 440px) minmax(0, 1.15fr);
-  gap: var(--ds-space-8);
+  gap: var(--ds-section-gap);
   width: min(1120px, 100%);
   align-items: stretch;
 }
@@ -108,8 +108,8 @@
   grid-column: 2;
   display: flex;
   flex-direction: column;
-  gap: var(--ds-space-6);
-  padding: var(--ds-space-2) var(--ds-space-2) 0;
+  gap: var(--ds-card-gap);
+  padding: var(--ds-label-gap) var(--ds-label-gap) 0;
   background: transparent;
   border: none;
   overflow: visible;
@@ -121,7 +121,7 @@
   align-items: center;
   justify-content: center;
   min-height: 280px;
-  padding: var(--ds-space-4);
+  padding: var(--ds-control-gap);
   border-radius: var(--ds-radius-xl);
   border: 1px solid rgba(186, 200, 220, 0.35);
   overflow: hidden;
@@ -142,7 +142,7 @@
 .login-page__roles {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: var(--ds-space-4);
+  gap: var(--ds-control-gap);
 }
 
 .login-page__role-card {
@@ -153,9 +153,9 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: var(--ds-space-3);
+  gap: var(--ds-control-gap);
   min-height: 188px;
-  padding: var(--ds-space-5) var(--ds-space-4) var(--ds-space-4);
+  padding: var(--ds-card-padding) var(--ds-control-gap) var(--ds-control-gap);
   border: 1px solid rgba(190, 200, 220, 0.45);
   border-radius: 18px;
   background: #ffffff;
@@ -192,8 +192,8 @@
   display: block;
   width: 42px;
   height: 4px;
-  margin-top: calc(var(--ds-space-1) * -1);
-  margin-bottom: var(--ds-space-1);
+  margin-top: calc(var(--ds-label-gap) * -1);
+  margin-bottom: var(--ds-label-gap);
   border-radius: var(--ds-radius-pill);
   background: var(--role-gradient);
 }
@@ -256,7 +256,7 @@
 
 .login-page__card {
   width: 100%;
-  padding: var(--ds-space-8);
+  padding: var(--ds-page-padding);
   border: 1px solid rgba(220, 226, 238, 0.9);
   border-radius: 28px;
   /* Override any translucent ds-card accent bleed */
@@ -268,12 +268,12 @@
 }
 
 .login-page__header {
-  margin-bottom: var(--ds-space-7);
+  margin-bottom: var(--ds-section-gap);
   text-align: center;
 }
 
 .login-page__brand {
-  margin: 0 0 var(--ds-space-2);
+  margin: 0 0 var(--ds-label-gap);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -294,15 +294,15 @@
 }
 
 .login-page__form-title {
-  margin: 0 0 var(--ds-space-6);
-  font-size: var(--ds-font-size-xl);
+  margin: 0 0 var(--ds-card-gap);
+  font-size: var(--ds-font-size-section-title);
   font-weight: var(--ds-font-weight-semibold);
   color: var(--ds-color-text-primary);
   text-align: center;
 }
 
 .login-page__form .ds-field:last-of-type {
-  margin-bottom: var(--ds-space-5);
+  margin-bottom: var(--ds-card-gap);
 }
 
 .login-page__submit {
@@ -312,7 +312,7 @@
 }
 
 .login-page__message {
-  margin-top: var(--ds-space-4);
+  margin-top: var(--ds-control-gap);
   text-align: center;
 }
 
@@ -320,7 +320,7 @@
   .login-page__shell {
     grid-template-columns: 1fr;
     max-width: 520px;
-    gap: var(--ds-space-5);
+    gap: var(--ds-card-gap);
   }
 
   .login-page__card,
@@ -358,16 +358,16 @@
 
 @media (max-width: 480px) {
   .login-page {
-    padding: var(--ds-space-4);
+    padding: var(--ds-page-padding-compact);
   }
 
   .login-page__card {
-    padding: var(--ds-space-6);
+    padding: var(--ds-card-padding);
     border-radius: 22px;
   }
 
   .login-page__brand {
-    margin-bottom: var(--ds-space-1);
+    margin-bottom: var(--ds-label-gap);
   }
 
   .login-page__brand-logo {
