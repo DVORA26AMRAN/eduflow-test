@@ -19,6 +19,46 @@
   outline: none;
 }
 
+.manager-dashboard__archive {
+  margin-bottom: 0;
+  padding: 0;
+}
+
+.manager-dashboard__archive-pagination-summary {
+  margin-bottom: var(--ds-control-gap);
+}
+
+.manager-dashboard__archive-pagination {
+  display: flex;
+  justify-content: flex-start;
+  gap: var(--ds-control-gap);
+  margin-top: var(--ds-card-gap);
+}
+
+.manager-dashboard__archive-confirm-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--ds-card-padding);
+  background: rgba(26, 21, 35, 0.4);
+}
+
+.manager-dashboard__archive-confirm-panel {
+  width: 100%;
+  max-width: 520px;
+  padding: var(--ds-card-padding);
+  text-align: right;
+}
+
+.manager-dashboard__archive-confirm-actions {
+  display: flex;
+  justify-content: flex-start;
+  gap: var(--ds-control-gap);
+}
+
 .manager-dashboard__header {
   display: flex;
   align-items: flex-start;
@@ -292,6 +332,20 @@
 
   .manager-dashboard__search-field {
     max-width: none;
+  }
+
+  .manager-dashboard__archive-confirm-panel {
+    padding: var(--ds-card-padding);
+  }
+
+  .manager-dashboard__archive-confirm-actions {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .manager-dashboard__archive-pagination {
+    flex-direction: column;
+    align-items: stretch;
   }
 
   .manager-dashboard__brand {

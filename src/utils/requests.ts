@@ -8,6 +8,10 @@ import type {
   SecretaryInboxFilters,
   SecretaryInboxRequest,
 } from '../types/request'
+import type {
+  ManagerPersonalArchivedRequest,
+  ManagerPersonalArchiveFilters,
+} from '../types/managerPersonalArchive'
 
 const requestTypeLabels: Record<RequestType, string> = {
   absence: 'היעדרויות',
@@ -116,6 +120,10 @@ export function isRequestStatus(value: string): value is RequestStatus {
   )
 }
 
+export function canArchiveInstitutionRequest(status: RequestStatus): boolean {
+  return status === 'completed' || status === 'rejected'
+}
+
 export function filterSecretaryInboxRequests(
   requests: SecretaryInboxRequest[],
   filters: SecretaryInboxFilters,
@@ -206,6 +214,16 @@ export function filterSecretaryArchivedRequests(
 
     return true
   })
+}
+
+export function filterManagerPersonalArchivedRequests(
+  requests: ManagerPersonalArchivedRequest[],
+  filters: ManagerPersonalArchiveFilters,
+): ManagerPersonalArchivedRequest[] {
+  return filterSecretaryArchivedRequests(
+    requests,
+    filters,
+  ) as ManagerPersonalArchivedRequest[]
 }
 
 export function filterArchivedTeacherRequests(

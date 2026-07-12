@@ -77,6 +77,17 @@ export function NavActivityIcon() {
   )
 }
 
+export function NavTrashIcon() {
+  const stroke = iconStroke()
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true">
+      <path d="M4.5 7.5h15v11.5a1.5 1.5 0 0 1-1.5 1.5h-12a1.5 1.5 0 0 1-1.5-1.5Z" {...stroke} />
+      <path d="M4 5.5h16v2H4Z" {...stroke} />
+      <path d="M10 12.5h4" {...stroke} />
+    </svg>
+  )
+}
+
 export function NavArchiveIcon() {
   const stroke = iconStroke()
   return (

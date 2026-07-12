@@ -4,6 +4,7 @@ import type {
   ManagerRecentRequest,
 } from '../types/analytics'
 import { isRequestStatus, isRequestType } from '../utils/requests'
+import { loadManagerPersonalArchivedRequestIds } from './managerPersonalArchive'
 import { supabase } from './supabase'
 
 export type LoadManagerAnalyticsResult =
@@ -175,13 +176,33 @@ export async function loadManagerAnalytics(): Promise<LoadManagerAnalyticsResult
 }
 
 export async function loadRecentRequests(): Promise<LoadRecentRequestsResult> {
-  const { data, error } = await supabase
+  const personalArchiveIdsResult = await loadManagerPersonalArchivedRequestIds()
+
+  if (!personalArchiveIdsResult.ok) {
+    return {
+      ok: false,
+      errorMessage: personalArchiveIdsResult.errorMessage,
+    }
+  }
+
+  let query = supabase
     .from('requests')
     .select(
       'id, request_type, status, created_at, users!created_by_user_id(full_name)',
     )
     .order('created_at', { ascending: false })
     .limit(5)
+
+  const personalArchiveIds = personalArchiveIdsResult.requestIds
+  if (personalArchiveIds.length > 0) {
+    query = query.not(
+      'id',
+      'in',
+      `(${personalArchiveIds.map((requestId) => `"${requestId}"`).join(',')})`,
+    )
+  }
+
+  const { data, error } = await query
 
   if (error) {
     console.error('[analytics] failed to load recent requests', error)

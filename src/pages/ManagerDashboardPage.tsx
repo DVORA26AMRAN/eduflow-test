@@ -2,10 +2,12 @@ import { useEffect, useState } from 'react'
 import { DashboardShell } from '../components/dashboard/DashboardShell'
 import {
   NavActivityIcon,
+  NavArchiveIcon,
   NavChartIcon,
   NavUsersIcon,
   type DashboardNavItem,
 } from '../components/dashboard/dashboardNav'
+import { ManagerArchiveSection } from '../components/manager/ManagerArchiveSection'
 import { ManagerRecentActivitySection } from '../components/manager/ManagerRecentActivitySection'
 import { ManagerRecentRequestsSection } from '../components/manager/ManagerRecentRequestsSection'
 import { ManagerRequestTypeDistribution } from '../components/manager/ManagerRequestTypeDistribution'
@@ -14,18 +16,17 @@ import { TeamManagementSection } from '../components/manager/TeamManagementSecti
 import {
   loadManagerAnalytics,
   loadRecentRequestActivity,
-  loadRecentRequests,
 } from '../services/analytics'
 import { loadInstitutionUsers } from '../services/institutionUsers'
 import type {
   ManagerAnalytics,
   ManagerRecentActivityEntry,
-  ManagerRecentRequest,
 } from '../types/analytics'
 import type { AuthenticatedUserProfile, InstitutionUser, UserRole } from '../types/user'
 import './ManagerDashboardPage.css'
 
 const TEAM_MANAGEMENT_SECTION_ID = 'team'
+const MANAGER_ARCHIVE_SECTION_ID = 'archive'
 
 type ManagerDashboardPageProps = {
   profile: AuthenticatedUserProfile
@@ -44,6 +45,7 @@ type ManagerDashboardPageProps = {
 const managerNavItems: DashboardNavItem[] = [
   { id: 'stats', label: 'נתונים', icon: <NavChartIcon /> },
   { id: 'recentActivity', label: 'פעילות אחרונה', icon: <NavActivityIcon /> },
+  { id: MANAGER_ARCHIVE_SECTION_ID, label: 'הארכיון שלי', icon: <NavArchiveIcon /> },
   { id: TEAM_MANAGEMENT_SECTION_ID, label: 'ניהול משתמשים', icon: <NavUsersIcon /> },
 ]
 
@@ -66,12 +68,10 @@ export function ManagerDashboardPage({
   const [analytics, setAnalytics] = useState<ManagerAnalytics | null>(null)
   const [isAnalyticsLoading, setIsAnalyticsLoading] = useState(true)
   const [analyticsError, setAnalyticsError] = useState('')
-  const [recentRequests, setRecentRequests] = useState<ManagerRecentRequest[]>([])
-  const [isRecentRequestsLoading, setIsRecentRequestsLoading] = useState(true)
-  const [recentRequestsError, setRecentRequestsError] = useState('')
   const [recentActivity, setRecentActivity] = useState<ManagerRecentActivityEntry[]>([])
   const [isRecentActivityLoading, setIsRecentActivityLoading] = useState(true)
   const [recentActivityError, setRecentActivityError] = useState('')
+  const [archiveRefreshToken, setArchiveRefreshToken] = useState(0)
   const [activeSectionId, setActiveSectionId] = useState<string>('stats')
 
   function handleSectionSelect(sectionId: string) {
@@ -145,31 +145,19 @@ export function ManagerDashboardPage({
     return () => {
       isCancelled = true
     }
-  }, [usersListVersion])
+  }, [usersListVersion, archiveRefreshToken])
 
   useEffect(() => {
     let isCancelled = false
 
-    async function fetchInsights() {
-      setIsRecentRequestsLoading(true)
+    async function fetchRecentActivity() {
       setIsRecentActivityLoading(true)
-      setRecentRequestsError('')
       setRecentActivityError('')
 
-      const [requestsResult, activityResult] = await Promise.all([
-        loadRecentRequests(),
-        loadRecentRequestActivity(),
-      ])
+      const activityResult = await loadRecentRequestActivity()
 
       if (isCancelled) {
         return
-      }
-
-      if (!requestsResult.ok) {
-        setRecentRequests([])
-        setRecentRequestsError(requestsResult.errorMessage)
-      } else {
-        setRecentRequests(requestsResult.requests)
       }
 
       if (!activityResult.ok) {
@@ -179,16 +167,19 @@ export function ManagerDashboardPage({
         setRecentActivity(activityResult.entries)
       }
 
-      setIsRecentRequestsLoading(false)
       setIsRecentActivityLoading(false)
     }
 
-    void fetchInsights()
+    void fetchRecentActivity()
 
     return () => {
       isCancelled = true
     }
-  }, [usersListVersion])
+  }, [usersListVersion, archiveRefreshToken])
+
+  function handleRequestArchived() {
+    setArchiveRefreshToken((token) => token + 1)
+  }
 
   useEffect(() => {
     const sections = Array.from(
@@ -260,9 +251,8 @@ export function ManagerDashboardPage({
         >
           <div className="manager-dashboard__insights">
             <ManagerRecentRequestsSection
-              requests={recentRequests}
-              isLoading={isRecentRequestsLoading}
-              errorMessage={recentRequestsError}
+              refreshToken={archiveRefreshToken}
+              onArchived={handleRequestArchived}
             />
 
             <ManagerRecentActivitySection
@@ -271,6 +261,15 @@ export function ManagerDashboardPage({
               errorMessage={recentActivityError}
             />
           </div>
+        </section>
+
+        <section
+          id="manager-archive"
+          data-section-id={MANAGER_ARCHIVE_SECTION_ID}
+          className="manager-dashboard__shell-section"
+          tabIndex={-1}
+        >
+          <ManagerArchiveSection refreshToken={archiveRefreshToken} />
         </section>
 
         <section
