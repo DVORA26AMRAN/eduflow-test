@@ -27,6 +27,7 @@ type TeacherRequestsSectionProps = {
   requestIdsWithMessages?: ReadonlySet<string>
   onConversationOpened?: (requestId: string) => void | Promise<boolean>
   requestNavigationIntent?: DashboardRequestNavigationIntent | null
+  requestNavigationReturnFocus?: HTMLElement | null
   onRequestNavigationIntentConsumed?: () => void
 }
 
@@ -49,6 +50,7 @@ export function TeacherRequestsSection({
   requestIdsWithMessages = new Set(),
   onConversationOpened,
   requestNavigationIntent = null,
+  requestNavigationReturnFocus = null,
   onRequestNavigationIntentConsumed,
 }: TeacherRequestsSectionProps) {
   const [requests, setRequests] = useState<TeacherRequest[]>([])
@@ -59,8 +61,14 @@ export function TeacherRequestsSection({
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [submitMessage, setSubmitMessage] = useState('')
   const [requestsListVersion, setRequestsListVersion] = useState(0)
+  const [archiveDialogRequest, setArchiveDialogRequest] = useState<TeacherRequest | null>(null)
+  const [detailsRequest, setDetailsRequest] = useState<RequestDetailsTeacherRequest | null>(null)
+  const [detailsReturnFocusElement, setDetailsReturnFocusElement] = useState<HTMLElement | null>(
+    null,
+  )
+
   useEffect(() => {
-    if (!requestNavigationIntent) {
+    if (!requestNavigationIntent || requestNavigationIntent.requestId) {
       return
     }
 
@@ -76,6 +84,48 @@ export function TeacherRequestsSection({
       onRequestNavigationIntentConsumed?.()
     })
   }, [requestNavigationIntent, onRequestNavigationIntentConsumed])
+
+  useEffect(() => {
+    if (!requestNavigationIntent?.requestId || isLoading) {
+      return
+    }
+
+    const request = requests.find((item) => item.id === requestNavigationIntent.requestId)
+    if (!request) {
+      return
+    }
+
+    const matchesStatusFilter =
+      listStatusFilter === 'all' || request.status === listStatusFilter
+    const matchesTypeFilter =
+      listTypeFilter === 'all' || request.request_type === listTypeFilter
+
+    if (!matchesStatusFilter || !matchesTypeFilter) {
+      queueMicrotask(() => {
+        setListStatusFilter('all')
+        setListTypeFilter('all')
+      })
+      return
+    }
+
+    queueMicrotask(() => {
+      const row = document.querySelector<HTMLTableRowElement>(
+        `[data-request-id="${request.id}"]`,
+      )
+      setDetailsReturnFocusElement(requestNavigationReturnFocus ?? row)
+      setDetailsRequest({ ...request, role: 'teacher' })
+      row?.scrollIntoView({ block: 'nearest', behavior: 'smooth' })
+      onRequestNavigationIntentConsumed?.()
+    })
+  }, [
+    requestNavigationIntent,
+    isLoading,
+    requests,
+    listStatusFilter,
+    listTypeFilter,
+    requestNavigationReturnFocus,
+    onRequestNavigationIntentConsumed,
+  ])
 
   const visibleRequests = requests.filter((request) => {
     if (listStatusFilter !== 'all' && request.status !== listStatusFilter) {
@@ -96,11 +146,6 @@ export function TeacherRequestsSection({
   const [reminderStatesByRequestId, setReminderStatesByRequestId] = useState<
     Map<string, TeacherRequestReminderState>
   >(new Map())
-  const [archiveDialogRequest, setArchiveDialogRequest] = useState<TeacherRequest | null>(null)
-  const [detailsRequest, setDetailsRequest] = useState<RequestDetailsTeacherRequest | null>(null)
-  const [detailsReturnFocusElement, setDetailsReturnFocusElement] = useState<HTMLElement | null>(
-    null,
-  )
 
   const fetchRequests = useCallback(async () => {
     setIsLoading(true)

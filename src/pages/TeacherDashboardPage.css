@@ -172,6 +172,7 @@
 .teacher-dashboard__notification {
   display: block;
   width: 100%;
+  min-width: 0;
   padding: var(--ds-card-padding);
   border: 1px solid var(--ds-color-border);
   border-radius: var(--ds-radius-md);
@@ -210,9 +211,20 @@
 
 .teacher-dashboard__notification-title {
   margin: 0;
+  min-width: 0;
   font-size: var(--ds-font-size-base);
   font-weight: var(--ds-font-weight-semibold);
   color: var(--ds-color-text-primary);
+}
+
+.teacher-dashboard__notification-context {
+  margin: 0 0 var(--ds-label-gap);
+  min-width: 0;
+  overflow: hidden;
+  color: var(--ds-color-text-secondary);
+  line-height: var(--ds-line-height-relaxed);
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .teacher-dashboard__notification-badge {
@@ -228,8 +240,12 @@
 
 .teacher-dashboard__notification-message {
   margin: 0 0 var(--ds-label-gap);
+  min-width: 0;
+  overflow: hidden;
   color: var(--ds-color-text-primary);
   line-height: var(--ds-line-height-relaxed);
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .teacher-dashboard__notification-date {

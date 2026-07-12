@@ -86,8 +86,9 @@ export function TeacherDashboardPage({ profile, onLogout }: TeacherDashboardPage
   const [analyticsRefreshToken, setAnalyticsRefreshToken] = useState(0)
 
   const [requestNavigationIntent, setRequestNavigationIntent] =
-
     useState<DashboardRequestNavigationIntent | null>(null)
+  const [requestNavigationReturnFocus, setRequestNavigationReturnFocus] =
+    useState<HTMLElement | null>(null)
 
   const [reminderStatesByRequestId, setReminderStatesByRequestId] = useState<
 
@@ -117,12 +118,27 @@ export function TeacherDashboardPage({ profile, onLogout }: TeacherDashboardPage
 
 
   function handleNavigateToRequests(intent: DashboardRequestNavigationIntent) {
-
+    setRequestNavigationReturnFocus(null)
     setRequestNavigationIntent(intent)
-
     showSection('requests')
-
   }
+
+  const handleNavigateFromNotification = useCallback(
+    (
+      intent: DashboardRequestNavigationIntent,
+      options: { archived: boolean; returnFocusElement: HTMLButtonElement | null },
+    ) => {
+      setRequestNavigationReturnFocus(options.returnFocusElement)
+      setRequestNavigationIntent(intent)
+      showSection(options.archived ? 'archive' : 'requests')
+    },
+    [showSection],
+  )
+
+  const handleRequestNavigationIntentConsumed = useCallback(() => {
+    setRequestNavigationIntent(null)
+    setRequestNavigationReturnFocus(null)
+  }, [])
 
 
 
@@ -240,7 +256,7 @@ export function TeacherDashboardPage({ profile, onLogout }: TeacherDashboardPage
 
         >
 
-          <TeacherNotificationsSection />
+          <TeacherNotificationsSection onNavigateToRequest={handleNavigateFromNotification} />
 
         </DashboardSectionPanel>
 
@@ -269,8 +285,8 @@ export function TeacherDashboardPage({ profile, onLogout }: TeacherDashboardPage
             onConversationOpened={handleConversationOpened}
 
             requestNavigationIntent={requestNavigationIntent}
-
-            onRequestNavigationIntentConsumed={() => setRequestNavigationIntent(null)}
+            requestNavigationReturnFocus={requestNavigationReturnFocus}
+            onRequestNavigationIntentConsumed={handleRequestNavigationIntentConsumed}
 
           />
 
@@ -313,6 +329,8 @@ export function TeacherDashboardPage({ profile, onLogout }: TeacherDashboardPage
             unreadMessageRequestIds={unreadMessageRequestIds}
             requestIdsWithMessages={requestIdsWithMessages}
             onConversationOpened={handleConversationOpened}
+            requestNavigationIntent={requestNavigationIntent}
+            onRequestNavigationIntentConsumed={handleRequestNavigationIntentConsumed}
           />
 
         </DashboardSectionPanel>

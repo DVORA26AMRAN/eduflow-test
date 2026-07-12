@@ -101,4 +101,5 @@ export type ManagerDashboardAnalytics = {
 export type DashboardRequestNavigationIntent = {
   requestStatus?: RequestStatus | 'all'
   requestType?: RequestType | 'all'
+  requestId?: string
 }

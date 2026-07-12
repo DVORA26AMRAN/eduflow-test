@@ -1,13 +1,21 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import type { RealtimeChannel } from '@supabase/supabase-js'
+import type { DashboardRequestNavigationIntent } from '../../types/dashboardAnalytics'
 import type { TeacherNotification } from '../../types/notification'
+import type { TeacherRequestNotificationContext } from '../../types/teacherNotification'
 import {
   loadNotifications,
   markNotificationAsRead,
   subscribeToTeacherNotifications,
   unsubscribeFromTeacherNotifications,
 } from '../../services/notifications'
+import { loadTeacherRequestNotificationContexts } from '../../services/teacherNotificationRequests'
 import { supabase } from '../../services/supabase'
+import {
+  collectTeacherRequestNotificationIds,
+  extractRequestIdFromNotification,
+  isTeacherRequestNotification,
+} from '../../utils/teacherNotificationDisplay'
 import { NavBellIcon } from '../dashboard/dashboardNav'
 import { DashboardSection } from '../dashboard/DashboardSection'
 import { TeacherNotificationsList } from './TeacherNotificationsList'
@@ -23,8 +31,36 @@ function prependNotificationIfNew(
   return [notification, ...currentNotifications]
 }
 
-export function TeacherNotificationsSection() {
+function mergeRequestContexts(
+  currentContexts: ReadonlyMap<string, TeacherRequestNotificationContext>,
+  incomingContexts: ReadonlyMap<string, TeacherRequestNotificationContext>,
+): Map<string, TeacherRequestNotificationContext> {
+  const mergedContexts = new Map(currentContexts)
+
+  for (const [requestId, context] of incomingContexts) {
+    mergedContexts.set(requestId, context)
+  }
+
+  return mergedContexts
+}
+
+type TeacherNotificationsSectionProps = {
+  onNavigateToRequest?: (
+    intent: DashboardRequestNavigationIntent,
+    options: {
+      archived: boolean
+      returnFocusElement: HTMLButtonElement | null
+    },
+  ) => void
+}
+
+export function TeacherNotificationsSection({
+  onNavigateToRequest,
+}: TeacherNotificationsSectionProps) {
   const [notifications, setNotifications] = useState<TeacherNotification[]>([])
+  const [requestContextsById, setRequestContextsById] = useState<
+    Map<string, TeacherRequestNotificationContext>
+  >(new Map())
   const [isLoading, setIsLoading] = useState(true)
   const [loadError, setLoadError] = useState('')
 
@@ -42,8 +78,20 @@ export function TeacherNotificationsSection() {
     if (!result.ok) {
       setNotifications([])
       setLoadError(result.errorMessage)
+      setIsLoading(false)
+      return
+    }
+
+    setNotifications(result.notifications)
+
+    const requestIds = collectTeacherRequestNotificationIds(result.notifications)
+    if (requestIds.length > 0) {
+      const contextsResult = await loadTeacherRequestNotificationContexts(requestIds)
+      if (contextsResult.ok) {
+        setRequestContextsById(contextsResult.contexts)
+      }
     } else {
-      setNotifications(result.notifications)
+      setRequestContextsById(new Map())
     }
 
     setIsLoading(false)
@@ -76,6 +124,25 @@ export function TeacherNotificationsSection() {
         setNotifications((currentNotifications) =>
           prependNotificationIfNew(currentNotifications, notification),
         )
+
+        if (!isTeacherRequestNotification(notification)) {
+          return
+        }
+
+        const requestId = extractRequestIdFromNotification(notification)
+        if (!requestId) {
+          return
+        }
+
+        void loadTeacherRequestNotificationContexts([requestId]).then((result) => {
+          if (!result.ok) {
+            return
+          }
+
+          setRequestContextsById((currentContexts) =>
+            mergeRequestContexts(currentContexts, result.contexts),
+          )
+        })
       })
 
       if (isCancelled) {
@@ -97,22 +164,48 @@ export function TeacherNotificationsSection() {
     }
   }, [])
 
-  async function handleNotificationClick(notificationId: string) {
+  async function handleNotificationClick(
+    notificationId: string,
+    buttonElement: HTMLButtonElement,
+  ) {
     const notification = notifications.find((item) => item.id === notificationId)
-    if (!notification || notification.is_read) {
+    if (!notification) {
       return
     }
 
-    const result = await markNotificationAsRead(notificationId)
+    if (!notification.is_read) {
+      const result = await markNotificationAsRead(notificationId)
 
-    if (!result.ok) {
+      if (result.ok) {
+        setNotifications((currentNotifications) =>
+          currentNotifications.map((item) =>
+            item.id === notificationId ? { ...item, is_read: true } : item,
+          ),
+        )
+      }
+    }
+
+    if (!isTeacherRequestNotification(notification) || !onNavigateToRequest) {
       return
     }
 
-    setNotifications((currentNotifications) =>
-      currentNotifications.map((item) =>
-        item.id === notificationId ? { ...item, is_read: true } : item,
-      ),
+    const requestId = extractRequestIdFromNotification(notification)
+    if (!requestId) {
+      return
+    }
+
+    const context = requestContextsById.get(requestId)
+
+    onNavigateToRequest(
+      {
+        requestId,
+        requestType: context?.requestType,
+        requestStatus: context?.status,
+      },
+      {
+        archived: Boolean(context?.archivedAt),
+        returnFocusElement: buttonElement,
+      },
     )
   }
 
@@ -142,6 +235,7 @@ export function TeacherNotificationsSection() {
           {!isLoading && !loadError && (
             <TeacherNotificationsList
               notifications={notifications}
+              requestContextsById={requestContextsById}
               onNotificationClick={handleNotificationClick}
             />
           )}

@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import type { ArchiveFilters, ArchivedTeacherRequest } from '../../types/request'
+import type { DashboardRequestNavigationIntent } from '../../types/dashboardAnalytics'
 import { loadMyArchivedRequests } from '../../services/requests'
 import { filterArchivedTeacherRequests } from '../../utils/requests'
 import { NavArchiveIcon } from '../dashboard/dashboardNav'
@@ -20,6 +21,8 @@ type TeacherArchiveSectionProps = {
   unreadMessageRequestIds?: ReadonlySet<string>
   requestIdsWithMessages?: ReadonlySet<string>
   onConversationOpened?: (requestId: string) => void | Promise<boolean>
+  requestNavigationIntent?: DashboardRequestNavigationIntent | null
+  onRequestNavigationIntentConsumed?: () => void
 }
 
 export function TeacherArchiveSection({
@@ -27,6 +30,8 @@ export function TeacherArchiveSection({
   unreadMessageRequestIds = new Set(),
   requestIdsWithMessages = new Set(),
   onConversationOpened,
+  requestNavigationIntent = null,
+  onRequestNavigationIntentConsumed,
 }: TeacherArchiveSectionProps) {
   const [requests, setRequests] = useState<ArchivedTeacherRequest[]>([])
   const [filters, setFilters] = useState<ArchiveFilters>(defaultFilters)
@@ -64,6 +69,37 @@ export function TeacherArchiveSection({
 
   const selectedRequest =
     filteredRequests.find((request) => request.id === selectedRequestId) ?? null
+
+  useEffect(() => {
+    if (!requestNavigationIntent?.requestId || isLoading) {
+      return
+    }
+
+    const matchingRequest = requests.find(
+      (request) => request.id === requestNavigationIntent.requestId,
+    )
+    if (!matchingRequest) {
+      return
+    }
+
+    if (!filteredRequests.some((request) => request.id === matchingRequest.id)) {
+      queueMicrotask(() => {
+        setFilters(defaultFilters)
+      })
+      return
+    }
+
+    queueMicrotask(() => {
+      setSelectedRequestId(matchingRequest.id)
+      onRequestNavigationIntentConsumed?.()
+    })
+  }, [
+    requestNavigationIntent,
+    isLoading,
+    requests,
+    filteredRequests,
+    onRequestNavigationIntentConsumed,
+  ])
 
   const emptyMessage =
     requests.length === 0
