@@ -27,48 +27,47 @@ export function DashboardShell({
 }: DashboardShellProps) {
   return (
     <main dir="rtl" className="dashboard-shell">
-      <section className="dashboard-shell__content">
-        <DashboardTopHeader
-          welcomeMessage="ברוכה הבאה"
-          roleSubtitle={roleLabel}
-          userDisplayName={profile.fullName}
-          school={profile.school}
-          onLogout={onLogout}
-          showSearch
-        />
-        {children}
-      </section>
+      <DashboardTopHeader
+        roleSubtitle={roleLabel}
+        userDisplayName={profile.fullName}
+        role={profile.role}
+        school={profile.school}
+        onLogout={onLogout}
+      />
 
-      <aside className="dashboard-shell__sidebar" aria-label={`ניווט ${roleLabel}`}>
-        <header className="dashboard-shell__brand">
-          <p className="dashboard-shell__subtitle">{subtitle}</p>
-          {profile.school ? (
-            <p className="dashboard-shell__school-name">{profile.school.name}</p>
-          ) : null}
-        </header>
+      <div className="dashboard-shell__layout">
+        <aside className="dashboard-shell__sidebar" aria-label={`ניווט ${roleLabel}`}>
+          <header className="dashboard-shell__brand">
+            <p className="dashboard-shell__subtitle">{subtitle}</p>
+            {profile.school ? (
+              <p className="dashboard-shell__school-name">{profile.school.name}</p>
+            ) : null}
+          </header>
 
-        <nav className="dashboard-shell__nav" aria-label="ניווט חלקים בדף">
-          {navItems.map((item) => (
-            <button
-              key={item.id}
-              type="button"
-              className={
-                item.id === activeSectionId
-                  ? 'dashboard-shell__nav-item dashboard-shell__nav-item--active'
-                  : 'dashboard-shell__nav-item'
-              }
-              onClick={() => onSectionSelect(item.id)}
-              aria-current={item.id === activeSectionId ? 'true' : undefined}
-            >
-              <span className="dashboard-shell__nav-icon" aria-hidden="true">
-                {item.icon}
-              </span>
-              <span className="dashboard-shell__nav-label">{item.label}</span>
-            </button>
-          ))}
-        </nav>
+          <nav className="dashboard-shell__nav" aria-label="ניווט חלקים בדף">
+            {navItems.map((item) => (
+              <button
+                key={item.id}
+                type="button"
+                className={
+                  item.id === activeSectionId
+                    ? 'dashboard-shell__nav-item dashboard-shell__nav-item--active'
+                    : 'dashboard-shell__nav-item'
+                }
+                onClick={() => onSectionSelect(item.id)}
+                aria-current={item.id === activeSectionId ? 'true' : undefined}
+              >
+                <span className="dashboard-shell__nav-icon" aria-hidden="true">
+                  {item.icon}
+                </span>
+                <span className="dashboard-shell__nav-label">{item.label}</span>
+              </button>
+            ))}
+          </nav>
+        </aside>
 
-      </aside>
+        <section className="dashboard-shell__content">{children}</section>
+      </div>
     </main>
   )
 }

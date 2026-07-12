@@ -5,23 +5,28 @@ import './SchoolLogo.css'
 type SchoolLogoProps = {
   schoolName: string
   logoUrl?: string | null
-  size?: 'default' | 'compact'
+  size?: 'default' | 'compact' | 'header'
+  placeholderVariant?: 'text' | 'icon'
 }
 
 export function SchoolLogo({
   schoolName,
   logoUrl,
   size = 'default',
+  placeholderVariant = 'text',
 }: SchoolLogoProps) {
   const [hasImageError, setHasImageError] = useState(false)
   const shouldShowImage = Boolean(logoUrl) && !hasImageError
 
+  const sizeClass =
+    size === 'header'
+      ? 'school-logo--header'
+      : size === 'compact'
+        ? 'school-logo--compact'
+        : ''
+
   return (
-    <div
-      className={['school-logo', size === 'compact' ? 'school-logo--compact' : '']
-        .filter(Boolean)
-        .join(' ')}
-    >
+    <div className={['school-logo', sizeClass].filter(Boolean).join(' ')}>
       {shouldShowImage ? (
         <img
           className="school-logo__image"
@@ -30,8 +35,30 @@ export function SchoolLogo({
           onError={() => setHasImageError(true)}
         />
       ) : (
-        <div className="school-logo__placeholder" aria-label={`לוגו ${schoolName}`}>
-          {SCHOOL_LOGO_PLACEHOLDER_TEXT}
+        <div
+          className={[
+            'school-logo__placeholder',
+            placeholderVariant === 'icon' ? 'school-logo__placeholder--icon' : '',
+          ]
+            .filter(Boolean)
+            .join(' ')}
+          aria-label={`לוגו ${schoolName}`}
+        >
+          {placeholderVariant === 'icon' ? (
+            <svg
+              className="school-logo__icon"
+              viewBox="0 0 24 24"
+              aria-hidden="true"
+              focusable="false"
+            >
+              <path
+                d="M4 10.5 12 5l8 5.5V19a1 1 0 0 1-1 1h-5v-5.5h-4V20H5a1 1 0 0 1-1-1v-8.5Z"
+                fill="currentColor"
+              />
+            </svg>
+          ) : (
+            SCHOOL_LOGO_PLACEHOLDER_TEXT
+          )}
         </div>
       )}
     </div>

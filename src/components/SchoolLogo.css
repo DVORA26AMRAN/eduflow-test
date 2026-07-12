@@ -44,6 +44,44 @@
   font-size: var(--ds-font-size-small);
 }
 
+.school-logo--header {
+  --school-logo-height: 40px;
+  --school-logo-width: 88px;
+  width: auto;
+  min-width: 40px;
+  max-width: var(--school-logo-width);
+  height: var(--school-logo-height);
+  border-radius: var(--ds-radius-sm);
+}
+
+.school-logo--header .school-logo__image {
+  display: block;
+  width: auto;
+  max-width: var(--school-logo-width);
+  height: 100%;
+  border-radius: var(--ds-radius-sm);
+  object-fit: contain;
+  object-position: center;
+}
+
+.school-logo--header .school-logo__placeholder {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  padding: 0;
+}
+
+.school-logo--header .school-logo__placeholder--icon {
+  color: var(--ds-color-text-muted);
+  background: var(--ds-color-surface-soft);
+}
+
+.school-logo__icon {
+  display: block;
+  width: 18px;
+  height: 18px;
+}
+
 @media (max-width: 768px) {
   .school-logo {
     --school-logo-size: 48px;
@@ -51,5 +89,15 @@
 
   .school-logo--compact {
     --school-logo-size: 40px;
+  }
+
+  .school-logo--header {
+    --school-logo-height: 36px;
+    --school-logo-width: 76px;
+  }
+
+  .school-logo--header .school-logo__placeholder {
+    width: 36px;
+    height: 36px;
   }
 }
