@@ -82,7 +82,7 @@ export function getReminderSectionIdForLocation(
   }
 
   if (role === 'institution_manager') {
-    return 'recentActivity'
+    return 'teacherRequests'
   }
 
   return 'requestsInbox'

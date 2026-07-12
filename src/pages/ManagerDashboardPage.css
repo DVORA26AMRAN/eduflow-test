@@ -155,59 +155,15 @@
   background: #c27b4a;
 }
 
-.manager-dashboard__insights {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  align-items: stretch;
-  gap: var(--ds-card-gap);
-  margin-bottom: var(--ds-section-gap);
-}
-
-.manager-dashboard__insight-card {
+.manager-dashboard__requests-card {
   display: flex;
   flex-direction: column;
-  height: 100%;
+  width: 100%;
   padding: 0;
 }
 
 .manager-dashboard__insight-status {
   margin: 0;
-  color: var(--ds-color-text-secondary);
-}
-
-.manager-dashboard__activity-list {
-  margin: 0;
-  padding: 0;
-  list-style: none;
-}
-
-.manager-dashboard__activity-item {
-  padding: var(--ds-control-gap) 0;
-  border-bottom: 1px solid var(--ds-color-border);
-}
-
-.manager-dashboard__activity-item:first-child {
-  padding-top: 0;
-}
-
-.manager-dashboard__activity-item:last-child {
-  padding-bottom: 0;
-  border-bottom: none;
-}
-
-.manager-dashboard__activity-transition {
-  display: flex;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: var(--ds-label-gap);
-  margin: 0 0 var(--ds-label-gap);
-  font-weight: var(--ds-font-weight-medium);
-  color: var(--ds-color-text-primary);
-}
-
-.manager-dashboard__activity-meta {
-  margin: 0;
-  font-size: var(--ds-font-size-sm);
   color: var(--ds-color-text-secondary);
 }
 
@@ -300,10 +256,6 @@
 
   .manager-dashboard__stats {
     grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-
-  .manager-dashboard__insights {
-    grid-template-columns: 1fr;
   }
 
   .manager-dashboard__search-field {

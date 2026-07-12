@@ -192,9 +192,9 @@ export function ManagerRecentRequestsSection({
   }
 
   return (
-    <section className="ds-card manager-dashboard__insight-card" aria-label="בקשות אחרונות">
+    <section className="ds-card manager-dashboard__requests-card" aria-label="בקשות מורים">
       <DashboardSection
-        title="בקשות אחרונות"
+        title="בקשות מורים"
         icon={<NavClipboardIcon />}
         className="dashboard-section--flush-header"
       >

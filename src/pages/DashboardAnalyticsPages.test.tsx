@@ -137,11 +137,7 @@ vi.mock('../components/secretary/SecretaryArchiveSection', () => ({
 }))
 
 vi.mock('../components/manager/ManagerRecentRequestsSection', () => ({
-  ManagerRecentRequestsSection: () => <div data-testid="manager-recent-requests">בקשות אחרונות</div>,
-}))
-
-vi.mock('../components/manager/ManagerRecentActivitySection', () => ({
-  ManagerRecentActivitySection: () => <div data-testid="manager-recent-activity">פעילות</div>,
+  ManagerRecentRequestsSection: () => <div data-testid="manager-recent-requests">בקשות מורים</div>,
 }))
 
 vi.mock('../components/manager/ManagerArchiveSection', () => ({
@@ -159,7 +155,6 @@ vi.mock('../services/attachments', () => ({
 
 vi.mock('../services/analytics', () => ({
   loadRecentRequests: vi.fn(async () => ({ ok: true, requests: [] })),
-  loadRecentRequestActivity: vi.fn(async () => ({ ok: true, entries: [] })),
 }))
 
 vi.mock('../services/institutionUsers', () => ({
@@ -276,7 +271,7 @@ describe('sidebar section navigation', () => {
     expect(screen.getByTestId('secretary-archive')).toBeInTheDocument()
   })
 
-  it('manager sidebar opens recent activity and team sections on demand', async () => {
+  it('manager sidebar opens teacher requests and team sections on demand', async () => {
     const user = userEvent.setup()
     render(
       <ManagerDashboardPage
@@ -294,8 +289,9 @@ describe('sidebar section navigation', () => {
       />,
     )
 
-    await user.click(screen.getByRole('button', { name: 'פעילות אחרונה' }))
+    await user.click(screen.getByRole('button', { name: 'בקשות מורים' }))
     expect(screen.getByTestId('manager-recent-requests')).toBeInTheDocument()
+    expect(screen.queryByTestId('manager-recent-activity')).not.toBeInTheDocument()
 
     await user.click(screen.getByRole('button', { name: 'ניהול משתמשים' }))
     expect(screen.getByTestId('manager-team')).toBeInTheDocument()

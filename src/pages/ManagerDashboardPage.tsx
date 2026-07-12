@@ -2,23 +2,21 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { DashboardShell } from '../components/dashboard/DashboardShell'
 import { DashboardSectionPanel } from '../components/dashboard/DashboardSectionPanel'
 import {
-  NavActivityIcon,
   NavArchiveIcon,
   NavBellIcon,
   NavChartIcon,
+  NavInboxIcon,
   NavUsersIcon,
   type DashboardNavItem,
 } from '../components/dashboard/dashboardNav'
 import { ManagerAnalyticsSection } from '../components/manager/ManagerAnalyticsSection'
 import { ManagerArchiveSection } from '../components/manager/ManagerArchiveSection'
-import { ManagerRecentActivitySection } from '../components/manager/ManagerRecentActivitySection'
 import { ManagerRecentRequestsSection } from '../components/manager/ManagerRecentRequestsSection'
 import { TeamManagementSection } from '../components/manager/TeamManagementSection'
 import { useAdminReminderNotifications } from '../hooks/useAdminReminderNotifications'
 import { useUnreadRequestMessageNotifications } from '../hooks/useUnreadRequestMessageNotifications'
 import { useDashboardSectionNavigation } from '../hooks/useDashboardSectionNavigation'
 import { useReminderBellNavigation } from '../hooks/useReminderBellNavigation'
-import { loadRecentRequestActivity } from '../services/analytics'
 import { loadInstitutionUsers } from '../services/institutionUsers'
 import { loadInstitutionRequestReminderSummaries } from '../services/requestReminders'
 import { resolveManagerReminderRequestLocation } from '../services/reminderRequestLocation'
@@ -26,7 +24,6 @@ import {
   DASHBOARD_OVERVIEW_SECTION_ID,
   type DashboardRequestNavigationIntent,
 } from '../types/dashboardAnalytics'
-import type { ManagerRecentActivityEntry } from '../types/analytics'
 import type { RequestReminderSummary } from '../types/requestReminder'
 import type { AuthenticatedUserProfile, InstitutionUser, UserRole } from '../types/user'
 import {
@@ -38,6 +35,7 @@ import './ManagerDashboardPage.css'
 
 const TEAM_MANAGEMENT_SECTION_ID = 'team'
 const MANAGER_ARCHIVE_SECTION_ID = 'archive'
+const MANAGER_TEACHER_REQUESTS_SECTION_ID = 'teacherRequests'
 
 type ManagerDashboardPageProps = {
   profile: AuthenticatedUserProfile
@@ -69,9 +67,6 @@ export function ManagerDashboardPage({
   const [users, setUsers] = useState<InstitutionUser[]>([])
   const [isUsersLoading, setIsUsersLoading] = useState(true)
   const [usersError, setUsersError] = useState('')
-  const [recentActivity, setRecentActivity] = useState<ManagerRecentActivityEntry[]>([])
-  const [isRecentActivityLoading, setIsRecentActivityLoading] = useState(true)
-  const [recentActivityError, setRecentActivityError] = useState('')
   const [archiveRefreshToken, setArchiveRefreshToken] = useState(0)
   const [analyticsRefreshToken, setAnalyticsRefreshToken] = useState(0)
   const [activeSectionId, setActiveSectionId] = useState<string>(DASHBOARD_OVERVIEW_SECTION_ID)
@@ -152,7 +147,11 @@ export function ManagerDashboardPage({
     }
 
     items.push(
-      { id: 'recentActivity', label: 'פעילות אחרונה', icon: <NavActivityIcon /> },
+      {
+        id: MANAGER_TEACHER_REQUESTS_SECTION_ID,
+        label: 'בקשות מורים',
+        icon: <NavInboxIcon />,
+      },
       { id: MANAGER_ARCHIVE_SECTION_ID, label: 'הארכיון שלי', icon: <NavArchiveIcon /> },
       { id: TEAM_MANAGEMENT_SECTION_ID, label: 'ניהול משתמשים', icon: <NavUsersIcon /> },
     )
@@ -160,9 +159,9 @@ export function ManagerDashboardPage({
     return items
   }, [handleReminderBellClick, unreadCount])
 
-  function handleNavigateToRecentActivity(intent: DashboardRequestNavigationIntent) {
+  function handleNavigateToTeacherRequests(intent: DashboardRequestNavigationIntent) {
     void intent
-    showSection('recentActivity')
+    showSection(MANAGER_TEACHER_REQUESTS_SECTION_ID)
   }
 
   useEffect(() => {
@@ -194,36 +193,6 @@ export function ManagerDashboardPage({
       isCancelled = true
     }
   }, [usersListVersion])
-
-  useEffect(() => {
-    let isCancelled = false
-
-    async function fetchRecentActivity() {
-      setIsRecentActivityLoading(true)
-      setRecentActivityError('')
-
-      const activityResult = await loadRecentRequestActivity()
-
-      if (isCancelled) {
-        return
-      }
-
-      if (!activityResult.ok) {
-        setRecentActivity([])
-        setRecentActivityError(activityResult.errorMessage)
-      } else {
-        setRecentActivity(activityResult.entries)
-      }
-
-      setIsRecentActivityLoading(false)
-    }
-
-    void fetchRecentActivity()
-
-    return () => {
-      isCancelled = true
-    }
-  }, [usersListVersion, archiveRefreshToken])
 
   useEffect(() => {
     let isCancelled = false
@@ -283,36 +252,28 @@ export function ManagerDashboardPage({
           <ManagerAnalyticsSection
             refreshToken={analyticsRefreshToken + archiveRefreshToken + usersListVersion}
             reminderSummariesByRequestId={reminderSummariesByRequestId}
-            onNavigateToRecentActivity={handleNavigateToRecentActivity}
+            onNavigateToTeacherRequests={handleNavigateToTeacherRequests}
           />
         </DashboardSectionPanel>
 
         <DashboardSectionPanel
-          id="manager-recent-activity"
-          sectionId="recentActivity"
+          id="manager-teacher-requests"
+          sectionId={MANAGER_TEACHER_REQUESTS_SECTION_ID}
           activeSectionId={activeSectionId}
           className="manager-dashboard__shell-section"
         >
-          <div className="manager-dashboard__insights">
-            <ManagerRecentRequestsSection
-              refreshToken={archiveRefreshToken}
-              onArchived={handleRequestArchived}
-              institutionId={profile.school?.id ?? null}
-              unreadReminderRequestIds={unreadReminderRequestIds}
-              unreadMessageRequestIds={unreadMessageRequestIds}
-              requestIdsWithMessages={requestIdsWithMessages}
-              onConversationOpened={handleConversationOpened}
-              reminderNavigationIntent={navigationIntent}
-              highlightedRequestId={highlightedRequestId}
-              onReminderNavigationComplete={handleReminderNavigationComplete}
-            />
-
-            <ManagerRecentActivitySection
-              entries={recentActivity}
-              isLoading={isRecentActivityLoading}
-              errorMessage={recentActivityError}
-            />
-          </div>
+          <ManagerRecentRequestsSection
+            refreshToken={archiveRefreshToken}
+            onArchived={handleRequestArchived}
+            institutionId={profile.school?.id ?? null}
+            unreadReminderRequestIds={unreadReminderRequestIds}
+            unreadMessageRequestIds={unreadMessageRequestIds}
+            requestIdsWithMessages={requestIdsWithMessages}
+            onConversationOpened={handleConversationOpened}
+            reminderNavigationIntent={navigationIntent}
+            highlightedRequestId={highlightedRequestId}
+            onReminderNavigationComplete={handleReminderNavigationComplete}
+          />
         </DashboardSectionPanel>
 
         <DashboardSectionPanel

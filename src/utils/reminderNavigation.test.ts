@@ -72,7 +72,7 @@ describe('reminderNavigation utils', () => {
 
   it('routes manager active reminders to recent activity', () => {
     expect(getReminderSectionIdForLocation({ kind: 'manager_recent' }, 'institution_manager')).toBe(
-      'recentActivity',
+      'teacherRequests',
     )
   })
 

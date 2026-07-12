@@ -27,13 +27,13 @@ import '../dashboard/analytics/dashboardAnalytics.css'
 type ManagerAnalyticsSectionProps = {
   refreshToken: number
   reminderSummariesByRequestId: ReadonlyMap<string, RequestReminderSummary>
-  onNavigateToRecentActivity: (intent: DashboardRequestNavigationIntent) => void
+  onNavigateToTeacherRequests: (intent: DashboardRequestNavigationIntent) => void
 }
 
 export function ManagerAnalyticsSection({
   refreshToken,
   reminderSummariesByRequestId,
-  onNavigateToRecentActivity,
+  onNavigateToTeacherRequests,
 }: ManagerAnalyticsSectionProps) {
   const [dateRangePreset, setDateRangePreset] = useState<DashboardDateRangePreset>('30d')
   const [analytics, setAnalytics] = useState<ManagerDashboardAnalytics | null>(null)
@@ -64,11 +64,11 @@ export function ManagerAnalyticsSection({
   }, [loadAnalytics, refreshToken])
 
   function handleStatusNavigate(status: RequestStatus) {
-    onNavigateToRecentActivity({ requestStatus: status })
+    onNavigateToTeacherRequests({ requestStatus: status })
   }
 
   function handleTypeNavigate(requestType: RequestType) {
-    onNavigateToRecentActivity({ requestType })
+    onNavigateToTeacherRequests({ requestType })
   }
 
   const isEmpty = !isLoading && !errorMessage && analytics?.totalInstitutionRequests === 0
