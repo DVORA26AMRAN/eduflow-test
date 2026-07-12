@@ -1,14 +1,12 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
+import type { RequestAttachment } from '../../types/attachment'
 import {
   ATTACHMENT_LOAD_ERROR_MESSAGE,
   ATTACHMENT_LOADING_MESSAGE,
   NO_ATTACHMENT_MESSAGE,
-  VIEW_ATTACHMENT_BUTTON_LABEL,
 } from '../../types/attachment'
-import {
-  createAttachmentSignedUrl,
-  loadRequestAttachments,
-} from '../../services/attachments'
+import { loadRequestAttachments } from '../../services/attachments'
+import { RequestAttachmentActions } from '../requests/RequestAttachmentActions'
 
 type SecretaryRequestAttachmentCellProps = {
   requestId: string
@@ -19,8 +17,50 @@ export function SecretaryRequestAttachmentCell({
   requestId,
   hasAttachment,
 }: SecretaryRequestAttachmentCellProps) {
+  const [attachment, setAttachment] = useState<RequestAttachment | null>(null)
   const [isLoading, setIsLoading] = useState(false)
-  const [errorMessage, setErrorMessage] = useState('')
+  const [loadError, setLoadError] = useState('')
+  const [actionError, setActionError] = useState('')
+
+  useEffect(() => {
+    if (!hasAttachment) {
+      return
+    }
+
+    let isCancelled = false
+
+    queueMicrotask(() => {
+      void (async () => {
+        setIsLoading(true)
+        setLoadError('')
+        setActionError('')
+
+        const attachmentsResult = await loadRequestAttachments(requestId)
+
+        if (isCancelled) {
+          return
+        }
+
+        setIsLoading(false)
+
+        if (!attachmentsResult.ok) {
+          setAttachment(null)
+          setLoadError(attachmentsResult.errorMessage)
+          return
+        }
+
+        setAttachment(attachmentsResult.attachments[0] ?? null)
+
+        if (!attachmentsResult.attachments[0]) {
+          setLoadError(ATTACHMENT_LOAD_ERROR_MESSAGE)
+        }
+      })()
+    })
+
+    return () => {
+      isCancelled = true
+    }
+  }, [hasAttachment, requestId])
 
   if (!hasAttachment) {
     return (
@@ -28,51 +68,24 @@ export function SecretaryRequestAttachmentCell({
     )
   }
 
-  async function handleViewAttachment() {
-    setIsLoading(true)
-    setErrorMessage('')
+  if (isLoading) {
+    return <span className="secretary-dashboard__attachment-loading">{ATTACHMENT_LOADING_MESSAGE}</span>
+  }
 
-    const attachmentsResult = await loadRequestAttachments(requestId)
-
-    if (!attachmentsResult.ok) {
-      setIsLoading(false)
-      setErrorMessage(attachmentsResult.errorMessage)
-      return
-    }
-
-    const attachment = attachmentsResult.attachments[0]
-
-    if (!attachment) {
-      setIsLoading(false)
-      setErrorMessage(ATTACHMENT_LOAD_ERROR_MESSAGE)
-      return
-    }
-
-    const signedUrlResult = await createAttachmentSignedUrl(attachment.storage_path)
-
-    setIsLoading(false)
-
-    if (!signedUrlResult.ok) {
-      setErrorMessage(signedUrlResult.errorMessage)
-      return
-    }
-
-    window.open(signedUrlResult.signedUrl, '_blank', 'noopener,noreferrer')
+  if (loadError || !attachment) {
+    return <p className="secretary-dashboard__attachment-error">{loadError || ATTACHMENT_LOAD_ERROR_MESSAGE}</p>
   }
 
   return (
     <div className="secretary-dashboard__attachment-cell">
-      <button
-        type="button"
-        className="ds-btn ds-btn--secondary secretary-dashboard__attachment-button"
-        onClick={() => void handleViewAttachment()}
-        disabled={isLoading}
-      >
-        {isLoading ? ATTACHMENT_LOADING_MESSAGE : VIEW_ATTACHMENT_BUTTON_LABEL}
-      </button>
+      <RequestAttachmentActions
+        attachment={attachment}
+        onError={setActionError}
+        className="request-attachment__actions--compact"
+      />
 
-      {errorMessage && (
-        <p className="secretary-dashboard__attachment-error">{errorMessage}</p>
+      {actionError && (
+        <p className="secretary-dashboard__attachment-error">{actionError}</p>
       )}
     </div>
   )

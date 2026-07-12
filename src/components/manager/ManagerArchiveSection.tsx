@@ -13,7 +13,7 @@ import {
 } from '../../utils/reminderNavigation'
 import { useRequestReminderNavigationEffect } from '../../hooks/useRequestReminderNavigationEffect'
 import { NavArchiveIcon } from '../dashboard/dashboardNav'
-import { DashboardCollapsibleSection } from '../dashboard/DashboardCollapsibleSection'
+import { DashboardSection } from '../dashboard/DashboardSection'
 import { SecretaryArchiveFilters as ManagerArchiveFiltersPanel } from '../secretary/SecretaryArchiveFilters'
 import { SecretaryArchiveTable } from '../secretary/SecretaryArchiveTable'
 
@@ -131,10 +131,10 @@ export function ManagerArchiveSection({
 
   return (
     <section className="ds-card manager-dashboard__archive" aria-label="הארכיון שלי">
-      <DashboardCollapsibleSection
+      <DashboardSection
         title="הארכיון שלי"
         icon={<NavArchiveIcon />}
-        className="dashboard-collapsible-section--flush-header"
+        className="dashboard-section--flush-header"
       >
         <ManagerArchiveFiltersPanel filters={filters} onFiltersChange={handleFiltersChange} />
 
@@ -183,7 +183,7 @@ export function ManagerArchiveSection({
             )}
           </>
         )}
-      </DashboardCollapsibleSection>
+      </DashboardSection>
     </section>
   )
 }

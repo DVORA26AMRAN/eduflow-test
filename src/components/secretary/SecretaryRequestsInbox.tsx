@@ -16,7 +16,7 @@ import { RequestDetailsModal } from '../requests/RequestDetailsModal'
 import { SECRETARY_INBOX_DEFAULT_FILTERS, shouldResetSecretaryInboxFilters } from '../../utils/reminderNavigation'
 import { useRequestReminderNavigationEffect } from '../../hooks/useRequestReminderNavigationEffect'
 import { NavInboxIcon } from '../dashboard/dashboardNav'
-import { DashboardCollapsibleSection } from '../dashboard/DashboardCollapsibleSection'
+import { DashboardSection } from '../dashboard/DashboardSection'
 import { ConfirmDialog } from '../ui/Modal'
 import { SecretaryRequestsFilters } from './SecretaryRequestsFilters'
 import { SecretaryRequestsTable } from './SecretaryRequestsTable'
@@ -280,10 +280,10 @@ export function SecretaryRequestsInbox({
 
   return (
     <section className="ds-card secretary-dashboard__inbox">
-      <DashboardCollapsibleSection
+      <DashboardSection
         title="תיבת בקשות"
         icon={<NavInboxIcon />}
-        className="dashboard-collapsible-section--flush-header"
+        className="dashboard-section--flush-header"
       >
         <SecretaryRequestsFilters filters={filters} onFiltersChange={setFilters} />
 
@@ -320,7 +320,7 @@ export function SecretaryRequestsInbox({
             onArchive={handleOpenArchiveDialog}
           />
         )}
-      </DashboardCollapsibleSection>
+      </DashboardSection>
 
       {archiveDialogRequest && (
         <ConfirmDialog

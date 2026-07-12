@@ -95,11 +95,31 @@
   gap: var(--ds-control-gap);
 }
 
+.request-details__attachment-info {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--ds-control-gap);
+  min-width: 0;
+  flex: 1;
+}
+
+.request-details__attachment-meta {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ds-label-gap);
+  min-width: 0;
+}
+
 .request-details__attachment-name {
   min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.request-details__attachment-details {
+  color: var(--ds-color-text-secondary);
+  font-size: var(--ds-font-size-sm);
 }
 
 .request-details__reminder {

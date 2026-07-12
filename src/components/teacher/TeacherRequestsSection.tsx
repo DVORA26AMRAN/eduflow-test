@@ -8,7 +8,7 @@ import { canSendRequestReminder, sendRequestReminder } from '../../services/requ
 import type { TeacherRequestReminderState } from '../../types/requestReminder'
 import { REQUEST_REMINDER_COOLDOWN_HOURS } from '../../types/requestReminder'
 import { NavClipboardIcon, NavInboxIcon } from '../dashboard/dashboardNav'
-import { DashboardCollapsibleSection } from '../dashboard/DashboardCollapsibleSection'
+import { DashboardSection } from '../dashboard/DashboardSection'
 import {
   loadTeacherRequestReminderStates,
 } from '../../services/requestReminders'
@@ -300,7 +300,7 @@ export function TeacherRequestsSection({
 
   return (
     <section className="teacher-dashboard__requests">
-      <DashboardCollapsibleSection title="הבקשות שלי" icon={<NavClipboardIcon />}>
+      <DashboardSection title="הבקשות שלי" icon={<NavClipboardIcon />}>
         <div className="ds-card teacher-dashboard__create-card">
           <h3 className="teacher-dashboard__subsection-title">פתיחת בקשה חדשה</h3>
 
@@ -341,7 +341,7 @@ export function TeacherRequestsSection({
             />
           )}
         </div>
-      </DashboardCollapsibleSection>
+      </DashboardSection>
 
       {activeRequestType && (
         <TeacherCreateRequestModal

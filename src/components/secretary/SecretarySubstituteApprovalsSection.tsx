@@ -10,7 +10,7 @@ import {
   loadPendingSubstituteBoardApprovals,
 } from '../../services/substituteBoard'
 import { NavUsersIcon } from '../dashboard/dashboardNav'
-import { DashboardCollapsibleSection } from '../dashboard/DashboardCollapsibleSection'
+import { DashboardSection } from '../dashboard/DashboardSection'
 import { SecretarySubstituteApprovalsTable } from './SecretarySubstituteApprovalsTable'
 
 export function SecretarySubstituteApprovalsSection() {
@@ -66,10 +66,10 @@ export function SecretarySubstituteApprovalsSection() {
 
   return (
     <section className="ds-card secretary-dashboard__substitute-approvals">
-      <DashboardCollapsibleSection
+      <DashboardSection
         title="מילויי מקום ממתינים לאישור"
         icon={<NavUsersIcon />}
-        className="dashboard-collapsible-section--flush-header"
+        className="dashboard-section--flush-header"
       >
         {statusMessage && (
           <p
@@ -101,7 +101,7 @@ export function SecretarySubstituteApprovalsSection() {
             onApprove={(postId) => void handleApprove(postId)}
           />
         )}
-      </DashboardCollapsibleSection>
+      </DashboardSection>
     </section>
   )
 }

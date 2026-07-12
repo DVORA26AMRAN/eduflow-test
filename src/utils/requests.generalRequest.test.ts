@@ -20,7 +20,6 @@ describe('Teacher request categories for general_request', () => {
       value: 'general_request',
       title: 'בקשה אחרת',
       description: 'פנייה חופשית למזכירה או למנהלת',
-      icon: '✉️',
     })
   })
 

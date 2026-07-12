@@ -2,7 +2,7 @@ import { useMemo, useState } from 'react'
 import type { InstitutionUser, UserRole } from '../../types/user'
 import { translateRole } from '../../utils/roles'
 import { NavUsersIcon } from '../dashboard/dashboardNav'
-import { DashboardCollapsibleSection } from '../dashboard/DashboardCollapsibleSection'
+import { DashboardSection } from '../dashboard/DashboardSection'
 import { CreateUserForm } from './CreateUserForm'
 
 type TeamManagementSectionProps = {
@@ -49,10 +49,10 @@ export function TeamManagementSection({
 
   return (
     <section className="ds-card manager-dashboard__team">
-      <DashboardCollapsibleSection
+      <DashboardSection
         title="ניהול צוות"
         icon={<NavUsersIcon />}
-        className="dashboard-collapsible-section--flush-header"
+        className="dashboard-section--flush-header"
       >
         <label className="ds-field manager-dashboard__search-field" htmlFor="team-search">
           <span className="ds-label">חיפוש</span>
@@ -111,7 +111,7 @@ export function TeamManagementSection({
           onNewUserRoleChange={onNewUserRoleChange}
           onCreateUser={onCreateUser}
         />
-      </DashboardCollapsibleSection>
+      </DashboardSection>
     </section>
   )
 }

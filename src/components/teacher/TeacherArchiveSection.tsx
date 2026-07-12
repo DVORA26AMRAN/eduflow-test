@@ -3,7 +3,7 @@ import type { ArchiveFilters, ArchivedTeacherRequest } from '../../types/request
 import { loadMyArchivedRequests } from '../../services/requests'
 import { filterArchivedTeacherRequests } from '../../utils/requests'
 import { NavArchiveIcon } from '../dashboard/dashboardNav'
-import { DashboardCollapsibleSection } from '../dashboard/DashboardCollapsibleSection'
+import { DashboardSection } from '../dashboard/DashboardSection'
 import { TeacherArchiveDetails } from './TeacherArchiveDetails'
 import { TeacherArchiveFilters } from './TeacherArchiveFilters'
 import { TeacherArchiveList } from './TeacherArchiveList'
@@ -64,7 +64,7 @@ export function TeacherArchiveSection({ refreshToken }: TeacherArchiveSectionPro
 
   return (
     <section className="teacher-dashboard__archive" aria-label="הארכיון שלי">
-      <DashboardCollapsibleSection title="הארכיון שלי" icon={<NavArchiveIcon />}>
+      <DashboardSection title="הארכיון שלי" icon={<NavArchiveIcon />}>
         <div className="ds-card teacher-dashboard__archive-card">
           <TeacherArchiveFilters filters={filters} onFiltersChange={setFilters} />
 
@@ -86,7 +86,7 @@ export function TeacherArchiveSection({ refreshToken }: TeacherArchiveSectionPro
             </div>
           )}
         </div>
-      </DashboardCollapsibleSection>
+      </DashboardSection>
     </section>
   )
 }

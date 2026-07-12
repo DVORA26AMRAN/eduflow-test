@@ -4,12 +4,12 @@ import {
   ATTACHMENT_LOAD_ERROR_MESSAGE,
   ATTACHMENT_LOADING_MESSAGE,
   NO_ATTACHMENT_MESSAGE,
-  VIEW_ATTACHMENT_BUTTON_LABEL,
 } from '../../types/attachment'
-import {
-  createAttachmentSignedUrl,
-  loadRequestAttachments,
-} from '../../services/attachments'
+import { loadRequestAttachments } from '../../services/attachments'
+import { formatAttachmentFileSize } from '../../utils/attachmentDisplay'
+import { formatRequestDate } from '../../utils/requests'
+import { RequestAttachmentActions } from './RequestAttachmentActions'
+import { RequestAttachmentFileIcon } from './RequestAttachmentFileIcon'
 
 type RequestDetailsAttachmentsSectionProps = {
   requestId: string
@@ -25,8 +25,7 @@ export function RequestDetailsAttachmentsSection({
   const [attachments, setAttachments] = useState<RequestAttachment[]>([])
   const [isLoading, setIsLoading] = useState(false)
   const [loadError, setLoadError] = useState('')
-  const [viewError, setViewError] = useState('')
-  const [viewingAttachmentId, setViewingAttachmentId] = useState<string | null>(null)
+  const [actionError, setActionError] = useState('')
 
   useEffect(() => {
     if (!isActive || knownHasAttachment === false) {
@@ -39,6 +38,7 @@ export function RequestDetailsAttachmentsSection({
       void (async () => {
         setIsLoading(true)
         setLoadError('')
+        setActionError('')
 
         const result = await loadRequestAttachments(requestId)
 
@@ -65,22 +65,6 @@ export function RequestDetailsAttachmentsSection({
 
   const showKnownEmpty = knownHasAttachment === false
 
-  async function handleViewAttachment(attachment: RequestAttachment) {
-    setViewError('')
-    setViewingAttachmentId(attachment.id)
-
-    const signedUrlResult = await createAttachmentSignedUrl(attachment.storage_path)
-
-    setViewingAttachmentId(null)
-
-    if (!signedUrlResult.ok) {
-      setViewError(signedUrlResult.errorMessage)
-      return
-    }
-
-    window.open(signedUrlResult.signedUrl, '_blank', 'noopener,noreferrer')
-  }
-
   return (
     <section className="request-details__section" aria-label="קבצים מצורפים">
       <h3 className="request-details__section-title">קבצים מצורפים</h3>
@@ -101,23 +85,27 @@ export function RequestDetailsAttachmentsSection({
         <ul className="request-details__attachments-list">
           {attachments.map((attachment) => (
             <li key={attachment.id} className="request-details__attachment-item">
-              <span className="request-details__attachment-name">{attachment.file_name}</span>
-              <button
-                type="button"
-                className="ds-btn ds-btn--secondary"
-                onClick={() => void handleViewAttachment(attachment)}
-                disabled={viewingAttachmentId === attachment.id}
-              >
-                {viewingAttachmentId === attachment.id
-                  ? ATTACHMENT_LOADING_MESSAGE
-                  : VIEW_ATTACHMENT_BUTTON_LABEL}
-              </button>
+              <div className="request-details__attachment-info">
+                <RequestAttachmentFileIcon fileType={attachment.file_type} />
+                <div className="request-details__attachment-meta">
+                  <span className="request-details__attachment-name">{attachment.file_name}</span>
+                  <span className="request-details__attachment-details">
+                    {formatAttachmentFileSize(attachment.file_size_bytes)}
+                    {' · '}
+                    {formatRequestDate(attachment.created_at)}
+                  </span>
+                </div>
+              </div>
+              <RequestAttachmentActions
+                attachment={attachment}
+                onError={setActionError}
+              />
             </li>
           ))}
         </ul>
       )}
 
-      {viewError && <p className="ds-form-message ds-form-message--error">{viewError}</p>}
+      {actionError && <p className="ds-form-message ds-form-message--error">{actionError}</p>}
       {!showKnownEmpty && !isLoading && !loadError && attachments.length === 0 && knownHasAttachment && (
         <p className="ds-form-message ds-form-message--error">{ATTACHMENT_LOAD_ERROR_MESSAGE}</p>
       )}

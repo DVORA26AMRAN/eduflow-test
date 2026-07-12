@@ -44,10 +44,6 @@ function renderSection() {
   )
 }
 
-async function expandRequestsSection(user: ReturnType<typeof userEvent.setup>) {
-  await user.click(screen.getByRole('button', { name: 'הבקשות שלי' }))
-}
-
 async function fillGeneralRequestForm(user: ReturnType<typeof userEvent.setup>) {
   await user.click(screen.getByRole('radio', { name: 'מזכירה' }))
   await user.type(screen.getByLabelText('נושא'), 'נושא לבדיקה')
@@ -55,10 +51,8 @@ async function fillGeneralRequestForm(user: ReturnType<typeof userEvent.setup>) 
 }
 
 describe('TeacherRequestsSection modal create flow', () => {
-  it('does not render request fields inline before a category is selected', async () => {
-    const user = userEvent.setup({ delay: null })
+  it('does not render request fields inline before a category is selected', () => {
     renderSection()
-    await expandRequestsSection(user)
 
     expect(screen.getByText('פתיחת בקשה חדשה')).toBeInTheDocument()
     expect(screen.queryByLabelText('תאריך היעדרות')).not.toBeInTheDocument()
@@ -66,10 +60,8 @@ describe('TeacherRequestsSection modal create flow', () => {
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
   })
 
-  it('does not show מילוי מקום as a teacher request category card', async () => {
-    const user = userEvent.setup({ delay: null })
+  it('does not show מילוי מקום as a teacher request category card', () => {
     renderSection()
-    await expandRequestsSection(user)
 
     expect(screen.queryByRole('radio', { name: /מילוי מקום/ })).not.toBeInTheDocument()
     expect(screen.getByRole('radio', { name: /בקשה אחרת/ })).toBeInTheDocument()
@@ -79,7 +71,6 @@ describe('TeacherRequestsSection modal create flow', () => {
   it('opens the selected request type inside a modal for every category', async () => {
     const user = userEvent.setup({ delay: null })
     renderSection()
-    await expandRequestsSection(user)
 
     const categories = [
       { name: /היעדרויות/, fieldLabel: 'תאריך היעדרות', dialogName: 'היעדרויות' },
@@ -99,7 +90,6 @@ describe('TeacherRequestsSection modal create flow', () => {
   it('allows only one create modal at a time', async () => {
     const user = userEvent.setup({ delay: null })
     renderSection()
-    await expandRequestsSection(user)
 
     await user.click(screen.getByRole('radio', { name: /היעדרויות/ }))
     expect(screen.getAllByRole('dialog')).toHaveLength(1)
@@ -116,7 +106,6 @@ describe('TeacherRequestsSection modal create flow', () => {
     })
 
     renderSection()
-    await expandRequestsSection(user)
 
     await user.click(screen.getByRole('radio', { name: /בקשה אחרת/ }))
     await fillGeneralRequestForm(user)
@@ -144,7 +133,6 @@ describe('TeacherRequestsSection modal create flow', () => {
     })
 
     renderSection()
-    await expandRequestsSection(user)
 
     await user.click(screen.getByRole('radio', { name: /בקשה אחרת/ }))
     await fillGeneralRequestForm(user)

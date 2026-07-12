@@ -20,11 +20,12 @@ const requestTypeLabels: Record<RequestType, string> = {
   general_request: 'בקשה אחרת',
 }
 
+export type TeacherNewRequestCategoryType = Exclude<RequestType, 'substitute_teacher'>
+
 export type TeacherRequestCategory = {
-  value: RequestType
+  value: TeacherNewRequestCategoryType
   title: string
   description: string
-  icon: string
 }
 
 export const TEACHER_REQUEST_CATEGORIES: TeacherRequestCategory[] = [
@@ -32,19 +33,16 @@ export const TEACHER_REQUEST_CATEGORIES: TeacherRequestCategory[] = [
     value: 'absence',
     title: 'היעדרויות',
     description: 'דיווח על היעדרות או חופשה',
-    icon: '📅',
   },
   {
     value: 'budget_or_equipment',
     title: 'בקשת תקציב / ציוד',
     description: 'בקשת ציוד, תקציב או משאבים',
-    icon: '📦',
   },
   {
     value: 'general_request',
     title: 'בקשה אחרת',
     description: 'פנייה חופשית למזכירה או למנהלת',
-    icon: '✉️',
   },
 ]
 

@@ -9,7 +9,7 @@ import {
 } from '../../services/notifications'
 import { supabase } from '../../services/supabase'
 import { NavBellIcon } from '../dashboard/dashboardNav'
-import { DashboardCollapsibleSection } from '../dashboard/DashboardCollapsibleSection'
+import { DashboardSection } from '../dashboard/DashboardSection'
 import { TeacherNotificationsList } from './TeacherNotificationsList'
 
 function prependNotificationIfNew(
@@ -118,7 +118,7 @@ export function TeacherNotificationsSection() {
 
   return (
     <section className="teacher-dashboard__notifications">
-      <DashboardCollapsibleSection
+      <DashboardSection
         title="התראות"
         icon={<NavBellIcon />}
         headerAddon={
@@ -130,7 +130,7 @@ export function TeacherNotificationsSection() {
             </p>
           ) : null
         }
-        className="dashboard-collapsible-section--flush-header"
+        className="dashboard-section--flush-header"
       >
         <div className="ds-card teacher-dashboard__notifications-card">
           {isLoading && <p className="ds-form-message">טוען התראות...</p>}
@@ -146,7 +146,7 @@ export function TeacherNotificationsSection() {
             />
           )}
         </div>
-      </DashboardCollapsibleSection>
+      </DashboardSection>
     </section>
   )
 }

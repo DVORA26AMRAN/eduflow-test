@@ -8,7 +8,7 @@ import {
 } from '../../services/substituteBoard'
 import { validateCreateSubstituteBoardPostInput } from '../../utils/substituteBoard'
 import { NavInboxIcon, NavUsersIcon } from '../dashboard/dashboardNav'
-import { DashboardCollapsibleSection } from '../dashboard/DashboardCollapsibleSection'
+import { DashboardSection } from '../dashboard/DashboardSection'
 import { CreateSubstituteBoardPostForm } from './CreateSubstituteBoardPostForm'
 import { SubstituteBoardPostsList } from './SubstituteBoardPostsList'
 
@@ -105,7 +105,7 @@ export function TeacherSubstituteBoardSection() {
 
   return (
     <section className="teacher-dashboard__substitute-board">
-      <DashboardCollapsibleSection title="לוח מילויי מקום" icon={<NavUsersIcon />}>
+      <DashboardSection title="לוח מילויי מקום" icon={<NavUsersIcon />}>
         <div className="ds-card teacher-dashboard__substitute-create-card">
           <CreateSubstituteBoardPostForm
             key={formKey}
@@ -152,7 +152,7 @@ export function TeacherSubstituteBoardSection() {
             />
           )}
         </div>
-      </DashboardCollapsibleSection>
+      </DashboardSection>
     </section>
   )
 }

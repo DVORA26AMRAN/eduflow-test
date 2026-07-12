@@ -43,7 +43,7 @@
   background: var(--ds-color-surface);
 }
 
-.ds-card:has(> .dashboard-collapsible-section) {
+.ds-card:has(> .dashboard-section) {
   padding: 0;
   border: none;
   border-radius: 0;
@@ -51,7 +51,7 @@
   box-shadow: none;
 }
 
-.ds-card:has(> .dashboard-collapsible-section):hover {
+.ds-card:has(> .dashboard-section):hover {
   box-shadow: none;
 }
 

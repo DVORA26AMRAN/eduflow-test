@@ -10,7 +10,7 @@ import {
 } from '../../utils/reminderNavigation'
 import { useRequestReminderNavigationEffect } from '../../hooks/useRequestReminderNavigationEffect'
 import { NavArchiveIcon } from '../dashboard/dashboardNav'
-import { DashboardCollapsibleSection } from '../dashboard/DashboardCollapsibleSection'
+import { DashboardSection } from '../dashboard/DashboardSection'
 import { SecretaryArchiveFilters as SecretaryArchiveFiltersPanel } from './SecretaryArchiveFilters'
 import { SecretaryArchiveTable } from './SecretaryArchiveTable'
 
@@ -130,10 +130,10 @@ export function SecretaryArchiveSection({
 
   return (
     <section className="ds-card secretary-dashboard__archive" aria-label="ארכיון מוסדי">
-      <DashboardCollapsibleSection
+      <DashboardSection
         title="ארכיון מוסדי"
         icon={<NavArchiveIcon />}
-        className="dashboard-collapsible-section--flush-header"
+        className="dashboard-section--flush-header"
       >
         <SecretaryArchiveFiltersPanel filters={filters} onFiltersChange={handleFiltersChange} />
 
@@ -182,7 +182,7 @@ export function SecretaryArchiveSection({
             )}
           </>
         )}
-      </DashboardCollapsibleSection>
+      </DashboardSection>
     </section>
   )
 }

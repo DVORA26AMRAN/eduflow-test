@@ -10,7 +10,7 @@ import { NavClipboardIcon } from '../dashboard/dashboardNav'
 import type { RequestDetailsManagerRequest } from '../../types/requestDetails'
 import { RequestArchiveTrashButton } from '../requests/RequestArchiveTrashButton'
 import { RequestDetailsModal } from '../requests/RequestDetailsModal'
-import { DashboardCollapsibleSection } from '../dashboard/DashboardCollapsibleSection'
+import { DashboardSection } from '../dashboard/DashboardSection'
 import { ConfirmDialog } from '../ui/Modal'
 import { ManagerRecentRequestsTable } from './ManagerRecentRequestsTable'
 
@@ -187,10 +187,10 @@ export function ManagerRecentRequestsSection({
 
   return (
     <section className="ds-card manager-dashboard__insight-card" aria-label="בקשות אחרונות">
-      <DashboardCollapsibleSection
+      <DashboardSection
         title="בקשות אחרונות"
         icon={<NavClipboardIcon />}
-        className="dashboard-collapsible-section--flush-header"
+        className="dashboard-section--flush-header"
       >
         {statusMessage && (
           <p
@@ -227,7 +227,7 @@ export function ManagerRecentRequestsSection({
             onOpenDetails={handleOpenDetails}
           />
         )}
-      </DashboardCollapsibleSection>
+      </DashboardSection>
 
       {archiveDialogRequest && (
         <ConfirmDialog

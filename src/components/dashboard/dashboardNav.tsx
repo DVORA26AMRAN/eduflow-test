@@ -124,3 +124,13 @@ export function NavPackageIcon() {
     </svg>
   )
 }
+
+export function NavEnvelopeIcon() {
+  const stroke = iconStroke()
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true">
+      <rect x="4.5" y="6.5" width="15" height="12" rx="2" {...stroke} />
+      <path d="M4.5 8.5 12 13.5l7.5-5" {...stroke} />
+    </svg>
+  )
+}

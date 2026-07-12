@@ -29,7 +29,16 @@ export const ATTACHMENT_LOAD_ERROR_MESSAGE = 'טעינת הקובץ נכשלה.'
 
 export const NO_ATTACHMENT_MESSAGE = 'אין קובץ'
 
-export const VIEW_ATTACHMENT_BUTTON_LABEL = 'צפייה בקובץ'
+export const PREVIEW_ATTACHMENT_BUTTON_LABEL = 'צפייה'
+
+export const DOWNLOAD_ATTACHMENT_BUTTON_LABEL = 'הורדה'
+
+export const PREVIEW_ATTACHMENT_ARIA_LABEL = 'צפייה בקובץ'
+
+export const DOWNLOAD_ATTACHMENT_ARIA_LABEL = 'הורדת הקובץ'
+
+/** @deprecated Use PREVIEW_ATTACHMENT_ARIA_LABEL */
+export const VIEW_ATTACHMENT_BUTTON_LABEL = PREVIEW_ATTACHMENT_ARIA_LABEL
 
 export type RequestAttachment = {
   id: string

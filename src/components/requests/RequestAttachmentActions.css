@@ -1,0 +1,32 @@
+.request-attachment__actions {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--ds-label-gap);
+  flex-shrink: 0;
+}
+
+.request-attachment__action-button {
+  min-width: 4.5rem;
+}
+
+.request-attachment__icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: var(--ds-radius-md);
+  background: var(--ds-color-surface-soft);
+  color: var(--ds-color-primary);
+  flex-shrink: 0;
+}
+
+.request-attachment__icon svg {
+  width: 18px;
+  height: 18px;
+}
+
+.request-attachment__actions--compact .request-attachment__action-button {
+  min-width: 0;
+  padding-inline: var(--ds-label-gap);
+}

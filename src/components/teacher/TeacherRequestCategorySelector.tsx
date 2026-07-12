@@ -1,5 +1,6 @@
 import type { RequestType } from '../../types/request'
 import { TEACHER_REQUEST_CATEGORIES } from '../../utils/requests'
+import { TEACHER_REQUEST_CATEGORY_ICON_COMPONENTS } from './teacherRequestCategoryIcons'
 
 type TeacherRequestCategorySelectorProps = {
   selectedType: RequestType | ''
@@ -18,6 +19,7 @@ export function TeacherRequestCategorySelector({
       <div className="teacher-dashboard__category-grid" role="radiogroup" aria-label="קטגוריית בקשה">
         {TEACHER_REQUEST_CATEGORIES.map((category) => {
           const isSelected = selectedType === category.value
+          const CategoryIcon = TEACHER_REQUEST_CATEGORY_ICON_COMPONENTS[category.value]
 
           return (
             <button
@@ -34,7 +36,7 @@ export function TeacherRequestCategorySelector({
               disabled={isDisabled}
             >
               <span className="teacher-dashboard__category-icon" aria-hidden="true">
-                {category.icon}
+                <CategoryIcon />
               </span>
               <span className="teacher-dashboard__category-title">{category.title}</span>
               <span className="teacher-dashboard__category-description">

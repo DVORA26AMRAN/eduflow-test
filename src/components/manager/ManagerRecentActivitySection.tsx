@@ -1,7 +1,7 @@
 import type { ManagerRecentActivityEntry } from '../../types/analytics'
 import { formatRequestDateTime, translateRequestStatus } from '../../utils/requests'
 import { NavActivityIcon } from '../dashboard/dashboardNav'
-import { DashboardCollapsibleSection } from '../dashboard/DashboardCollapsibleSection'
+import { DashboardSection } from '../dashboard/DashboardSection'
 
 type ManagerRecentActivitySectionProps = {
   entries: ManagerRecentActivityEntry[]
@@ -16,10 +16,10 @@ export function ManagerRecentActivitySection({
 }: ManagerRecentActivitySectionProps) {
   return (
     <section className="ds-card manager-dashboard__insight-card" aria-label="פעילות אחרונה">
-      <DashboardCollapsibleSection
+      <DashboardSection
         title="פעילות אחרונה"
         icon={<NavActivityIcon />}
-        className="dashboard-collapsible-section--flush-header"
+        className="dashboard-section--flush-header"
       >
         {isLoading && (
           <p className="manager-dashboard__insight-status">טוען נתונים...</p>
@@ -55,7 +55,7 @@ export function ManagerRecentActivitySection({
             ))}
           </ul>
         )}
-      </DashboardCollapsibleSection>
+      </DashboardSection>
     </section>
   )
 }

@@ -11,7 +11,7 @@ import {
 import { NOTIFICATION_TYPE_REQUEST_REMINDER } from '../../types/requestReminder'
 import { supabase } from '../../services/supabase'
 import { NavBellIcon } from '../dashboard/dashboardNav'
-import { DashboardCollapsibleSection } from '../dashboard/DashboardCollapsibleSection'
+import { DashboardSection } from '../dashboard/DashboardSection'
 import { AdminNotificationsList } from './AdminNotificationsList'
 
 type AdminNotificationsSectionProps = {
@@ -153,7 +153,7 @@ export function AdminNotificationsSection({
 
   return (
     <section className="admin-notifications">
-      <DashboardCollapsibleSection
+      <DashboardSection
         title="התראות תזכורת"
         icon={<NavBellIcon />}
         headerAddon={
@@ -165,7 +165,7 @@ export function AdminNotificationsSection({
             </p>
           ) : null
         }
-        className="dashboard-collapsible-section--flush-header"
+        className="dashboard-section--flush-header"
       >
         <div className="ds-card admin-notifications__card">
           {isLoading && <p className="ds-form-message">טוען התראות...</p>}
@@ -181,7 +181,7 @@ export function AdminNotificationsSection({
             />
           )}
         </div>
-      </DashboardCollapsibleSection>
+      </DashboardSection>
     </section>
   )
 }
