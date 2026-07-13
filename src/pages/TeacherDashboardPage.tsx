@@ -211,7 +211,6 @@ export function TeacherDashboardPage({ profile, onLogout }: TeacherDashboardPage
       onSectionSelect={showSection}
 
       onLogout={onLogout}
-
     >
 
       <div dir="rtl" className="teacher-dashboard">

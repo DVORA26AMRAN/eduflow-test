@@ -70,6 +70,12 @@ describe('LoginPage remembered email', () => {
     expect(screen.getByLabelText('מסך התחברות').closest('main')).toHaveAttribute('dir', 'rtl')
   })
 
+  it('renders the organization logo on the login screen', () => {
+    renderLoginPage()
+
+    expect(screen.getByRole('img', { name: 'לוגו הארגון' })).toBeInTheDocument()
+  })
+
   it('supports keyboard and screen-reader interaction for the checkbox', async () => {
     const user = userEvent.setup()
     const props = renderLoginPage()
