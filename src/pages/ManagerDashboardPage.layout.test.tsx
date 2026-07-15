@@ -104,11 +104,19 @@ describe('Manager dashboard requests layout', () => {
         newUserName=""
         newUserEmail=""
         newUserRole="teacher"
+        newUserPhone=""
+        newUserNationalId=""
+        newUserJobTitle=""
+        newUserWeeklyHours=""
         message=""
         usersListVersion={0}
         onNewUserNameChange={() => undefined}
         onNewUserEmailChange={() => undefined}
         onNewUserRoleChange={() => undefined}
+        onNewUserPhoneChange={() => undefined}
+        onNewUserNationalIdChange={() => undefined}
+        onNewUserJobTitleChange={() => undefined}
+        onNewUserWeeklyHoursChange={() => undefined}
         onCreateUser={() => undefined}
         onLogout={() => undefined}
       />,
@@ -128,11 +136,19 @@ describe('Manager dashboard requests layout', () => {
         newUserName=""
         newUserEmail=""
         newUserRole="teacher"
+        newUserPhone=""
+        newUserNationalId=""
+        newUserJobTitle=""
+        newUserWeeklyHours=""
         message=""
         usersListVersion={0}
         onNewUserNameChange={() => undefined}
         onNewUserEmailChange={() => undefined}
         onNewUserRoleChange={() => undefined}
+        onNewUserPhoneChange={() => undefined}
+        onNewUserNationalIdChange={() => undefined}
+        onNewUserJobTitleChange={() => undefined}
+        onNewUserWeeklyHoursChange={() => undefined}
         onCreateUser={() => undefined}
         onLogout={() => undefined}
       />,

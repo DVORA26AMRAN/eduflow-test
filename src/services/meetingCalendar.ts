@@ -13,6 +13,7 @@ import {
   isMeetingState,
   validateProposedMeetingSlots,
 } from '../utils/meetingCalendar'
+import { mapMeetingCalendarError } from '../utils/meetingCalendarDisplay'
 import { supabase } from './supabase'
 
 export type LoadMeetingsResult =
@@ -37,16 +38,25 @@ function parseMeeting(row: Record<string, unknown>): Meeting | null {
     typeof row.recipient_id !== 'string' ||
     typeof row.subject !== 'string' ||
     typeof row.reason !== 'string' ||
-    typeof row.duration_minutes !== 'number' ||
     typeof row.institution_timezone !== 'string' ||
     typeof row.current_state !== 'string' ||
     typeof row.active_proposal_cycle !== 'number' ||
     typeof row.rescheduling_active !== 'boolean' ||
     typeof row.created_at !== 'string' ||
     typeof row.updated_at !== 'string' ||
-    !isMeetingState(row.current_state) ||
-    !isMeetingDurationMinutes(row.duration_minutes)
+    !isMeetingState(row.current_state)
   ) {
+    return null
+  }
+
+  const durationMinutes =
+    row.duration_minutes === null
+      ? null
+      : typeof row.duration_minutes === 'number' && isMeetingDurationMinutes(row.duration_minutes)
+        ? row.duration_minutes
+        : undefined
+
+  if (durationMinutes === undefined) {
     return null
   }
 
@@ -59,7 +69,7 @@ function parseMeeting(row: Record<string, unknown>): Meeting | null {
     recipientId: row.recipient_id,
     subject: row.subject,
     reason: row.reason,
-    durationMinutes: row.duration_minutes,
+    durationMinutes,
     institutionTimezone: row.institution_timezone,
     currentState: row.current_state,
     activeProposalCycle: row.active_proposal_cycle,
@@ -165,11 +175,7 @@ function parseCommandResult(data: unknown): MeetingCommandResult {
 }
 
 function mapRpcError(error: { message?: string } | null): string {
-  if (!error?.message) {
-    return 'לא ניתן להשלים את פעולת לוח הפגישות.'
-  }
-
-  return error.message
+  return mapMeetingCalendarError(error?.message)
 }
 
 export async function loadMeetings(): Promise<LoadMeetingsResult> {
@@ -231,7 +237,7 @@ export async function loadMeetingAuditEvents(
 }
 
 export async function createMeeting(input: CreateMeetingInput): Promise<MeetingCommandResult> {
-  if (!isMeetingDurationMinutes(input.durationMinutes)) {
+  if (input.durationMinutes !== null && !isMeetingDurationMinutes(input.durationMinutes)) {
     return { ok: false, errorMessage: 'משך הפגישה אינו חוקי.' }
   }
 
@@ -264,6 +270,27 @@ export async function approveMeetingByOwner(meetingId: string): Promise<MeetingC
   return parseCommandResult(data)
 }
 
+export async function setMeetingDuration(
+  meetingId: string,
+  durationMinutes: MeetingDurationMinutes,
+): Promise<MeetingCommandResult> {
+  if (!isMeetingDurationMinutes(durationMinutes)) {
+    return { ok: false, errorMessage: 'משך הפגישה אינו חוקי.' }
+  }
+
+  const { data, error } = await supabase.rpc('meeting_calendar_set_duration', {
+    p_meeting_id: meetingId,
+    p_duration_minutes: durationMinutes,
+  })
+
+  if (error) {
+    console.error('[meetingCalendar] failed to set meeting duration', error)
+    return { ok: false, errorMessage: mapRpcError(error) }
+  }
+
+  return parseCommandResult(data)
+}
+
 export async function proposeMeetingSlots(
   meetingId: string,
   slots: ProposedMeetingSlotInput[],
@@ -276,7 +303,10 @@ export async function proposeMeetingSlots(
 
   const { data, error } = await supabase.rpc('meeting_calendar_propose_slots', {
     p_meeting_id: meetingId,
-    p_slots: slots,
+    p_slots: slots.map((slot) => ({
+      starts_at: slot.startsAt,
+      ends_at: slot.endsAt,
+    })),
   })
 
   if (error) {

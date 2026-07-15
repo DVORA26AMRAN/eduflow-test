@@ -6,12 +6,14 @@ import { DashboardSectionPanel } from '../components/dashboard/DashboardSectionP
 import {
   NavArchiveIcon,
   NavBellIcon,
+  NavCalendarIcon,
   NavChartIcon,
   NavInboxIcon,
   NavUsersIcon,
   type DashboardNavItem,
 } from '../components/dashboard/dashboardNav'
 
+import { MeetingCalendarSection } from '../components/meetingCalendar/MeetingCalendarSection'
 import { SecretaryAnalyticsSection } from '../components/secretary/SecretaryAnalyticsSection'
 import { SecretaryArchiveSection } from '../components/secretary/SecretaryArchiveSection'
 import { SecretaryRequestsInbox } from '../components/secretary/SecretaryRequestsInbox'
@@ -33,6 +35,7 @@ import {
   REMINDER_NAV_LABEL,
 } from '../utils/reminderNavigation'
 import type { AuthenticatedUserProfile } from '../types/user'
+import { MEETING_CALENDAR_NAV_LABEL, MEETING_CALENDAR_SECTION_ID } from '../utils/meetingCalendarDisplay'
 
 import './SecretaryDashboardPage.css'
 
@@ -126,6 +129,7 @@ export function SecretaryDashboardPage({ profile, onLogout }: SecretaryDashboard
     items.push(
       { id: 'substituteApprovals', label: 'אישורי מילויי מקום', icon: <NavUsersIcon /> },
       { id: 'requestsInbox', label: 'בקשות מורים', icon: <NavInboxIcon /> },
+      { id: MEETING_CALENDAR_SECTION_ID, label: MEETING_CALENDAR_NAV_LABEL, icon: <NavCalendarIcon /> },
       { id: 'institutionalArchive', label: 'ארכיון מוסדי', icon: <NavArchiveIcon /> },
     )
 
@@ -228,6 +232,15 @@ export function SecretaryDashboardPage({ profile, onLogout }: SecretaryDashboard
             requestNavigationIntent={requestNavigationIntent}
             onRequestNavigationIntentConsumed={() => setRequestNavigationIntent(null)}
           />
+        </DashboardSectionPanel>
+
+        <DashboardSectionPanel
+          id="secretary-meeting-calendar"
+          sectionId={MEETING_CALENDAR_SECTION_ID}
+          activeSectionId={activeSectionId}
+          className="secretary-dashboard__shell-section"
+        >
+          <MeetingCalendarSection actorUserId={profile.id} actorRole="secretary" />
         </DashboardSectionPanel>
 
         <DashboardSectionPanel

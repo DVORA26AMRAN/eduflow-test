@@ -12,10 +12,18 @@ type TeamManagementSectionProps = {
   newUserName: string
   newUserEmail: string
   newUserRole: UserRole
+  newUserPhone: string
+  newUserNationalId: string
+  newUserJobTitle: string
+  newUserWeeklyHours: string
   createUserMessage: string
   onNewUserNameChange: (value: string) => void
   onNewUserEmailChange: (value: string) => void
   onNewUserRoleChange: (value: UserRole) => void
+  onNewUserPhoneChange: (value: string) => void
+  onNewUserNationalIdChange: (value: string) => void
+  onNewUserJobTitleChange: (value: string) => void
+  onNewUserWeeklyHoursChange: (value: string) => void
   onCreateUser: () => void
 }
 
@@ -26,10 +34,18 @@ export function TeamManagementSection({
   newUserName,
   newUserEmail,
   newUserRole,
+  newUserPhone,
+  newUserNationalId,
+  newUserJobTitle,
+  newUserWeeklyHours,
   createUserMessage,
   onNewUserNameChange,
   onNewUserEmailChange,
   onNewUserRoleChange,
+  onNewUserPhoneChange,
+  onNewUserNationalIdChange,
+  onNewUserJobTitleChange,
+  onNewUserWeeklyHoursChange,
   onCreateUser,
 }: TeamManagementSectionProps) {
   const [searchQuery, setSearchQuery] = useState('')
@@ -105,10 +121,18 @@ export function TeamManagementSection({
           newUserName={newUserName}
           newUserEmail={newUserEmail}
           newUserRole={newUserRole}
+          newUserPhone={newUserPhone}
+          newUserNationalId={newUserNationalId}
+          newUserJobTitle={newUserJobTitle}
+          newUserWeeklyHours={newUserWeeklyHours}
           message={createUserMessage}
           onNewUserNameChange={onNewUserNameChange}
           onNewUserEmailChange={onNewUserEmailChange}
           onNewUserRoleChange={onNewUserRoleChange}
+          onNewUserPhoneChange={onNewUserPhoneChange}
+          onNewUserNationalIdChange={onNewUserNationalIdChange}
+          onNewUserJobTitleChange={onNewUserJobTitleChange}
+          onNewUserWeeklyHoursChange={onNewUserWeeklyHoursChange}
           onCreateUser={onCreateUser}
         />
       </DashboardSection>

@@ -15,11 +15,13 @@ import {
   hasCompletedPasswordSetup,
 } from './services/auth'
 import { loadCurrentUserProfile, logAuthState, logProfileDebug } from './services/profile'
+import { setTeacherExtendedProfile } from './services/userExtendedProfile'
 import { PENDING_PASSWORD_SETUP_KEY, supabase } from './services/supabase'
 import {
   getInitialLoginFormState,
   handleRememberMeAfterLogin,
 } from './utils/rememberedEmail'
+import { validateCreateUserForm } from './utils/createUserForm'
 import { buildSignInCredentials } from './services/authCredentials'
 import type {
   AuthenticatedUserProfile,
@@ -50,6 +52,10 @@ function App() {
   const [newUserName, setNewUserName] = useState('')
   const [newUserEmail, setNewUserEmail] = useState('')
   const [newUserRole, setNewUserRole] = useState<UserRole>('teacher')
+  const [newUserPhone, setNewUserPhone] = useState('')
+  const [newUserNationalId, setNewUserNationalId] = useState('')
+  const [newUserJobTitle, setNewUserJobTitle] = useState('')
+  const [newUserWeeklyHours, setNewUserWeeklyHours] = useState('')
   const [usersListVersion, setUsersListVersion] = useState(0)
 
   const profileLoadRequestId = useRef(0)
@@ -347,8 +353,18 @@ function App() {
   }
 
   async function createUser() {
-    if (!newUserName || !newUserEmail) {
-      setMessage('נא למלא שם מלא וכתובת מייל.')
+    const validation = validateCreateUserForm({
+      fullName: newUserName,
+      email: newUserEmail,
+      role: newUserRole,
+      phone: newUserPhone,
+      nationalId: newUserNationalId,
+      jobTitle: newUserJobTitle,
+      weeklyHours: newUserWeeklyHours,
+    })
+
+    if (!validation.ok) {
+      setMessage(validation.errorMessage)
       return
     }
 
@@ -369,10 +385,14 @@ function App() {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          full_name: newUserName,
-          email: newUserEmail,
-          role: newUserRole,
+          full_name: validation.values.fullName,
+          email: validation.values.email,
+          role: validation.values.role,
           capabilities: [],
+          phone: validation.values.phone,
+          national_id: validation.values.nationalId,
+          job_title: validation.values.jobTitle,
+          weekly_hours: validation.values.weeklyHours,
         }),
       },
     )
@@ -385,10 +405,36 @@ function App() {
     })
 
     if (response.status === 201) {
+      const hasExtendedFields =
+        validation.values.phone !== null ||
+        validation.values.nationalId !== null ||
+        validation.values.jobTitle !== null ||
+        validation.values.weeklyHours !== null
+
+      if (validation.values.role === 'teacher' && hasExtendedFields) {
+        const extendedResult = await setTeacherExtendedProfile({
+          email: validation.values.email,
+          phone: validation.values.phone,
+          nationalId: validation.values.nationalId,
+          jobTitle: validation.values.jobTitle,
+          weeklyHours: validation.values.weeklyHours,
+        })
+
+        if (!extendedResult.ok) {
+          setMessage(extendedResult.errorMessage)
+          setUsersListVersion((version) => version + 1)
+          return
+        }
+      }
+
       setMessage('המשתמש נוצר בהצלחה.')
       setNewUserName('')
       setNewUserEmail('')
       setNewUserRole('teacher')
+      setNewUserPhone('')
+      setNewUserNationalId('')
+      setNewUserJobTitle('')
+      setNewUserWeeklyHours('')
       setUsersListVersion((version) => version + 1)
       return
     }
@@ -492,11 +538,19 @@ function App() {
       newUserName={newUserName}
       newUserEmail={newUserEmail}
       newUserRole={newUserRole}
+      newUserPhone={newUserPhone}
+      newUserNationalId={newUserNationalId}
+      newUserJobTitle={newUserJobTitle}
+      newUserWeeklyHours={newUserWeeklyHours}
       message={message}
       usersListVersion={usersListVersion}
       onNewUserNameChange={setNewUserName}
       onNewUserEmailChange={setNewUserEmail}
       onNewUserRoleChange={setNewUserRole}
+      onNewUserPhoneChange={setNewUserPhone}
+      onNewUserNationalIdChange={setNewUserNationalId}
+      onNewUserJobTitleChange={setNewUserJobTitle}
+      onNewUserWeeklyHoursChange={setNewUserWeeklyHours}
       onCreateUser={createUser}
       onLogout={logout}
     />

@@ -10,6 +10,14 @@ export type InstitutionUser = {
   primary_role: PrimaryRole
 }
 
+/** Optional employee fields on public.users (Phase 3A.1 teacher extended profile). */
+export type TeacherExtendedProfileFields = {
+  phone: string | null
+  nationalId: string | null
+  jobTitle: string | null
+  weeklyHours: number | null
+}
+
 export type AuthenticatedUserProfile = {
   id: string
   fullName: string

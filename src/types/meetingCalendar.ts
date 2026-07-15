@@ -51,7 +51,7 @@ export type Meeting = {
   recipientId: string
   subject: string
   reason: string
-  durationMinutes: MeetingDurationMinutes
+  durationMinutes: MeetingDurationMinutes | null
   institutionTimezone: string
   currentState: MeetingState
   activeProposalCycle: number
@@ -100,7 +100,7 @@ export type CreateMeetingInput = {
   recipientId: string
   subject: string
   reason: string
-  durationMinutes: MeetingDurationMinutes
+  durationMinutes: MeetingDurationMinutes | null
   institutionTimezone?: string
 }
 

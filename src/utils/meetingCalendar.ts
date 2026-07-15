@@ -1,4 +1,3 @@
-import type { PrimaryRole } from '../types/user'
 import {
   MEETING_DURATIONS_MINUTES,
   MEETING_MAX_SLOTS,
@@ -71,7 +70,7 @@ export function isMeetingDurationMinutes(value: number): value is MeetingDuratio
   return (MEETING_DURATIONS_MINUTES as readonly number[]).includes(value)
 }
 
-export function isMeetingCalendarRole(role: PrimaryRole): role is MeetingCalendarRole {
+export function isMeetingCalendarRole(role: string): role is MeetingCalendarRole {
   return (MEETING_CALENDAR_ROLES as readonly string[]).includes(role)
 }
 

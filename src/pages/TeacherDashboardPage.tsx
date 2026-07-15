@@ -10,6 +10,8 @@ import {
 
   NavBellIcon,
 
+  NavCalendarIcon,
+
   NavChartIcon,
 
   NavClipboardIcon,
@@ -22,6 +24,8 @@ import {
 
 import { useDashboardSectionNavigation } from '../hooks/useDashboardSectionNavigation'
 import { useUnreadRequestMessageNotifications } from '../hooks/useUnreadRequestMessageNotifications'
+
+import { MeetingCalendarSection } from '../components/meetingCalendar/MeetingCalendarSection'
 
 import { TeacherAnalyticsSection } from '../components/teacher/TeacherAnalyticsSection'
 
@@ -47,6 +51,8 @@ import type { TeacherRequestReminderState } from '../types/requestReminder'
 
 import type { AuthenticatedUserProfile } from '../types/user'
 
+import { MEETING_CALENDAR_NAV_LABEL, MEETING_CALENDAR_SECTION_ID } from '../utils/meetingCalendarDisplay'
+
 import './TeacherDashboardPage.css'
 
 
@@ -70,6 +76,8 @@ const teacherNavItems: DashboardNavItem[] = [
   { id: 'requests', label: 'בקשות', icon: <NavClipboardIcon /> },
 
   { id: 'substituteBoard', label: 'לוח מילויי מקום', icon: <NavUsersIcon /> },
+
+  { id: MEETING_CALENDAR_SECTION_ID, label: MEETING_CALENDAR_NAV_LABEL, icon: <NavCalendarIcon /> },
 
   { id: 'archive', label: 'הארכיון שלי', icon: <NavArchiveIcon /> },
 
@@ -306,6 +314,24 @@ export function TeacherDashboardPage({ profile, onLogout }: TeacherDashboardPage
         >
 
           <TeacherSubstituteBoardSection />
+
+        </DashboardSectionPanel>
+
+
+
+        <DashboardSectionPanel
+
+          id="teacher-meeting-calendar"
+
+          sectionId={MEETING_CALENDAR_SECTION_ID}
+
+          activeSectionId={activeSectionId}
+
+          className="teacher-dashboard__shell-section"
+
+        >
+
+          <MeetingCalendarSection actorUserId={profile.id} actorRole="teacher" />
 
         </DashboardSectionPanel>
 

@@ -102,6 +102,38 @@ AS $$
     END;
 $$;
 
+CREATE OR REPLACE FUNCTION public.meeting_calendar_validate_role_pair(
+    p_requester_role public.user_role,
+    p_recipient_role public.user_role
+)
+RETURNS BOOLEAN
+LANGUAGE sql
+IMMUTABLE
+AS $$
+    SELECT public.meeting_calendar_validate_role_pair(
+        p_requester_role::TEXT,
+        p_recipient_role::TEXT
+    );
+$$;
+
+CREATE OR REPLACE FUNCTION public.meeting_calendar_resolve_calendar_owner_user_id(
+    p_requester_id UUID,
+    p_recipient_id UUID,
+    p_requester_role public.user_role,
+    p_recipient_role public.user_role
+)
+RETURNS UUID
+LANGUAGE sql
+IMMUTABLE
+AS $$
+    SELECT public.meeting_calendar_resolve_calendar_owner_user_id(
+        p_requester_id,
+        p_recipient_id,
+        p_requester_role::TEXT,
+        p_recipient_role::TEXT
+    );
+$$;
+
 -- -----------------------------------------------------------------------------
 -- Legacy schema reconciliation (skipped when already reconciled)
 -- -----------------------------------------------------------------------------

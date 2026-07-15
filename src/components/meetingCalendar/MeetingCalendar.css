@@ -1,0 +1,130 @@
+.mc-section {
+  display: grid;
+  gap: 1.5rem;
+}
+
+.mc-section__toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+}
+
+.mc-bucket {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.mc-bucket h3 {
+  margin: 0;
+  font-size: 1.05rem;
+}
+
+.mc-meeting-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 0.75rem;
+}
+
+.mc-meeting-card {
+  width: 100%;
+  display: grid;
+  gap: 0.25rem;
+  text-align: right;
+  border: 1px solid color-mix(in srgb, currentColor 18%, transparent);
+  background: color-mix(in srgb, Canvas 92%, CanvasText 8%);
+  border-radius: 0.75rem;
+  padding: 0.9rem 1rem;
+  cursor: pointer;
+}
+
+.mc-meeting-card:hover,
+.mc-meeting-card:focus-visible {
+  outline: 2px solid color-mix(in srgb, Highlight 70%, transparent);
+  outline-offset: 2px;
+}
+
+.mc-create-form,
+.mc-details,
+.mc-recipient-picker,
+.mc-owner-propose,
+.mc-select-slots {
+  display: grid;
+  gap: 1rem;
+}
+
+.mc-field-block,
+.mc-slot-row {
+  display: grid;
+  gap: 0.5rem;
+}
+
+.mc-field-label,
+.mc-help-text,
+.mc-slot-end,
+.mc-selected-recipient,
+.mc-confirmed-slot,
+.mc-selected-slot {
+  margin: 0;
+}
+
+.mc-help-text {
+  opacity: 0.8;
+}
+
+.mc-recipient-list {
+  display: grid;
+  gap: 0.5rem;
+  max-height: 18rem;
+  overflow: auto;
+}
+
+.mc-recipient-option {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+  border: 1px solid color-mix(in srgb, currentColor 16%, transparent);
+  border-radius: 0.65rem;
+  padding: 0.75rem;
+  cursor: pointer;
+}
+
+.mc-recipient-option__body {
+  display: grid;
+  gap: 0.15rem;
+}
+
+.mc-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+}
+
+.mc-details-grid {
+  display: grid;
+  gap: 0.75rem;
+  margin: 0;
+}
+
+.mc-details-grid div {
+  display: grid;
+  gap: 0.2rem;
+}
+
+.mc-details-grid dt {
+  font-weight: 600;
+}
+
+.mc-details-grid dd {
+  margin: 0;
+}
+
+.mc-slots-form {
+  display: grid;
+  gap: 0.85rem;
+  border: 1px solid color-mix(in srgb, currentColor 14%, transparent);
+  border-radius: 0.75rem;
+  padding: 0.9rem;
+  margin: 0;
+}

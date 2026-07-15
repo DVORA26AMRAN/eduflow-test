@@ -213,11 +213,19 @@ describe('dashboard overview section isolation', () => {
         newUserName=""
         newUserEmail=""
         newUserRole="teacher"
+        newUserPhone=""
+        newUserNationalId=""
+        newUserJobTitle=""
+        newUserWeeklyHours=""
         message=""
         usersListVersion={0}
         onNewUserNameChange={() => undefined}
         onNewUserEmailChange={() => undefined}
         onNewUserRoleChange={() => undefined}
+        onNewUserPhoneChange={() => undefined}
+        onNewUserNationalIdChange={() => undefined}
+        onNewUserJobTitleChange={() => undefined}
+        onNewUserWeeklyHoursChange={() => undefined}
         onCreateUser={() => undefined}
         onLogout={() => undefined}
       />,
@@ -279,11 +287,19 @@ describe('sidebar section navigation', () => {
         newUserName=""
         newUserEmail=""
         newUserRole="teacher"
+        newUserPhone=""
+        newUserNationalId=""
+        newUserJobTitle=""
+        newUserWeeklyHours=""
         message=""
         usersListVersion={0}
         onNewUserNameChange={() => undefined}
         onNewUserEmailChange={() => undefined}
         onNewUserRoleChange={() => undefined}
+        onNewUserPhoneChange={() => undefined}
+        onNewUserNationalIdChange={() => undefined}
+        onNewUserJobTitleChange={() => undefined}
+        onNewUserWeeklyHoursChange={() => undefined}
         onCreateUser={() => undefined}
         onLogout={() => undefined}
       />,

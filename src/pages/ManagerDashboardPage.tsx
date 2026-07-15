@@ -4,11 +4,13 @@ import { DashboardSectionPanel } from '../components/dashboard/DashboardSectionP
 import {
   NavArchiveIcon,
   NavBellIcon,
+  NavCalendarIcon,
   NavChartIcon,
   NavInboxIcon,
   NavUsersIcon,
   type DashboardNavItem,
 } from '../components/dashboard/dashboardNav'
+import { MeetingCalendarSection } from '../components/meetingCalendar/MeetingCalendarSection'
 import { ManagerAnalyticsSection } from '../components/manager/ManagerAnalyticsSection'
 import { ManagerArchiveSection } from '../components/manager/ManagerArchiveSection'
 import { ManagerRecentRequestsSection } from '../components/manager/ManagerRecentRequestsSection'
@@ -26,6 +28,7 @@ import {
 } from '../types/dashboardAnalytics'
 import type { RequestReminderSummary } from '../types/requestReminder'
 import type { AuthenticatedUserProfile, InstitutionUser, UserRole } from '../types/user'
+import { MEETING_CALENDAR_NAV_LABEL, MEETING_CALENDAR_SECTION_ID } from '../utils/meetingCalendarDisplay'
 import {
   REMINDER_BELL_NAV_ID,
   REMINDER_NAV_ARIA_LABEL,
@@ -42,11 +45,19 @@ type ManagerDashboardPageProps = {
   newUserName: string
   newUserEmail: string
   newUserRole: UserRole
+  newUserPhone: string
+  newUserNationalId: string
+  newUserJobTitle: string
+  newUserWeeklyHours: string
   message: string
   usersListVersion: number
   onNewUserNameChange: (value: string) => void
   onNewUserEmailChange: (value: string) => void
   onNewUserRoleChange: (value: UserRole) => void
+  onNewUserPhoneChange: (value: string) => void
+  onNewUserNationalIdChange: (value: string) => void
+  onNewUserJobTitleChange: (value: string) => void
+  onNewUserWeeklyHoursChange: (value: string) => void
   onCreateUser: () => void
   onLogout: () => void
 }
@@ -56,11 +67,19 @@ export function ManagerDashboardPage({
   newUserName,
   newUserEmail,
   newUserRole,
+  newUserPhone,
+  newUserNationalId,
+  newUserJobTitle,
+  newUserWeeklyHours,
   message,
   usersListVersion,
   onNewUserNameChange,
   onNewUserEmailChange,
   onNewUserRoleChange,
+  onNewUserPhoneChange,
+  onNewUserNationalIdChange,
+  onNewUserJobTitleChange,
+  onNewUserWeeklyHoursChange,
   onCreateUser,
   onLogout,
 }: ManagerDashboardPageProps) {
@@ -152,6 +171,7 @@ export function ManagerDashboardPage({
         label: 'בקשות מורים',
         icon: <NavInboxIcon />,
       },
+      { id: MEETING_CALENDAR_SECTION_ID, label: MEETING_CALENDAR_NAV_LABEL, icon: <NavCalendarIcon /> },
       { id: MANAGER_ARCHIVE_SECTION_ID, label: 'הארכיון שלי', icon: <NavArchiveIcon /> },
       { id: TEAM_MANAGEMENT_SECTION_ID, label: 'ניהול משתמשים', icon: <NavUsersIcon /> },
     )
@@ -277,6 +297,15 @@ export function ManagerDashboardPage({
         </DashboardSectionPanel>
 
         <DashboardSectionPanel
+          id="manager-meeting-calendar"
+          sectionId={MEETING_CALENDAR_SECTION_ID}
+          activeSectionId={activeSectionId}
+          className="manager-dashboard__shell-section"
+        >
+          <MeetingCalendarSection actorUserId={profile.id} actorRole="institution_manager" />
+        </DashboardSectionPanel>
+
+        <DashboardSectionPanel
           id="manager-archive"
           sectionId={MANAGER_ARCHIVE_SECTION_ID}
           activeSectionId={activeSectionId}
@@ -305,10 +334,18 @@ export function ManagerDashboardPage({
             newUserName={newUserName}
             newUserEmail={newUserEmail}
             newUserRole={newUserRole}
+            newUserPhone={newUserPhone}
+            newUserNationalId={newUserNationalId}
+            newUserJobTitle={newUserJobTitle}
+            newUserWeeklyHours={newUserWeeklyHours}
             createUserMessage={message}
             onNewUserNameChange={onNewUserNameChange}
             onNewUserEmailChange={onNewUserEmailChange}
             onNewUserRoleChange={onNewUserRoleChange}
+            onNewUserPhoneChange={onNewUserPhoneChange}
+            onNewUserNationalIdChange={onNewUserNationalIdChange}
+            onNewUserJobTitleChange={onNewUserJobTitleChange}
+            onNewUserWeeklyHoursChange={onNewUserWeeklyHoursChange}
             onCreateUser={onCreateUser}
           />
         </DashboardSectionPanel>
