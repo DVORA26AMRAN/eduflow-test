@@ -6,6 +6,7 @@ import {
   NavBellIcon,
   NavCalendarIcon,
   NavChartIcon,
+  NavClipboardIcon,
   NavInboxIcon,
   NavUsersIcon,
   type DashboardNavItem,
@@ -15,6 +16,7 @@ import { ManagerAnalyticsSection } from '../components/manager/ManagerAnalyticsS
 import { ManagerArchiveSection } from '../components/manager/ManagerArchiveSection'
 import { ManagerRecentRequestsSection } from '../components/manager/ManagerRecentRequestsSection'
 import { TeamManagementSection } from '../components/manager/TeamManagementSection'
+import { StaffDirectoryPage } from './StaffDirectoryPage'
 import { useAdminReminderNotifications } from '../hooks/useAdminReminderNotifications'
 import { useUnreadRequestMessageNotifications } from '../hooks/useUnreadRequestMessageNotifications'
 import { useDashboardSectionNavigation } from '../hooks/useDashboardSectionNavigation'
@@ -29,6 +31,10 @@ import {
 import type { RequestReminderSummary } from '../types/requestReminder'
 import type { AuthenticatedUserProfile, InstitutionUser, UserRole } from '../types/user'
 import { MEETING_CALENDAR_NAV_LABEL, MEETING_CALENDAR_SECTION_ID } from '../utils/meetingCalendarDisplay'
+import {
+  STAFF_DIRECTORY_NAV_LABEL,
+  STAFF_DIRECTORY_SECTION_ID,
+} from '../utils/staffDirectoryDisplay'
 import {
   REMINDER_BELL_NAV_ID,
   REMINDER_NAV_ARIA_LABEL,
@@ -172,6 +178,7 @@ export function ManagerDashboardPage({
         icon: <NavInboxIcon />,
       },
       { id: MEETING_CALENDAR_SECTION_ID, label: MEETING_CALENDAR_NAV_LABEL, icon: <NavCalendarIcon /> },
+      { id: STAFF_DIRECTORY_SECTION_ID, label: STAFF_DIRECTORY_NAV_LABEL, icon: <NavClipboardIcon /> },
       { id: MANAGER_ARCHIVE_SECTION_ID, label: 'הארכיון שלי', icon: <NavArchiveIcon /> },
       { id: TEAM_MANAGEMENT_SECTION_ID, label: 'ניהול משתמשים', icon: <NavUsersIcon /> },
     )
@@ -303,6 +310,15 @@ export function ManagerDashboardPage({
           className="manager-dashboard__shell-section"
         >
           <MeetingCalendarSection actorUserId={profile.id} actorRole="institution_manager" />
+        </DashboardSectionPanel>
+
+        <DashboardSectionPanel
+          id="manager-staff-directory"
+          sectionId={STAFF_DIRECTORY_SECTION_ID}
+          activeSectionId={activeSectionId}
+          className="manager-dashboard__shell-section"
+        >
+          <StaffDirectoryPage />
         </DashboardSectionPanel>
 
         <DashboardSectionPanel
