@@ -85,3 +85,26 @@
   margin: 0;
   font-size: 1rem;
 }
+
+.staff-directory__edit-form {
+  display: grid;
+  gap: 1rem;
+}
+
+.staff-directory__edit-heading {
+  margin: 0 0 1rem;
+  font-size: 1.125rem;
+}
+
+.staff-directory__readonly-list {
+  display: grid;
+  gap: 0.75rem;
+  margin: 0;
+  padding: 1rem;
+  border-radius: 0.75rem;
+  background: var(--ds-color-surface-muted, #f8fafc);
+}
+
+.staff-directory__details-actions {
+  margin-top: 1.25rem;
+}

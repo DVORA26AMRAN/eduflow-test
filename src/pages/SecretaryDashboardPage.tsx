@@ -256,7 +256,10 @@ export function SecretaryDashboardPage({ profile, onLogout }: SecretaryDashboard
           activeSectionId={activeSectionId}
           className="secretary-dashboard__shell-section"
         >
-          <StaffDirectoryPage />
+          <StaffDirectoryPage
+            canEdit={false}
+            institutionName={profile.school?.name ?? ''}
+          />
         </DashboardSectionPanel>
 
         <DashboardSectionPanel

@@ -19,7 +19,12 @@ import {
 import '../components/staff/StaffDirectory.css'
 import './StaffDirectoryPage.css'
 
-export function StaffDirectoryPage() {
+type StaffDirectoryPageProps = {
+  canEdit: boolean
+  institutionName: string
+}
+
+export function StaffDirectoryPage({ canEdit, institutionName }: StaffDirectoryPageProps) {
   const [members, setMembers] = useState<StaffDirectoryMember[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [errorMessage, setErrorMessage] = useState('')
@@ -47,8 +52,28 @@ export function StaffDirectoryPage() {
   }, [])
 
   useEffect(() => {
-    void refreshDirectory()
-  }, [refreshDirectory])
+    let cancelled = false
+
+    void loadStaffDirectory().then((result) => {
+      if (cancelled) {
+        return
+      }
+
+      if (!result.ok) {
+        setMembers([])
+        setErrorMessage(STAFF_DIRECTORY_ERROR_MESSAGE)
+        setIsLoading(false)
+        return
+      }
+
+      setMembers(result.members)
+      setIsLoading(false)
+    })
+
+    return () => {
+      cancelled = true
+    }
+  }, [])
 
   const visibleMembers = useMemo(() => {
     const filtered = filterStaffDirectoryMembers(members, searchQuery)
@@ -108,6 +133,9 @@ export function StaffDirectoryPage() {
       <StaffMemberDetailsModal
         isOpen={isDetailsOpen}
         memberId={selectedMemberId}
+        canEdit={canEdit}
+        institutionName={institutionName}
+        onUpdated={refreshDirectory}
         onClose={handleDetailsClose}
       />
     </section>

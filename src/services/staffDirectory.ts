@@ -3,6 +3,8 @@ import type {
   LoadStaffMemberDetailsResult,
   StaffDirectoryMember,
   StaffMemberDetails,
+  UpdateStaffMemberInput,
+  UpdateStaffMemberResult,
 } from '../types/staffDirectory'
 import { supabase } from './supabase'
 
@@ -151,4 +153,28 @@ export async function loadStaffMemberDetails(
   }
 
   return { ok: true, member }
+}
+
+export async function updateStaffMember(
+  input: UpdateStaffMemberInput,
+): Promise<UpdateStaffMemberResult> {
+  const { data, error } = await supabase.rpc('update_staff_member', {
+    p_user_id: input.userId,
+    p_full_name: input.fullName,
+    p_phone: input.phone,
+    p_job_title: input.jobTitle,
+    p_weekly_hours: input.weeklyHours,
+    p_national_id: input.nationalId,
+  })
+
+  if (error) {
+    console.error('[staffDirectory] failed to update staff member', error)
+    return { ok: false, errorMessage: 'העדכון נכשל.' }
+  }
+
+  if (!data || typeof data !== 'object' || (data as { ok?: unknown }).ok !== true) {
+    return { ok: false, errorMessage: 'העדכון נכשל.' }
+  }
+
+  return { ok: true }
 }

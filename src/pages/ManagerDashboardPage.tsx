@@ -318,7 +318,10 @@ export function ManagerDashboardPage({
           activeSectionId={activeSectionId}
           className="manager-dashboard__shell-section"
         >
-          <StaffDirectoryPage />
+          <StaffDirectoryPage
+            canEdit
+            institutionName={profile.school?.name ?? ''}
+          />
         </DashboardSectionPanel>
 
         <DashboardSectionPanel
