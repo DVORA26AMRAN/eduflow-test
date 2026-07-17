@@ -91,34 +91,40 @@ export function AdminNotificationsSection({
     let isCancelled = false
 
     async function setupRealtimeSubscription() {
-      const { data, error } = await supabase.auth.getSession()
+      try {
+        const { data, error } = await supabase.auth.getSession()
 
-      if (error) {
-        console.error('[notifications] failed to load session for realtime', error)
-        return
-      }
-
-      const userId = data.session?.user?.id
-      if (!userId || isCancelled) {
-        return
-      }
-
-      const subscribedChannel = subscribeToAdminNotifications(userId, (notification) => {
-        if (notification.notification_type !== NOTIFICATION_TYPE_REQUEST_REMINDER) {
+        if (error) {
+          console.error('[notifications] failed to load session for realtime', error)
           return
         }
 
-        setNotifications((currentNotifications) =>
-          prependNotificationIfNew(currentNotifications, notification),
-        )
-      })
+        const userId = data.session?.user?.id
+        if (!userId || isCancelled) {
+          return
+        }
 
-      if (isCancelled) {
-        void unsubscribeFromAdminNotifications(subscribedChannel)
-        return
+        const subscribedChannel = subscribeToAdminNotifications(userId, (notification) => {
+          if (notification.notification_type !== NOTIFICATION_TYPE_REQUEST_REMINDER) {
+            return
+          }
+
+          setNotifications((currentNotifications) =>
+            prependNotificationIfNew(currentNotifications, notification),
+          )
+        }, 'admin-notifications-section')
+
+        if (isCancelled) {
+          await unsubscribeFromAdminNotifications(subscribedChannel)
+          return
+        }
+
+        channel = subscribedChannel
+      } catch (error) {
+        if (!isCancelled) {
+          console.error('[notifications] admin section realtime setup failed', error)
+        }
       }
-
-      channel = subscribedChannel
     }
 
     void setupRealtimeSubscription()

@@ -26,7 +26,7 @@ export function DashboardShell({
   children,
 }: DashboardShellProps) {
   return (
-    <main dir="rtl" className="dashboard-shell">
+    <main dir="rtl" className={`dashboard-shell dashboard-shell--${profile.role}`}>
       <DashboardTopHeader
         roleSubtitle={roleLabel}
         userDisplayName={profile.fullName}

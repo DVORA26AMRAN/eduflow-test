@@ -100,30 +100,56 @@ function mapStaffDirectoryError(rawMessage: string | null | undefined): string {
 }
 
 export async function loadStaffDirectory(): Promise<LoadStaffDirectoryResult> {
-  const { data, error } = await supabase.rpc('get_staff_directory')
-
-  if (error) {
-    console.error('[staffDirectory] failed to load directory', error)
-    return { ok: false, errorMessage: mapStaffDirectoryError(error.message) }
+  if (import.meta.env.DEV) {
+    console.debug('[staffDirectory] loadStaffDirectory() called')
+    console.debug('[staffDirectory] RPC request starting', {
+      functionName: 'get_staff_directory',
+    })
   }
 
-  if (!Array.isArray(data)) {
+  try {
+    const { data, error } = await supabase.rpc('get_staff_directory')
+
+    if (import.meta.env.DEV) {
+      console.debug('[staffDirectory] RPC response received', {
+        functionName: 'get_staff_directory',
+        rowCount: Array.isArray(data) ? data.length : null,
+        hasError: Boolean(error),
+      })
+    }
+
+    if (error) {
+      if (import.meta.env.DEV) {
+        console.error('[staffDirectory] RPC error', error)
+      }
+      console.error('[staffDirectory] failed to load directory', error)
+      return { ok: false, errorMessage: mapStaffDirectoryError(error.message) }
+    }
+
+    if (!Array.isArray(data)) {
+      return { ok: false, errorMessage: 'לא ניתן לטעון את ספר העובדים.' }
+    }
+
+    const members: StaffDirectoryMember[] = []
+    for (const row of data) {
+      if (!row || typeof row !== 'object') {
+        return { ok: false, errorMessage: 'לא ניתן לטעון את ספר העובדים.' }
+      }
+      const parsed = parseStaffDirectoryMember(row as Record<string, unknown>)
+      if (!parsed) {
+        return { ok: false, errorMessage: 'לא ניתן לטעון את ספר העובדים.' }
+      }
+      members.push(parsed)
+    }
+
+    return { ok: true, members }
+  } catch (error) {
+    if (import.meta.env.DEV) {
+      console.error('[staffDirectory] RPC error', error)
+    }
+    console.error('[staffDirectory] get_staff_directory threw before completing', error)
     return { ok: false, errorMessage: 'לא ניתן לטעון את ספר העובדים.' }
   }
-
-  const members: StaffDirectoryMember[] = []
-  for (const row of data) {
-    if (!row || typeof row !== 'object') {
-      return { ok: false, errorMessage: 'לא ניתן לטעון את ספר העובדים.' }
-    }
-    const parsed = parseStaffDirectoryMember(row as Record<string, unknown>)
-    if (!parsed) {
-      return { ok: false, errorMessage: 'לא ניתן לטעון את ספר העובדים.' }
-    }
-    members.push(parsed)
-  }
-
-  return { ok: true, members }
 }
 
 export async function loadStaffMemberDetails(

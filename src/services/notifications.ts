@@ -98,12 +98,59 @@ export async function markNotificationAsRead(
 
 export type NotificationInsertHandler = (notification: AppNotification) => void
 
+let notificationChannelSequence = 0
+const notificationChannelNames = new WeakMap<RealtimeChannel, string>()
+
+function createNotificationChannelName(userId: string, consumerName: string): string {
+  notificationChannelSequence += 1
+  return `user-notifications:${userId}:${consumerName}:${notificationChannelSequence}`
+}
+
+function logRealtimeDevelopment(
+  event: 'setup' | 'status' | 'cleanup',
+  channelName: string,
+  details?: Record<string, unknown>,
+) {
+  if (import.meta.env.DEV) {
+    console.debug(`[notifications] realtime ${event}`, {
+      channelName,
+      ...details,
+    })
+  }
+}
+
+async function removeNotificationChannel(
+  channel: RealtimeChannel,
+  channelName: string,
+): Promise<void> {
+  logRealtimeDevelopment('cleanup', channelName)
+
+  try {
+    await supabase.removeChannel(channel)
+  } catch (error) {
+    console.error('[notifications] realtime cleanup failed', {
+      channelName,
+      error,
+    })
+  } finally {
+    notificationChannelNames.delete(channel)
+  }
+}
+
 export function subscribeToUserNotifications(
   userId: string,
   onInsert: NotificationInsertHandler,
+  consumerName = 'user',
 ): RealtimeChannel {
-  const channel = supabase
-    .channel(`user-notifications:${userId}`)
+  const channelName = createNotificationChannelName(userId, consumerName)
+  let channel: RealtimeChannel | null = null
+
+  try {
+    channel = supabase.channel(channelName)
+    notificationChannelNames.set(channel, channelName)
+    logRealtimeDevelopment('setup', channelName)
+
+    channel
     .on(
       'postgres_changes',
       {
@@ -120,12 +167,31 @@ export function subscribeToUserNotifications(
       },
     )
     .subscribe((status) => {
-      if (status === 'CHANNEL_ERROR') {
-        console.error('[notifications] realtime subscription failed', { userId })
+      logRealtimeDevelopment('status', channelName, { status })
+
+      if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
+        console.error('[notifications] realtime subscription failed', {
+          userId,
+          channelName,
+          status,
+        })
       }
     })
 
-  return channel
+    return channel
+  } catch (error) {
+    console.error('[notifications] realtime subscription setup failed', {
+      userId,
+      channelName,
+      error,
+    })
+
+    if (channel) {
+      void removeNotificationChannel(channel, channelName)
+    }
+
+    throw error
+  }
 }
 
 export type TeacherNotificationInsertHandler = NotificationInsertHandler
@@ -134,20 +200,22 @@ export function subscribeToTeacherNotifications(
   userId: string,
   onInsert: TeacherNotificationInsertHandler,
 ): RealtimeChannel {
-  return subscribeToUserNotifications(userId, onInsert)
+  return subscribeToUserNotifications(userId, onInsert, 'teacher-notifications')
 }
 
 export function subscribeToAdminNotifications(
   userId: string,
   onInsert: NotificationInsertHandler,
+  consumerName = 'admin-notifications',
 ): RealtimeChannel {
-  return subscribeToUserNotifications(userId, onInsert)
+  return subscribeToUserNotifications(userId, onInsert, consumerName)
 }
 
 export async function unsubscribeFromUserNotifications(
   channel: RealtimeChannel,
 ): Promise<void> {
-  await supabase.removeChannel(channel)
+  const channelName = notificationChannelNames.get(channel) ?? 'unknown-notification-channel'
+  await removeNotificationChannel(channel, channelName)
 }
 
 export async function unsubscribeFromTeacherNotifications(

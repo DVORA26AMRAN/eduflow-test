@@ -108,49 +108,55 @@ export function TeacherNotificationsSection({
     let isCancelled = false
 
     async function setupRealtimeSubscription() {
-      const { data, error } = await supabase.auth.getSession()
+      try {
+        const { data, error } = await supabase.auth.getSession()
 
-      if (error) {
-        console.error('[notifications] failed to load session for realtime', error)
-        return
-      }
-
-      const userId = data.session?.user?.id
-      if (!userId || isCancelled) {
-        return
-      }
-
-      const subscribedChannel = subscribeToTeacherNotifications(userId, (notification) => {
-        setNotifications((currentNotifications) =>
-          prependNotificationIfNew(currentNotifications, notification),
-        )
-
-        if (!isTeacherRequestNotification(notification)) {
+        if (error) {
+          console.error('[notifications] failed to load session for realtime', error)
           return
         }
 
-        const requestId = extractRequestIdFromNotification(notification)
-        if (!requestId) {
+        const userId = data.session?.user?.id
+        if (!userId || isCancelled) {
           return
         }
 
-        void loadTeacherRequestNotificationContexts([requestId]).then((result) => {
-          if (!result.ok) {
+        const subscribedChannel = subscribeToTeacherNotifications(userId, (notification) => {
+          setNotifications((currentNotifications) =>
+            prependNotificationIfNew(currentNotifications, notification),
+          )
+
+          if (!isTeacherRequestNotification(notification)) {
             return
           }
 
-          setRequestContextsById((currentContexts) =>
-            mergeRequestContexts(currentContexts, result.contexts),
-          )
+          const requestId = extractRequestIdFromNotification(notification)
+          if (!requestId) {
+            return
+          }
+
+          void loadTeacherRequestNotificationContexts([requestId]).then((result) => {
+            if (!result.ok) {
+              return
+            }
+
+            setRequestContextsById((currentContexts) =>
+              mergeRequestContexts(currentContexts, result.contexts),
+            )
+          })
         })
-      })
 
-      if (isCancelled) {
-        void unsubscribeFromTeacherNotifications(subscribedChannel)
-        return
+        if (isCancelled) {
+          await unsubscribeFromTeacherNotifications(subscribedChannel)
+          return
+        }
+
+        channel = subscribedChannel
+      } catch (error) {
+        if (!isCancelled) {
+          console.error('[notifications] teacher realtime setup failed', error)
+        }
       }
-
-      channel = subscribedChannel
     }
 
     void setupRealtimeSubscription()

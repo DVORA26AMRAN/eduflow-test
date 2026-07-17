@@ -95,41 +95,47 @@ export function useUnreadRequestMessageNotifications() {
     let isCancelled = false
 
     async function setupRealtimeSubscription() {
-      const { data, error } = await supabase.auth.getSession()
+      try {
+        const { data, error } = await supabase.auth.getSession()
 
-      if (error) {
-        console.error('[requestMessages] failed to load session for realtime', error)
-        return
-      }
-
-      const userId = data.session?.user?.id
-      if (!userId || isCancelled) {
-        return
-      }
-
-      const subscribedChannel = subscribeToUserNotifications(userId, (notification) => {
-        if (notification.notification_type !== NOTIFICATION_TYPE_REQUEST_MESSAGE) {
+        if (error) {
+          console.error('[requestMessages] failed to load session for realtime', error)
           return
         }
 
-        setNotifications((currentNotifications) =>
-          prependNotificationIfNew(currentNotifications, notification),
-        )
-
-        const requestId = notification.metadata.request_id
-        if (typeof requestId === 'string') {
-          setRequestIdsWithMessages((currentRequestIds) =>
-            addRequestIdToSet(currentRequestIds, requestId),
-          )
+        const userId = data.session?.user?.id
+        if (!userId || isCancelled) {
+          return
         }
-      })
 
-      if (isCancelled) {
-        void unsubscribeFromUserNotifications(subscribedChannel)
-        return
+        const subscribedChannel = subscribeToUserNotifications(userId, (notification) => {
+          if (notification.notification_type !== NOTIFICATION_TYPE_REQUEST_MESSAGE) {
+            return
+          }
+
+          setNotifications((currentNotifications) =>
+            prependNotificationIfNew(currentNotifications, notification),
+          )
+
+          const requestId = notification.metadata.request_id
+          if (typeof requestId === 'string') {
+            setRequestIdsWithMessages((currentRequestIds) =>
+              addRequestIdToSet(currentRequestIds, requestId),
+            )
+          }
+        }, 'request-message-hook')
+
+        if (isCancelled) {
+          await unsubscribeFromUserNotifications(subscribedChannel)
+          return
+        }
+
+        channel = subscribedChannel
+      } catch (error) {
+        if (!isCancelled) {
+          console.error('[requestMessages] realtime setup failed', error)
+        }
       }
-
-      channel = subscribedChannel
     }
 
     void setupRealtimeSubscription()

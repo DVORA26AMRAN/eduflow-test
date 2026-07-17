@@ -54,21 +54,37 @@ export function StaffDirectoryPage({ canEdit, institutionName }: StaffDirectoryP
   useEffect(() => {
     let cancelled = false
 
-    void loadStaffDirectory().then((result) => {
-      if (cancelled) {
-        return
-      }
+    if (import.meta.env.DEV) {
+      console.debug('[StaffDirectoryPage] mounted')
+    }
 
-      if (!result.ok) {
+    void (async () => {
+      try {
+        const result = await loadStaffDirectory()
+        if (cancelled) {
+          return
+        }
+
+        if (!result.ok) {
+          setMembers([])
+          setErrorMessage(STAFF_DIRECTORY_ERROR_MESSAGE)
+          setIsLoading(false)
+          return
+        }
+
+        setMembers(result.members)
+        setIsLoading(false)
+      } catch (error) {
+        if (cancelled) {
+          return
+        }
+
+        console.error('[StaffDirectoryPage] loadStaffDirectory() threw', error)
         setMembers([])
         setErrorMessage(STAFF_DIRECTORY_ERROR_MESSAGE)
         setIsLoading(false)
-        return
       }
-
-      setMembers(result.members)
-      setIsLoading(false)
-    })
+    })()
 
     return () => {
       cancelled = true
