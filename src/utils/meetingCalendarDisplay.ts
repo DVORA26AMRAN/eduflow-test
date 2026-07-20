@@ -121,16 +121,73 @@ export function getMeetingParticipantLabel(
   return `${entry.fullName} (${translateRole(entry.primaryRole)})`
 }
 
+export type MeetingRescheduleStage =
+  | 'awaiting_proposal'
+  | 'awaiting_selection'
+  | 'awaiting_confirmation'
+  | null
+
+/**
+ * Reschedule overlay stages while current_state remains CONFIRMED.
+ * Progress is represented by rescheduling_active + pending_slot_id + proposed slots.
+ */
+export function getMeetingRescheduleStage(
+  meeting: Pick<
+    Meeting,
+    'currentState' | 'reschedulingActive' | 'pendingSlotId' | 'activeProposedSlotCount'
+  >,
+  activeProposedSlotCount?: number | null,
+): MeetingRescheduleStage {
+  if (meeting.currentState !== 'CONFIRMED' || !meeting.reschedulingActive) {
+    return null
+  }
+
+  if (meeting.pendingSlotId) {
+    return 'awaiting_confirmation'
+  }
+
+  const proposedCount = activeProposedSlotCount ?? meeting.activeProposedSlotCount ?? 0
+  if (proposedCount > 0) {
+    return 'awaiting_selection'
+  }
+
+  return 'awaiting_proposal'
+}
+
 export function classifyMeetingPendingBucket(
   meeting: Meeting,
   actorUserId: string,
 ): MeetingPendingBucket | null {
-  if (meeting.currentState === 'CONFIRMED' && !meeting.reschedulingActive) {
-    return 'confirmed'
-  }
-
   if (meeting.currentState === 'CANCELLED' || meeting.currentState === 'COMPLETED') {
     return null
+  }
+
+  if (meeting.currentState === 'CONFIRMED' && meeting.reschedulingActive) {
+    const stage = getMeetingRescheduleStage(meeting)
+    const isOwner = meeting.calendarOwnerId === actorUserId
+
+    if (stage === 'awaiting_confirmation') {
+      if (meeting.slotSelectedByUserId === actorUserId) {
+        return 'waiting_for_my_final_confirmation'
+      }
+      return 'waiting_for_other'
+    }
+
+    if (stage === 'awaiting_selection') {
+      if (isOwner) {
+        return 'waiting_for_other'
+      }
+      return 'waiting_for_me_to_choose'
+    }
+
+    if (isOwner) {
+      return 'waiting_for_me_to_propose'
+    }
+    return 'waiting_for_other'
+  }
+
+  if (meeting.currentState === 'CONFIRMED' && !meeting.reschedulingActive) {
+    return 'confirmed'
   }
 
   if (
@@ -224,6 +281,14 @@ export function mapMeetingCalendarError(rawMessage: string | null | undefined): 
   const message = rawMessage.toLowerCase()
 
   if (
+    message.includes('unauthorized role combination') ||
+    message.includes('unsupported participant') ||
+    message.includes('recipient is not an active')
+  ) {
+    return 'המשתמש שנבחר אינו זמין לתיאום פגישה'
+  }
+
+  if (
     message.includes('permission denied') ||
     message.includes('unauthorized') ||
     message.includes('42501') ||
@@ -232,12 +297,8 @@ export function mapMeetingCalendarError(rawMessage: string | null | undefined): 
     return 'אין הרשאה לבצע פעולה זו'
   }
 
-  if (
-    message.includes('unauthorized role combination') ||
-    message.includes('unsupported participant') ||
-    message.includes('recipient is not an active')
-  ) {
-    return 'המשתמש שנבחר אינו זמין לתיאום פגישה'
+  if (message.includes('cancellation reason exceeds')) {
+    return 'סיבת הביטול ארוכה מדי (עד 500 תווים)'
   }
 
   if (

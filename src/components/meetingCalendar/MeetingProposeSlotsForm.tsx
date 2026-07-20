@@ -1,11 +1,13 @@
+import { useId } from 'react'
 import type { MeetingDurationMinutes } from '../../types/meetingCalendar'
+import { MEETING_MAX_SLOTS, MEETING_MIN_SLOTS } from '../../types/meetingCalendar'
 import {
   createEmptySlotDraft,
   draftSlotsToProposedInputs,
   type SlotDraft,
 } from '../../utils/meetingCalendarForm'
-import { MEETING_MAX_SLOTS, MEETING_MIN_SLOTS } from '../../types/meetingCalendar'
 import { translateMeetingDuration } from '../../utils/meetingCalendarDisplay'
+import './MeetingCalendar.css'
 
 type MeetingProposeSlotsFormProps = {
   durationMinutes: MeetingDurationMinutes
@@ -20,6 +22,8 @@ export function MeetingProposeSlotsForm({
   onDraftsChange,
   validationMessage,
 }: MeetingProposeSlotsFormProps) {
+  const formId = useId()
+
   function updateDraft(id: string, patch: Partial<SlotDraft>) {
     onDraftsChange(drafts.map((draft) => (draft.id === id ? { ...draft, ...patch } : draft)))
   }
@@ -40,55 +44,78 @@ export function MeetingProposeSlotsForm({
   }
 
   return (
-    <fieldset className="mc-slots-form">
-      <legend>הצעת מועדים ({translateMeetingDuration(durationMinutes)})</legend>
-      <p className="mc-help-text">יש להציע בין {MEETING_MIN_SLOTS} ל־{MEETING_MAX_SLOTS} מועדים מדויקים.</p>
+    <fieldset className="ds-fieldset mc-slots-form">
+      <legend className="ds-label">
+        הצעת מועדים ({translateMeetingDuration(durationMinutes)})
+      </legend>
+      <p className="mc-help-text">
+        יש להציע בין {MEETING_MIN_SLOTS} ל־{MEETING_MAX_SLOTS} מועדים מדויקים.
+      </p>
 
-      {drafts.map((draft, index) => {
-        const preview = draftSlotsToProposedInputs([draft], durationMinutes)
-        const endPreview =
-          preview.ok && preview.slots[0]
-            ? new Date(preview.slots[0].endsAt).toLocaleTimeString('he-IL', {
-                hour: '2-digit',
-                minute: '2-digit',
-              })
-            : '—'
+      <div className="mc-slot-rows">
+        {drafts.map((draft, index) => {
+          const dateId = `${formId}-date-${draft.id}`
+          const timeId = `${formId}-time-${draft.id}`
+          const preview = draftSlotsToProposedInputs([draft], durationMinutes)
+          const endPreview =
+            preview.ok && preview.slots[0]
+              ? new Date(preview.slots[0].endsAt).toLocaleTimeString('he-IL', {
+                  hour: '2-digit',
+                  minute: '2-digit',
+                })
+              : '—'
 
-        return (
-          <div key={draft.id} className="mc-slot-row">
-            <p className="mc-slot-row__title">מועד {index + 1}</p>
-            <label className="ds-field">
-              <span>תאריך</span>
-              <input
-                type="date"
-                value={draft.date}
-                onChange={(event) => updateDraft(draft.id, { date: event.target.value })}
-              />
-            </label>
-            <label className="ds-field">
-              <span>שעת התחלה</span>
-              <input
-                type="time"
-                value={draft.startTime}
-                onChange={(event) => updateDraft(draft.id, { startTime: event.target.value })}
-              />
-            </label>
-            <p className="mc-slot-end">שעת סיום מחושבת: {endPreview}</p>
-            <button
-              type="button"
-              className="ds-button ds-button--secondary"
-              onClick={() => removeDraft(draft.id)}
-            >
-              הסרת מועד
-            </button>
-          </div>
-        )
-      })}
+          return (
+            <article key={draft.id} className="mc-slot-row" aria-labelledby={`${formId}-title-${draft.id}`}>
+              <p id={`${formId}-title-${draft.id}`} className="mc-slot-row__title">
+                מועד {index + 1}
+              </p>
+
+              <div className="mc-slot-row__fields">
+                <label className="ds-field" htmlFor={dateId}>
+                  <span className="ds-label">תאריך</span>
+                  <input
+                    id={dateId}
+                    className="ds-input"
+                    type="date"
+                    value={draft.date}
+                    onChange={(event) => updateDraft(draft.id, { date: event.target.value })}
+                  />
+                </label>
+
+                <label className="ds-field" htmlFor={timeId}>
+                  <span className="ds-label">שעת התחלה</span>
+                  <input
+                    id={timeId}
+                    className="ds-input"
+                    type="time"
+                    value={draft.startTime}
+                    onChange={(event) => updateDraft(draft.id, { startTime: event.target.value })}
+                  />
+                </label>
+              </div>
+
+              <p className="mc-slot-end ds-helper-text">שעת סיום מחושבת: {endPreview}</p>
+
+              <div className="mc-slot-row__actions">
+                <button
+                  type="button"
+                  className="ds-btn ds-btn--danger mc-slot-row__remove"
+                  onClick={() => removeDraft(draft.id)}
+                  aria-label={`הסרת מועד ${index + 1}`}
+                >
+                  הסרת מועד
+                </button>
+              </div>
+            </article>
+          )
+        })}
+      </div>
 
       <div className="mc-actions">
         <button
           type="button"
-          className="ds-button ds-button--secondary"
+          className="ds-btn ds-btn--primary"
           onClick={addDraft}
           disabled={drafts.length >= MEETING_MAX_SLOTS}
         >

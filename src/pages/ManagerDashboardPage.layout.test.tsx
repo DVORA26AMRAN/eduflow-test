@@ -84,6 +84,18 @@ vi.mock('../components/manager/TeamManagementSection', () => ({
   TeamManagementSection: () => <div data-testid="manager-team">צוות</div>,
 }))
 
+vi.mock('../components/manager/ManagerRecentRequestsSection', () => ({
+  ManagerRecentRequestsSection: () => (
+    <section aria-label="בקשות מורים" data-testid="manager-recent-requests">
+      <h2>בקשות מורים</h2>
+    </section>
+  ),
+}))
+
+vi.mock('../components/meetingCalendar/MeetingCalendarSection', () => ({
+  MeetingCalendarSection: () => <div data-testid="meeting-calendar">יומן פגישות</div>,
+}))
+
 afterEach(() => {
   cleanup()
 })
@@ -97,7 +109,7 @@ const managerProfile = {
 
 describe('Manager dashboard requests layout', () => {
   it('does not render the recent activity panel', async () => {
-    const user = userEvent.setup()
+    const user = userEvent.setup({ delay: null })
     render(
       <ManagerDashboardPage
         profile={managerProfile}
@@ -129,7 +141,7 @@ describe('Manager dashboard requests layout', () => {
   })
 
   it('shows בקשות מורים in the sidebar and section title', async () => {
-    const user = userEvent.setup()
+    const user = userEvent.setup({ delay: null })
     render(
       <ManagerDashboardPage
         profile={managerProfile}

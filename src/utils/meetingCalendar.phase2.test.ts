@@ -231,6 +231,46 @@ describe('pending bucket classification', () => {
         't1',
       ),
     ).toBe('confirmed')
+
+    expect(
+      classifyMeetingPendingBucket(
+        baseMeeting({
+          currentState: 'CONFIRMED',
+          reschedulingActive: true,
+          calendarOwnerId: 'm1',
+        }),
+        'm1',
+      ),
+    ).toBe('waiting_for_me_to_propose')
+
+    expect(
+      classifyMeetingPendingBucket(
+        baseMeeting({
+          currentState: 'CONFIRMED',
+          reschedulingActive: true,
+          calendarOwnerId: 'm1',
+          requesterId: 't1',
+          recipientId: 'm1',
+          activeProposedSlotCount: 2,
+        }),
+        't1',
+      ),
+    ).toBe('waiting_for_me_to_choose')
+
+    expect(
+      classifyMeetingPendingBucket(
+        baseMeeting({
+          currentState: 'CONFIRMED',
+          reschedulingActive: true,
+          calendarOwnerId: 'm1',
+          requesterId: 't1',
+          recipientId: 'm1',
+          pendingSlotId: 'slot-2',
+          slotSelectedByUserId: 't1',
+        }),
+        't1',
+      ),
+    ).toBe('waiting_for_my_final_confirmation')
   })
 })
 

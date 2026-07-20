@@ -1,46 +1,69 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import type { MeetingCalendarRole, Meeting } from '../../types/meetingCalendar'
+import type { Meeting, MeetingCalendarRole, MeetingSlot } from '../../types/meetingCalendar'
 import { isMeetingCalendarRole } from '../../utils/meetingCalendar'
-import { loadMeetings } from '../../services/meetingCalendar'
+import {
+  loadConfirmedMeetingsInRange,
+  loadPendingMeetings,
+  loadUpcomingConfirmedMeetings,
+  type ConfirmedMeetingWithSlot,
+} from '../../services/meetingCalendar'
 import {
   loadEligibleMeetingRecipients,
   loadMeetingUserDirectory,
 } from '../../services/meetingRecipients'
 import {
   MEETING_CALENDAR_NAV_LABEL,
-  getMeetingParticipantLabel,
-  groupMeetingsByPendingBucket,
-  translateMeetingPendingBucket,
-  translateMeetingState,
-  type MeetingPendingBucket,
+  classifyMeetingPendingBucket,
   type MeetingUserDirectoryEntry,
 } from '../../utils/meetingCalendarDisplay'
+import {
+  buildConfirmedCalendarEvents,
+  buildPhase3PendingPanels,
+  getVisibleCalendarRange,
+  startOfDay,
+  type CalendarViewMode,
+} from '../../utils/meetingCalendarView'
 import { DashboardSection } from '../dashboard/DashboardSection'
 import { CreateMeetingModal } from './CreateMeetingModal'
 import { MeetingActionModal } from './MeetingActionModal'
+import { MeetingCalendarBoard } from './MeetingCalendarBoard'
+import { MeetingDetailsDialog } from './MeetingDetailsDialog'
+import { MeetingNotificationsPanel } from './MeetingNotificationsPanel'
+import { MeetingPendingPanels } from './MeetingPendingPanels'
 import './MeetingCalendar.css'
-
-const BUCKET_ORDER: MeetingPendingBucket[] = [
-  'waiting_for_my_approval',
-  'waiting_for_me_to_propose',
-  'waiting_for_me_to_choose',
-  'waiting_for_my_final_confirmation',
-  'waiting_for_other',
-  'confirmed',
-]
 
 type MeetingCalendarSectionProps = {
   actorUserId: string
   actorRole: MeetingCalendarRole
 }
 
+type DialogMode = 'action' | 'details'
+
+function toMeetingsAndSlots(items: ConfirmedMeetingWithSlot[]): {
+  meetings: Meeting[]
+  slots: MeetingSlot[]
+} {
+  return {
+    meetings: items.map((item) => item.meeting),
+    slots: items.map((item) => item.slot),
+  }
+}
+
 export function MeetingCalendarSection({ actorUserId, actorRole }: MeetingCalendarSectionProps) {
-  const [meetings, setMeetings] = useState<Meeting[]>([])
+  const [pendingMeetings, setPendingMeetings] = useState<Meeting[]>([])
+  const [rangeMeetings, setRangeMeetings] = useState<Meeting[]>([])
+  const [rangeSlots, setRangeSlots] = useState<MeetingSlot[]>([])
+  const [upcomingMeetings, setUpcomingMeetings] = useState<Meeting[]>([])
+  const [upcomingSlots, setUpcomingSlots] = useState<MeetingSlot[]>([])
   const [directoryList, setDirectoryList] = useState<MeetingUserDirectoryEntry[]>([])
-  const [isLoading, setIsLoading] = useState(true)
+  const [isLoadingCalendar, setIsLoadingCalendar] = useState(true)
+  const [isLoadingPending, setIsLoadingPending] = useState(true)
   const [errorMessage, setErrorMessage] = useState('')
   const [createOpen, setCreateOpen] = useState(false)
   const [activeMeetingId, setActiveMeetingId] = useState<string | null>(null)
+  const [dialogMode, setDialogMode] = useState<DialogMode>('action')
+  const [viewMode, setViewMode] = useState<CalendarViewMode>('month')
+  const [anchorDate, setAnchorDate] = useState(() => new Date())
 
   const directory = useMemo(() => {
     const map = new Map<string, MeetingUserDirectoryEntry>()
@@ -50,128 +73,318 @@ export function MeetingCalendarSection({ actorUserId, actorRole }: MeetingCalend
     return map
   }, [directoryList])
 
+  const slotsById = useMemo(() => {
+    const map = new Map<string, MeetingSlot>()
+    for (const slot of [...rangeSlots, ...upcomingSlots]) {
+      map.set(slot.id, slot)
+    }
+    return map
+  }, [rangeSlots, upcomingSlots])
+
+  const meetingsById = useMemo(() => {
+    const map = new Map<string, Meeting>()
+    for (const meeting of [...pendingMeetings, ...rangeMeetings, ...upcomingMeetings]) {
+      map.set(meeting.id, meeting)
+    }
+    return map
+  }, [pendingMeetings, rangeMeetings, upcomingMeetings])
+
   const eligibleRecipients = useMemo(
     () => loadEligibleMeetingRecipients(directoryList, actorUserId, actorRole),
     [directoryList, actorUserId, actorRole],
   )
 
-  const grouped = useMemo(
-    () => groupMeetingsByPendingBucket(meetings, actorUserId),
-    [meetings, actorUserId],
+  const visibleRange = useMemo(
+    () => getVisibleCalendarRange(anchorDate, viewMode),
+    [anchorDate, viewMode],
   )
 
-  const activeMeeting = useMemo(
-    () => meetings.find((meeting) => meeting.id === activeMeetingId) ?? null,
-    [meetings, activeMeetingId],
+  const visibleEvents = useMemo(
+    () =>
+      buildConfirmedCalendarEvents({
+        meetings: rangeMeetings,
+        slotsById,
+        directory,
+        actorUserId,
+      }),
+    [rangeMeetings, slotsById, directory, actorUserId],
   )
 
-  const refresh = useCallback(async () => {
-    setIsLoading(true)
-    setErrorMessage('')
+  const pendingPanels = useMemo(
+    () =>
+      buildPhase3PendingPanels({
+        pendingMeetings,
+        upcomingMeetings,
+        actorUserId,
+      }),
+    [pendingMeetings, upcomingMeetings, actorUserId],
+  )
 
-    const [meetingsResult, directoryResult] = await Promise.all([
-      loadMeetings(),
-      loadMeetingUserDirectory(),
-    ])
+  const activeMeeting = activeMeetingId ? (meetingsById.get(activeMeetingId) ?? null) : null
 
-    setIsLoading(false)
-
-    if (!meetingsResult.ok) {
-      setErrorMessage(meetingsResult.errorMessage)
-      return
+  const activeConfirmedSlot = useMemo(() => {
+    if (!activeMeeting?.confirmedSlotId) {
+      return null
     }
+    return slotsById.get(activeMeeting.confirmedSlotId) ?? null
+  }, [activeMeeting, slotsById])
+
+  const loadDirectory = useCallback(async () => {
+    const directoryResult = await loadMeetingUserDirectory()
     if (!directoryResult.ok) {
       setErrorMessage(directoryResult.errorMessage)
+      return directoryResult
+    }
+    setDirectoryList(directoryResult.users)
+    return directoryResult
+  }, [])
+
+  const loadPending = useCallback(async () => {
+    setIsLoadingPending(true)
+    const pendingResult = await loadPendingMeetings()
+    setIsLoadingPending(false)
+
+    if (!pendingResult.ok) {
+      setErrorMessage(pendingResult.errorMessage)
+      setPendingMeetings([])
+      return pendingResult
+    }
+
+    setPendingMeetings(pendingResult.meetings)
+    return pendingResult
+  }, [])
+
+  const loadUpcoming = useCallback(async () => {
+    const upcomingResult = await loadUpcomingConfirmedMeetings({
+      from: startOfDay(new Date()),
+    })
+    if (!upcomingResult.ok) {
+      setErrorMessage(upcomingResult.errorMessage)
+      setUpcomingMeetings([])
+      setUpcomingSlots([])
+      return upcomingResult
+    }
+
+    const mapped = toMeetingsAndSlots(upcomingResult.items)
+    setUpcomingMeetings(mapped.meetings)
+    setUpcomingSlots(mapped.slots)
+    return upcomingResult
+  }, [])
+
+  const loadRange = useCallback(async (rangeStart: Date, rangeEnd: Date) => {
+    setIsLoadingCalendar(true)
+    const rangeResult = await loadConfirmedMeetingsInRange({ rangeStart, rangeEnd })
+    setIsLoadingCalendar(false)
+
+    if (!rangeResult.ok) {
+      setErrorMessage(rangeResult.errorMessage)
+      setRangeMeetings([])
+      setRangeSlots([])
+      return rangeResult
+    }
+
+    const mapped = toMeetingsAndSlots(rangeResult.items)
+    setRangeMeetings(mapped.meetings)
+    setRangeSlots(mapped.slots)
+    return rangeResult
+  }, [])
+
+  const refreshAll = useCallback(async () => {
+    setErrorMessage('')
+    const range = getVisibleCalendarRange(anchorDate, viewMode)
+
+    const [directoryResult, pendingResult, upcomingResult, rangeResult] = await Promise.all([
+      loadDirectory(),
+      loadPending(),
+      loadUpcoming(),
+      loadRange(range.rangeStart, range.rangeEnd),
+    ])
+
+    if (
+      !directoryResult.ok ||
+      !pendingResult.ok ||
+      !upcomingResult.ok ||
+      !rangeResult.ok
+    ) {
       return
     }
 
-    setMeetings(meetingsResult.meetings)
-    setDirectoryList(directoryResult.users)
-  }, [])
+    setErrorMessage('')
+  }, [anchorDate, viewMode, loadDirectory, loadPending, loadUpcoming, loadRange])
 
   useEffect(() => {
-    void refresh()
-  }, [refresh])
+    let cancelled = false
+
+    void (async () => {
+      const [directoryResult, pendingResult, upcomingResult] = await Promise.all([
+        loadDirectory(),
+        loadPending(),
+        loadUpcoming(),
+      ])
+
+      if (cancelled) {
+        return
+      }
+
+      if (!directoryResult.ok || !pendingResult.ok || !upcomingResult.ok) {
+        return
+      }
+    })()
+
+    return () => {
+      cancelled = true
+    }
+  }, [loadDirectory, loadPending, loadUpcoming])
+
+  useEffect(() => {
+    let cancelled = false
+
+    void (async () => {
+      const result = await loadRange(visibleRange.rangeStart, visibleRange.rangeEnd)
+      if (cancelled || !result.ok) {
+        return
+      }
+    })()
+
+    return () => {
+      cancelled = true
+    }
+  }, [visibleRange.rangeStart, visibleRange.rangeEnd, loadRange])
+
+  function openPendingMeeting(meetingId: string) {
+    const meeting = meetingsById.get(meetingId)
+    if (!meeting) {
+      return
+    }
+    const bucket = classifyMeetingPendingBucket(meeting, actorUserId)
+    setDialogMode(bucket === 'confirmed' ? 'details' : 'action')
+    setActiveMeetingId(meetingId)
+  }
+
+  function openCalendarMeeting(meetingId: string) {
+    const meeting = meetingsById.get(meetingId)
+    if (!meeting) {
+      return
+    }
+
+    if (meeting.reschedulingActive) {
+      const bucket = classifyMeetingPendingBucket(meeting, actorUserId)
+      setDialogMode(bucket === 'confirmed' || bucket == null ? 'details' : 'action')
+    } else {
+      setDialogMode('details')
+    }
+    setActiveMeetingId(meetingId)
+  }
+
+  function openFromNotification(meetingId: string) {
+    const meeting = meetingsById.get(meetingId)
+    if (!meeting) {
+      setActiveMeetingId(meetingId)
+      setDialogMode('details')
+      void refreshAll()
+      return
+    }
+
+    if (meeting.currentState === 'CONFIRMED' && !meeting.reschedulingActive) {
+      setDialogMode('details')
+    } else {
+      const bucket = classifyMeetingPendingBucket(meeting, actorUserId)
+      setDialogMode(bucket === 'confirmed' ? 'details' : 'action')
+    }
+    setActiveMeetingId(meetingId)
+  }
+
+  function handleRescheduleStarted(meetingId: string) {
+    setDialogMode('action')
+    setActiveMeetingId(meetingId)
+  }
 
   return (
     <DashboardSection title={MEETING_CALENDAR_NAV_LABEL}>
       <div className="mc-section">
         <p className="mc-help-text">תיאום פגישות בין מורות, מזכירות ומנהלות לפי התהליך המאושר.</p>
         <div className="mc-section__toolbar">
-          <button type="button" className="ds-button" onClick={() => setCreateOpen(true)}>
+          <button type="button" className="ds-btn ds-btn--primary" onClick={() => setCreateOpen(true)}>
             יצירת פגישה
           </button>
           <button
             type="button"
-            className="ds-button ds-button--secondary"
-            onClick={() => void refresh()}
-            disabled={isLoading}
+            className="ds-btn ds-btn--secondary"
+            onClick={() => void refreshAll()}
+            disabled={isLoadingCalendar || isLoadingPending}
           >
             רענון
           </button>
         </div>
 
-        {isLoading ? <p>טוען פגישות…</p> : null}
         {errorMessage ? (
           <p className="ds-form-message ds-form-message--error" role="alert">
             {errorMessage}
           </p>
         ) : null}
 
-        {!isLoading && !errorMessage
-          ? BUCKET_ORDER.map((bucket) => {
-              const items = grouped[bucket]
-              return (
-                <section key={bucket} className="mc-bucket" aria-labelledby={`mc-bucket-${bucket}`}>
-                  <h3 id={`mc-bucket-${bucket}`}>{translateMeetingPendingBucket(bucket)}</h3>
-                  {items.length === 0 ? (
-                    <p className="ds-empty-state">אין פגישות בקטגוריה זו.</p>
-                  ) : (
-                    <ul className="mc-meeting-list">
-                      {items.map((meeting) => {
-                        const otherId =
-                          meeting.requesterId === actorUserId
-                            ? meeting.recipientId
-                            : meeting.requesterId
-                        return (
-                          <li key={meeting.id}>
-                            <button
-                              type="button"
-                              className="mc-meeting-card"
-                              onClick={() => setActiveMeetingId(meeting.id)}
-                            >
-                              <strong>{meeting.subject}</strong>
-                              <span>{getMeetingParticipantLabel(directory, otherId)}</span>
-                              <span>{translateMeetingState(meeting.currentState)}</span>
-                              <span>{new Date(meeting.createdAt).toLocaleDateString('he-IL')}</span>
-                            </button>
-                          </li>
-                        )
-                      })}
-                    </ul>
-                  )}
-                </section>
-              )
-            })
-          : null}
+        <div className="mc-layout">
+          <MeetingCalendarBoard
+            viewMode={viewMode}
+            anchorDate={anchorDate}
+            events={visibleEvents}
+            isLoading={isLoadingCalendar}
+            onViewModeChange={setViewMode}
+            onAnchorDateChange={setAnchorDate}
+            onSelectEvent={openCalendarMeeting}
+          />
+
+          <aside className="mc-sidebar" aria-label="פעולות ממתינות והתראות">
+            <MeetingPendingPanels
+              panels={pendingPanels}
+              actorUserId={actorUserId}
+              directory={directory}
+              isLoading={isLoadingPending}
+              onSelectMeeting={openPendingMeeting}
+            />
+            <MeetingNotificationsPanel
+              actorUserId={actorUserId}
+              onOpenMeeting={openFromNotification}
+            />
+          </aside>
+        </div>
       </div>
 
-      <CreateMeetingModal
-        isOpen={createOpen}
-        actorRole={actorRole}
-        eligibleRecipients={eligibleRecipients}
-        onClose={() => setCreateOpen(false)}
-        onCreated={() => void refresh()}
-      />
+      {createOpen ? (
+        <CreateMeetingModal
+          isOpen
+          actorRole={actorRole}
+          eligibleRecipients={eligibleRecipients}
+          onClose={() => setCreateOpen(false)}
+          onCreated={() => void refreshAll()}
+        />
+      ) : null}
 
-      <MeetingActionModal
-        isOpen={activeMeetingId !== null}
-        meeting={activeMeeting}
-        actorUserId={actorUserId}
-        directory={directory}
-        onClose={() => setActiveMeetingId(null)}
-        onChanged={() => void refresh()}
-      />
+      {activeMeeting && dialogMode === 'action' ? (
+        <MeetingActionModal
+          key={`action:${activeMeeting.id}:${activeMeeting.activeProposalCycle}`}
+          isOpen
+          meeting={activeMeeting}
+          actorUserId={actorUserId}
+          directory={directory}
+          onClose={() => setActiveMeetingId(null)}
+          onChanged={() => void refreshAll()}
+        />
+      ) : null}
+
+      {activeMeeting && dialogMode === 'details' ? (
+        <MeetingDetailsDialog
+          key={`details:${activeMeeting.id}`}
+          isOpen
+          meeting={activeMeeting}
+          actorUserId={actorUserId}
+          directory={directory}
+          confirmedSlot={activeConfirmedSlot}
+          onClose={() => setActiveMeetingId(null)}
+          onChanged={() => void refreshAll()}
+          onRescheduleStarted={handleRescheduleStarted}
+        />
+      ) : null}
     </DashboardSection>
   )
 }

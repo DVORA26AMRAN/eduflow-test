@@ -28,6 +28,44 @@ export type LoadMeetingAuditEventsResult =
   | { ok: true; events: MeetingAuditEvent[] }
   | { ok: false; errorMessage: string }
 
+export type ConfirmedMeetingWithSlot = {
+  meeting: Meeting
+  slot: MeetingSlot
+}
+
+export type LoadConfirmedMeetingsWithSlotsResult =
+  | { ok: true; items: ConfirmedMeetingWithSlot[] }
+  | { ok: false; errorMessage: string }
+
+export const UPCOMING_CONFIRMED_MEETINGS_LIMIT = 50
+
+function parseConfirmedMeetingWithSlot(
+  row: Record<string, unknown>,
+): ConfirmedMeetingWithSlot | null {
+  const meeting = parseMeeting(row)
+  if (!meeting) {
+    return null
+  }
+
+  const slot = parseMeetingSlot({
+    id: row.slot_id,
+    meeting_id: row.id,
+    institution_id: row.institution_id,
+    proposal_cycle: row.slot_proposal_cycle,
+    starts_at: row.slot_starts_at,
+    ends_at: row.slot_ends_at,
+    slot_status: row.slot_status,
+    created_by_user_id: row.slot_created_by_user_id,
+    created_at: row.slot_created_at,
+  })
+
+  if (!slot) {
+    return null
+  }
+
+  return { meeting, slot }
+}
+
 function parseMeeting(row: Record<string, unknown>): Meeting | null {
   if (
     typeof row.id !== 'string' ||
@@ -84,6 +122,8 @@ function parseMeeting(row: Record<string, unknown>): Meeting | null {
     pendingSlotId: typeof row.pending_slot_id === 'string' ? row.pending_slot_id : null,
     slotSelectedByUserId:
       typeof row.slot_selected_by_user_id === 'string' ? row.slot_selected_by_user_id : null,
+    activeProposedSlotCount:
+      typeof row.active_proposed_slot_count === 'number' ? row.active_proposed_slot_count : null,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
   }
@@ -196,6 +236,63 @@ export async function loadMeetings(): Promise<LoadMeetingsResult> {
   return { ok: true, meetings }
 }
 
+export async function loadPendingMeetings(): Promise<LoadMeetingsResult> {
+  const { data, error } = await supabase.rpc('meeting_calendar_list_pending_meetings')
+
+  if (error) {
+    console.error('[meetingCalendar] failed to load pending meetings', error)
+    return { ok: false, errorMessage: mapRpcError(error) }
+  }
+
+  const meetings = (Array.isArray(data) ? data : [])
+    .map((row) => parseMeeting(row as Record<string, unknown>))
+    .filter((meeting): meeting is Meeting => meeting !== null)
+
+  return { ok: true, meetings }
+}
+
+export async function loadConfirmedMeetingsInRange(input: {
+  rangeStart: Date
+  rangeEnd: Date
+}): Promise<LoadConfirmedMeetingsWithSlotsResult> {
+  const { data, error } = await supabase.rpc('meeting_calendar_list_confirmed_in_range', {
+    p_range_start: input.rangeStart.toISOString(),
+    p_range_end: input.rangeEnd.toISOString(),
+  })
+
+  if (error) {
+    console.error('[meetingCalendar] failed to load confirmed meetings in range', error)
+    return { ok: false, errorMessage: mapRpcError(error) }
+  }
+
+  const items = (Array.isArray(data) ? data : [])
+    .map((row) => parseConfirmedMeetingWithSlot(row as Record<string, unknown>))
+    .filter((item): item is ConfirmedMeetingWithSlot => item !== null)
+
+  return { ok: true, items }
+}
+
+export async function loadUpcomingConfirmedMeetings(input?: {
+  from?: Date
+  limit?: number
+}): Promise<LoadConfirmedMeetingsWithSlotsResult> {
+  const { data, error } = await supabase.rpc('meeting_calendar_list_upcoming_confirmed', {
+    p_from: (input?.from ?? new Date()).toISOString(),
+    p_limit: input?.limit ?? UPCOMING_CONFIRMED_MEETINGS_LIMIT,
+  })
+
+  if (error) {
+    console.error('[meetingCalendar] failed to load upcoming confirmed meetings', error)
+    return { ok: false, errorMessage: mapRpcError(error) }
+  }
+
+  const items = (Array.isArray(data) ? data : [])
+    .map((row) => parseConfirmedMeetingWithSlot(row as Record<string, unknown>))
+    .filter((item): item is ConfirmedMeetingWithSlot => item !== null)
+
+  return { ok: true, items }
+}
+
 export async function loadMeetingSlots(meetingId: string): Promise<LoadMeetingSlotsResult> {
   const { data, error } = await supabase
     .from('meeting_slots')
@@ -205,6 +302,32 @@ export async function loadMeetingSlots(meetingId: string): Promise<LoadMeetingSl
 
   if (error) {
     console.error('[meetingCalendar] failed to load meeting slots', error)
+    return { ok: false, errorMessage: 'לא ניתן לטעון זמני פגישה.' }
+  }
+
+  const slots = (data ?? [])
+    .map((row) => parseMeetingSlot(row as Record<string, unknown>))
+    .filter((slot): slot is MeetingSlot => slot !== null)
+
+  return { ok: true, slots }
+}
+
+export async function loadMeetingSlotsByIds(
+  slotIds: string[],
+): Promise<LoadMeetingSlotsResult> {
+  const uniqueIds = [...new Set(slotIds.filter(Boolean))]
+  if (uniqueIds.length === 0) {
+    return { ok: true, slots: [] }
+  }
+
+  const { data, error } = await supabase
+    .from('meeting_slots')
+    .select('*')
+    .in('id', uniqueIds)
+    .order('starts_at', { ascending: true })
+
+  if (error) {
+    console.error('[meetingCalendar] failed to load meeting slots by ids', error)
     return { ok: false, errorMessage: 'לא ניתן לטעון זמני פגישה.' }
   }
 

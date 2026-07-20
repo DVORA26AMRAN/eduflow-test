@@ -287,10 +287,15 @@ export function canCompleteConcurrentConfirmation(input: {
   currentState: MeetingState
   pendingSlotId: string | null
   alreadyConfirmed: boolean
+  reschedulingActive?: boolean
 }): boolean {
-  if (input.alreadyConfirmed) {
+  if (input.alreadyConfirmed || input.pendingSlotId === null) {
     return false
   }
 
-  return input.currentState === 'WAITING_FOR_FINAL_CONFIRMATION' && input.pendingSlotId !== null
+  if (input.currentState === 'WAITING_FOR_FINAL_CONFIRMATION') {
+    return true
+  }
+
+  return input.currentState === 'CONFIRMED' && Boolean(input.reschedulingActive)
 }

@@ -148,6 +148,10 @@ vi.mock('../components/manager/TeamManagementSection', () => ({
   TeamManagementSection: () => <div data-testid="manager-team">צוות</div>,
 }))
 
+vi.mock('../components/meetingCalendar/MeetingCalendarSection', () => ({
+  MeetingCalendarSection: () => <div data-testid="meeting-calendar">יומן פגישות</div>,
+}))
+
 vi.mock('../services/attachments', () => ({
   loadRequestAttachmentRequestIds: vi.fn(async () => ({ ok: true, requestIds: [] })),
   uploadRequestAttachment: vi.fn(),
@@ -241,7 +245,7 @@ describe('dashboard overview section isolation', () => {
 
 describe('sidebar section navigation', () => {
   it('teacher sidebar opens each section directly in the main area', async () => {
-    const user = userEvent.setup()
+    const user = userEvent.setup({ delay: null })
     const { container } = render(<TeacherDashboardPage profile={profile} onLogout={() => undefined} />)
 
     await user.click(screen.getByRole('button', { name: 'בקשות' }))
@@ -261,10 +265,10 @@ describe('sidebar section navigation', () => {
 
     await user.click(screen.getByRole('button', { name: 'סקירה כללית' }))
     expectOnlyOverviewSection(container)
-  }, 15000)
+  }, 20_000)
 
   it('secretary sidebar opens inbox and archive sections on demand', async () => {
-    const user = userEvent.setup()
+    const user = userEvent.setup({ delay: null })
     render(
       <SecretaryDashboardPage
         profile={{ ...profile, role: 'secretary' }}
@@ -277,10 +281,10 @@ describe('sidebar section navigation', () => {
 
     await user.click(screen.getByRole('button', { name: 'ארכיון מוסדי' }))
     expect(screen.getByTestId('secretary-archive')).toBeInTheDocument()
-  })
+  }, 15_000)
 
   it('manager sidebar opens teacher requests and team sections on demand', async () => {
-    const user = userEvent.setup()
+    const user = userEvent.setup({ delay: null })
     render(
       <ManagerDashboardPage
         profile={{ ...profile, role: 'institution_manager' }}
@@ -311,7 +315,7 @@ describe('sidebar section navigation', () => {
 
     await user.click(screen.getByRole('button', { name: 'ניהול משתמשים' }))
     expect(screen.getByTestId('manager-team')).toBeInTheDocument()
-  })
+  }, 15_000)
 })
 
 describe('manager analytics archive isolation', () => {

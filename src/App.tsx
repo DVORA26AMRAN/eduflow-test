@@ -3,6 +3,7 @@ import { useEffect, useRef, useState } from 'react'
 import './App.css'
 import { LoadingPage } from './components/LoadingPage'
 import { ProfileLoadErrorPage } from './components/ProfileLoadErrorPage'
+import { LoginSuccessTransition } from './components/transitions/LoginSuccessTransition'
 import { LoginPage } from './pages/LoginPage'
 import { ManagerDashboardPage } from './pages/ManagerDashboardPage'
 import { PasswordSetupPage } from './pages/PasswordSetupPage'
@@ -43,6 +44,7 @@ function App() {
     null,
   )
   const [currentProfile, setCurrentProfile] = useState<AuthenticatedUserProfile | null>(null)
+  const [showLoginSuccessTransition, setShowLoginSuccessTransition] = useState(false)
 
   const [newPassword, setNewPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
@@ -82,6 +84,7 @@ function App() {
       loadedProfileUserId.current = null
       loadedProfile.current = null
       setCurrentProfile(null)
+      setShowLoginSuccessTransition(false)
       setNeedsPasswordSetup(false)
       setProfileLoadError('')
       setProfileLoadDebug(null)
@@ -105,6 +108,7 @@ function App() {
       })
       setNeedsPasswordSetup(true)
       setCurrentProfile(null)
+      setShowLoginSuccessTransition(false)
       setProfileLoadError('')
       setProfileLoadDebug(null)
       setIsProfileLoading(false)
@@ -168,6 +172,7 @@ function App() {
         loadedProfileUserId.current = null
         loadedProfile.current = null
         setCurrentProfile(null)
+        setShowLoginSuccessTransition(false)
         setProfileLoadError('לא ניתן לטעון את פרופיל המשתמש.')
         setProfileLoadDebug(result.debug)
 
@@ -206,6 +211,7 @@ function App() {
       loadedProfileUserId.current = null
       loadedProfile.current = null
       setCurrentProfile(null)
+      setShowLoginSuccessTransition(false)
       setProfileLoadError('לא ניתן לטעון את פרופיל המשתמש.')
       setProfileLoadDebug({
         sessionUserId: session.user.id,
@@ -269,6 +275,7 @@ function App() {
   async function login() {
     setProfileLoadError('')
     setProfileLoadDebug(null)
+    setShowLoginSuccessTransition(false)
     loadedProfileUserId.current = null
     loadedProfile.current = null
     setCurrentProfile(null)
@@ -305,6 +312,7 @@ function App() {
       email: data.session.user.email,
     })
 
+    setShowLoginSuccessTransition(true)
     await syncAuthenticatedSession(data.session, 'login')
   }
 
@@ -488,7 +496,7 @@ function App() {
   }
 
   if (isProfileLoading) {
-    return <LoadingPage message="טוען פרופיל משתמש..." />
+    return <LoadingPage message="טוען..." />
   }
 
   if (profileLoadError) {
@@ -515,45 +523,67 @@ function App() {
     )
   }
 
+  const loginSuccessTransition = showLoginSuccessTransition ? (
+    <LoginSuccessTransition
+      onComplete={() => setShowLoginSuccessTransition(false)}
+    />
+  ) : null
+
   if (currentProfile.role === 'platform_admin') {
     return (
-      <PlatformAdminDashboardPage
-        profile={currentProfile}
-        onLogout={logout}
-      />
+      <>
+        <PlatformAdminDashboardPage
+          profile={currentProfile}
+          onLogout={logout}
+        />
+        {loginSuccessTransition}
+      </>
     )
   }
 
   if (currentProfile.role === 'secretary') {
-    return <SecretaryDashboardPage profile={currentProfile} onLogout={logout} />
+    return (
+      <>
+        <SecretaryDashboardPage profile={currentProfile} onLogout={logout} />
+        {loginSuccessTransition}
+      </>
+    )
   }
 
   if (currentProfile.role === 'teacher') {
-    return <TeacherDashboardPage profile={currentProfile} onLogout={logout} />
+    return (
+      <>
+        <TeacherDashboardPage profile={currentProfile} onLogout={logout} />
+        {loginSuccessTransition}
+      </>
+    )
   }
 
   return (
-    <ManagerDashboardPage
-      profile={currentProfile}
-      newUserName={newUserName}
-      newUserEmail={newUserEmail}
-      newUserRole={newUserRole}
-      newUserPhone={newUserPhone}
-      newUserNationalId={newUserNationalId}
-      newUserJobTitle={newUserJobTitle}
-      newUserWeeklyHours={newUserWeeklyHours}
-      message={message}
-      usersListVersion={usersListVersion}
-      onNewUserNameChange={setNewUserName}
-      onNewUserEmailChange={setNewUserEmail}
-      onNewUserRoleChange={setNewUserRole}
-      onNewUserPhoneChange={setNewUserPhone}
-      onNewUserNationalIdChange={setNewUserNationalId}
-      onNewUserJobTitleChange={setNewUserJobTitle}
-      onNewUserWeeklyHoursChange={setNewUserWeeklyHours}
-      onCreateUser={createUser}
-      onLogout={logout}
-    />
+    <>
+      <ManagerDashboardPage
+        profile={currentProfile}
+        newUserName={newUserName}
+        newUserEmail={newUserEmail}
+        newUserRole={newUserRole}
+        newUserPhone={newUserPhone}
+        newUserNationalId={newUserNationalId}
+        newUserJobTitle={newUserJobTitle}
+        newUserWeeklyHours={newUserWeeklyHours}
+        message={message}
+        usersListVersion={usersListVersion}
+        onNewUserNameChange={setNewUserName}
+        onNewUserEmailChange={setNewUserEmail}
+        onNewUserRoleChange={setNewUserRole}
+        onNewUserPhoneChange={setNewUserPhone}
+        onNewUserNationalIdChange={setNewUserNationalId}
+        onNewUserJobTitleChange={setNewUserJobTitle}
+        onNewUserWeeklyHoursChange={setNewUserWeeklyHours}
+        onCreateUser={createUser}
+        onLogout={logout}
+      />
+      {loginSuccessTransition}
+    </>
   )
 }
 

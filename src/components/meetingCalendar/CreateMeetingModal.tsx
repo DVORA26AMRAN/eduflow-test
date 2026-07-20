@@ -1,4 +1,4 @@
-import { useEffect, useId, useMemo, useState } from 'react'
+import { useId, useMemo, useState } from 'react'
 import type { MeetingCalendarRole, MeetingDurationMinutes } from '../../types/meetingCalendar'
 import {
   createMeeting,
@@ -8,6 +8,7 @@ import {
   MEETING_REASON_MAX_LENGTH,
   MEETING_SUBJECT_MAX_LENGTH,
   mapMeetingCalendarError,
+  searchMeetingRecipients,
   willRequesterBeCalendarOwner,
   type MeetingUserDirectoryEntry,
 } from '../../utils/meetingCalendarDisplay'
@@ -21,7 +22,6 @@ import {
 import { translateRole } from '../../utils/roles'
 import { Modal } from '../ui/Modal'
 import { MeetingProposeSlotsForm } from './MeetingProposeSlotsForm'
-import { MeetingRecipientPicker } from './MeetingRecipientPicker'
 import './MeetingCalendar.css'
 
 type CreateMeetingModalProps = {
@@ -32,23 +32,30 @@ type CreateMeetingModalProps = {
   onCreated: () => void
 }
 
-export function CreateMeetingModal({
-  isOpen,
+type CreateMeetingModalFormProps = {
+  actorRole: MeetingCalendarRole
+  eligibleRecipients: MeetingUserDirectoryEntry[]
+  onClose: () => void
+  onCreated: () => void
+}
+
+function CreateMeetingModalForm({
   actorRole,
   eligibleRecipients,
   onClose,
   onCreated,
-}: CreateMeetingModalProps) {
+}: CreateMeetingModalFormProps) {
   const subjectId = useId()
   const reasonId = useId()
-  const durationId = useId()
+  const recipientSearchId = useId()
+  const recipientListId = useId()
 
   const [recipient, setRecipient] = useState<MeetingUserDirectoryEntry | null>(null)
+  const [recipientQuery, setRecipientQuery] = useState('')
   const [subject, setSubject] = useState('')
   const [reason, setReason] = useState('')
   const [durationMinutes, setDurationMinutes] = useState<MeetingDurationMinutes | null>(null)
   const [slotDrafts, setSlotDrafts] = useState<SlotDraft[]>([createEmptySlotDraft()])
-  const [pickerOpen, setPickerOpen] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [validationMessage, setValidationMessage] = useState('')
   const [slotsValidationMessage, setSlotsValidationMessage] = useState('')
@@ -60,19 +67,22 @@ export function CreateMeetingModal({
     return willRequesterBeCalendarOwner(actorRole, recipient.primaryRole)
   }, [actorRole, recipient])
 
-  useEffect(() => {
-    if (!isOpen) {
-      setRecipient(null)
-      setSubject('')
-      setReason('')
-      setDurationMinutes(null)
-      setSlotDrafts([createEmptySlotDraft()])
-      setValidationMessage('')
-      setSlotsValidationMessage('')
-      setPickerOpen(false)
-      setIsSubmitting(false)
-    }
-  }, [isOpen])
+  const filteredRecipients = useMemo(
+    () => searchMeetingRecipients(eligibleRecipients, recipientQuery),
+    [eligibleRecipients, recipientQuery],
+  )
+
+  function selectRecipient(selected: MeetingUserDirectoryEntry) {
+    setRecipient(selected)
+    setRecipientQuery('')
+    setDurationMinutes(null)
+    setSlotDrafts([createEmptySlotDraft()])
+  }
+
+  function clearRecipient() {
+    setRecipient(null)
+    setRecipientQuery('')
+  }
 
   async function handleSubmit() {
     setValidationMessage('')
@@ -146,124 +156,196 @@ export function CreateMeetingModal({
   }
 
   return (
-    <>
-      <Modal isOpen={isOpen} title="יצירת פגישה חדשה" onClose={onClose} size="large">
-        <div className="mc-create-form">
-          <div className="mc-field-block">
-            <p className="mc-field-label">נמען</p>
+    <div className="mc-create-form" aria-busy={isSubmitting}>
+      <p className="mc-help-text">תאם פגישה חדשה עם משתמש במוסד.</p>
+
+      <div className="mc-field-block">
+        <p className="mc-field-label" id="mc-create-recipient-label">
+          עם מי תרצה להיפגש?
+        </p>
+
+        {recipient ? (
+          <>
             <p className="mc-selected-recipient">
-              {recipient
-                ? `${recipient.fullName} · ${translateRole(recipient.primaryRole)}`
-                : 'לא נבחר נמען'}
+              {recipient.fullName} · {translateRole(recipient.primaryRole)}
             </p>
-            <button
-              type="button"
-              className="ds-button ds-button--secondary"
-              onClick={() => setPickerOpen(true)}
+            <div className="mc-actions">
+              <button
+                type="button"
+                className="ds-btn ds-btn--secondary"
+                onClick={clearRecipient}
+                disabled={isSubmitting}
+              >
+                שינוי
+              </button>
+            </div>
+          </>
+        ) : (
+          <>
+            <label className="ds-field" htmlFor={recipientSearchId}>
+              <span className="ds-label">חיפוש לפי שם</span>
+              <input
+                id={recipientSearchId}
+                className="ds-input"
+                type="search"
+                value={recipientQuery}
+                onChange={(event) => setRecipientQuery(event.target.value)}
+                placeholder="הקלידו שם משתמש"
+                autoComplete="off"
+                disabled={isSubmitting}
+              />
+            </label>
+
+            <div
+              id={recipientListId}
+              className="mc-recipient-list"
+              role="radiogroup"
+              aria-labelledby="mc-create-recipient-label"
             >
-              בחירת נמען
-            </button>
-          </div>
+              {filteredRecipients.length === 0 ? (
+                <p className="ds-empty-state">לא נמצאו נמענים מתאימים.</p>
+              ) : (
+                filteredRecipients.map((entry) => {
+                  const inputId = `${recipientListId}-${entry.id}`
+                  return (
+                    <label key={entry.id} className="mc-recipient-option" htmlFor={inputId}>
+                      <input
+                        id={inputId}
+                        type="radio"
+                        name="create-meeting-recipient"
+                        disabled={isSubmitting}
+                        onChange={() => selectRecipient(entry)}
+                      />
+                      <span className="mc-recipient-option__body">
+                        <strong>{entry.fullName}</strong>
+                        <span>{translateRole(entry.primaryRole)}</span>
+                      </span>
+                    </label>
+                  )
+                })
+              )}
+            </div>
+          </>
+        )}
+      </div>
 
-          <label className="ds-field" htmlFor={subjectId}>
-            <span>נושא</span>
-            <input
-              id={subjectId}
-              value={subject}
-              maxLength={MEETING_SUBJECT_MAX_LENGTH}
-              onChange={(event) => setSubject(event.target.value)}
-            />
-          </label>
+      <div className="mc-field-block">
+        <p className="mc-field-label">פרטי הפגישה</p>
 
-          <label className="ds-field" htmlFor={reasonId}>
-            <span>סיבה</span>
-            <textarea
-              id={reasonId}
-              value={reason}
-              maxLength={MEETING_REASON_MAX_LENGTH}
-              rows={4}
-              onChange={(event) => setReason(event.target.value)}
-            />
-          </label>
+        <label className="ds-field" htmlFor={subjectId}>
+          <span className="ds-label">נושא</span>
+          <input
+            id={subjectId}
+            className="ds-input"
+            value={subject}
+            maxLength={MEETING_SUBJECT_MAX_LENGTH}
+            disabled={isSubmitting}
+            onChange={(event) => setSubject(event.target.value)}
+          />
+        </label>
 
-          {isOwnerInitiated ? (
-            <>
-              <label className="ds-field" htmlFor={durationId}>
-                <span>משך הפגישה</span>
-                <select
-                  id={durationId}
-                  value={durationMinutes ?? ''}
-                  onChange={(event) =>
-                    setDurationMinutes(
-                      event.target.value
-                        ? (Number(event.target.value) as MeetingDurationMinutes)
-                        : null,
-                    )
-                  }
+        <label className="ds-field" htmlFor={reasonId}>
+          <span className="ds-label">סיבה</span>
+          <textarea
+            id={reasonId}
+            className="ds-textarea"
+            value={reason}
+            maxLength={MEETING_REASON_MAX_LENGTH}
+            rows={5}
+            disabled={isSubmitting}
+            onChange={(event) => setReason(event.target.value)}
+          />
+        </label>
+        <p className="ds-helper-text" aria-live="polite">
+          {reason.length}/{MEETING_REASON_MAX_LENGTH}
+        </p>
+      </div>
+
+      {isOwnerInitiated ? (
+        <div className="mc-owner-propose">
+          <div className="mc-field-block">
+            <p className="mc-field-label">משך הפגישה</p>
+            <div
+              className="mc-calendar-board__modes"
+              role="radiogroup"
+              aria-label="משך הפגישה בדקות"
+            >
+              {MEETING_DURATION_OPTIONS.map((option) => (
+                <button
+                  key={option}
+                  type="button"
+                  role="radio"
+                  aria-checked={durationMinutes === option}
+                  className={`ds-btn ${
+                    durationMinutes === option ? 'ds-btn--primary' : 'ds-btn--secondary'
+                  }`}
+                  disabled={isSubmitting}
+                  onClick={() => setDurationMinutes(option)}
                 >
-                  <option value="">בחרו משך</option>
-                  {MEETING_DURATION_OPTIONS.map((option) => (
-                    <option key={option} value={option}>
-                      {option} דקות
-                    </option>
-                  ))}
-                </select>
-              </label>
-
-              {durationMinutes ? (
-                <MeetingProposeSlotsForm
-                  durationMinutes={durationMinutes}
-                  drafts={slotDrafts}
-                  onDraftsChange={setSlotDrafts}
-                  validationMessage={slotsValidationMessage}
-                />
-              ) : null}
-            </>
-          ) : (
-            <p className="mc-help-text">
-              בקשה זו תישלח לבעל היומן לאישור. משך הפגישה והמועדים ייקבעו על ידו.
-            </p>
-          )}
-
-          {validationMessage ? (
-            <p className="ds-form-message ds-form-message--error" role="alert">
-              {validationMessage}
-            </p>
-          ) : null}
-
-          <div className="mc-actions">
-            <button
-              type="button"
-              className="ds-button ds-button--secondary"
-              onClick={onClose}
-              disabled={isSubmitting}
-            >
-              ביטול
-            </button>
-            <button
-              type="button"
-              className="ds-button"
-              onClick={() => void handleSubmit()}
-              disabled={isSubmitting}
-            >
-              {isSubmitting ? 'שולח…' : isOwnerInitiated ? 'שליחת הצעת מועדים' : 'שליחת בקשה'}
-            </button>
+                  {option} דקות
+                </button>
+              ))}
+            </div>
           </div>
-        </div>
-      </Modal>
 
-      <MeetingRecipientPicker
-        isOpen={pickerOpen}
-        recipients={eligibleRecipients}
-        selectedRecipientId={recipient?.id ?? null}
-        onClose={() => setPickerOpen(false)}
-        onSelect={(selected) => {
-          setRecipient(selected)
-          setDurationMinutes(null)
-          setSlotDrafts([createEmptySlotDraft()])
-          setPickerOpen(false)
-        }}
-      />
-    </>
+          {durationMinutes ? (
+            <MeetingProposeSlotsForm
+              durationMinutes={durationMinutes}
+              drafts={slotDrafts}
+              onDraftsChange={setSlotDrafts}
+              validationMessage={slotsValidationMessage}
+            />
+          ) : null}
+        </div>
+      ) : (
+        <p className="mc-help-text">משך הפגישה והמועדים ייקבעו על ידי בעל היומן.</p>
+      )}
+
+      {validationMessage ? (
+        <p className="ds-form-message ds-form-message--error" role="alert">
+          {validationMessage}
+        </p>
+      ) : null}
+
+      <div className="mc-actions">
+        <button
+          type="button"
+          className="ds-btn ds-btn--secondary"
+          onClick={onClose}
+          disabled={isSubmitting}
+        >
+          ביטול
+        </button>
+        <button
+          type="button"
+          className="ds-btn ds-btn--primary"
+          onClick={() => void handleSubmit()}
+          disabled={isSubmitting}
+        >
+          {isSubmitting ? 'שולח…' : isOwnerInitiated ? 'שליחת הזמנה' : 'שליחת בקשה'}
+        </button>
+      </div>
+    </div>
+  )
+}
+
+export function CreateMeetingModal({
+  isOpen,
+  actorRole,
+  eligibleRecipients,
+  onClose,
+  onCreated,
+}: CreateMeetingModalProps) {
+  return (
+    <Modal isOpen={isOpen} title="יצירת פגישה חדשה" onClose={onClose} size="large">
+      {isOpen ? (
+        <CreateMeetingModalForm
+          actorRole={actorRole}
+          eligibleRecipients={eligibleRecipients}
+          onClose={onClose}
+          onCreated={onCreated}
+        />
+      ) : null}
+    </Modal>
   )
 }

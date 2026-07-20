@@ -1,18 +1,23 @@
+import mpexLogo from '../assets/branding/m-transition-logo.png.png'
+import './LoadingPage.css'
+
 type LoadingPageProps = {
   message: string
-  maxWidth?: number
 }
 
-export function LoadingPage({ message, maxWidth = 500 }: LoadingPageProps) {
+export function LoadingPage({ message }: LoadingPageProps) {
   return (
-    <main
-      dir="rtl"
-      className="ds-page-shell ds-page-shell--narrow"
-      style={{ maxWidth }}
-    >
-      <section className="ds-state" aria-live="polite">
-        <p className="ds-state__message">{message}</p>
-      </section>
+    <main className="profile-loading-page" aria-busy="true">
+      <img
+        className="profile-loading-page__logo"
+        src={mpexLogo}
+        alt=""
+        aria-hidden="true"
+        draggable={false}
+      />
+      <p className="profile-loading-page__status" role="status" aria-live="polite">
+        {message}
+      </p>
     </main>
   )
 }

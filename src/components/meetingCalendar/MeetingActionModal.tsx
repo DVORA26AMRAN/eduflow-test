@@ -23,6 +23,7 @@ import {
   type SlotDraft,
 } from '../../utils/meetingCalendarForm'
 import { Modal } from '../ui/Modal'
+import { MeetingHistoryList } from './MeetingHistoryList'
 import { MeetingProposeSlotsForm } from './MeetingProposeSlotsForm'
 import './MeetingCalendar.css'
 
@@ -45,31 +46,42 @@ export function MeetingActionModal({
 }: MeetingActionModalProps) {
   const durationId = useId()
   const [slots, setSlots] = useState<MeetingSlot[]>([])
-  const [isLoadingSlots, setIsLoadingSlots] = useState(false)
-  const [selectedSlotId, setSelectedSlotId] = useState<string | null>(null)
-  const [durationMinutes, setDurationMinutes] = useState<MeetingDurationMinutes | null>(null)
+  const [isLoadingSlots, setIsLoadingSlots] = useState(true)
+  const [selectedSlotId, setSelectedSlotId] = useState<string | null>(
+    meeting?.pendingSlotId ?? null,
+  )
+  const [durationMinutes, setDurationMinutes] = useState<MeetingDurationMinutes | null>(
+    meeting?.durationMinutes ?? null,
+  )
   const [slotDrafts, setSlotDrafts] = useState<SlotDraft[]>([createEmptySlotDraft()])
   const [message, setMessage] = useState('')
   const [slotsValidationMessage, setSlotsValidationMessage] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [syncedDuration, setSyncedDuration] = useState(meeting?.durationMinutes ?? null)
+  const [syncedPendingSlotId, setSyncedPendingSlotId] = useState(meeting?.pendingSlotId ?? null)
+
+  if (
+    meeting &&
+    (meeting.durationMinutes !== syncedDuration ||
+      meeting.pendingSlotId !== syncedPendingSlotId)
+  ) {
+    setSyncedDuration(meeting.durationMinutes)
+    setSyncedPendingSlotId(meeting.pendingSlotId)
+    setDurationMinutes(meeting.durationMinutes)
+    setSelectedSlotId(meeting.pendingSlotId)
+  }
 
   useEffect(() => {
     if (!isOpen || !meeting) {
-      setSlots([])
-      setSelectedSlotId(null)
-      setMessage('')
-      setSlotsValidationMessage('')
-      setDurationMinutes(null)
-      setSlotDrafts([createEmptySlotDraft()])
       return
     }
 
-    setDurationMinutes(meeting.durationMinutes)
-    setSelectedSlotId(meeting.pendingSlotId)
-
+    const meetingId = meeting.id
+    const proposalCycle = meeting.activeProposalCycle
+    const confirmedSlotId = meeting.confirmedSlotId
     let cancelled = false
-    setIsLoadingSlots(true)
-    void loadMeetingSlots(meeting.id).then((result) => {
+
+    void loadMeetingSlots(meetingId).then((result) => {
       if (cancelled) {
         return
       }
@@ -80,10 +92,11 @@ export function MeetingActionModal({
       }
       const active = result.slots.filter(
         (slot) =>
-          slot.proposalCycle === meeting.activeProposalCycle &&
-          (slot.slotStatus === 'proposed' ||
-            slot.slotStatus === 'selected' ||
-            slot.slotStatus === 'confirmed'),
+          (slot.proposalCycle === proposalCycle &&
+            (slot.slotStatus === 'proposed' ||
+              slot.slotStatus === 'selected' ||
+              slot.slotStatus === 'confirmed')) ||
+          slot.id === confirmedSlotId,
       )
       setSlots(active)
     })
@@ -125,6 +138,23 @@ export function MeetingActionModal({
     await refreshAfterChange()
   }
 
+  const isRescheduleFlow =
+    activeMeeting.currentState === 'CONFIRMED' && activeMeeting.reschedulingActive
+  const canProposeSlots =
+    isCalendarOwner &&
+    (activeMeeting.currentState === 'WAITING_FOR_SLOT_PROPOSAL' ||
+      (isRescheduleFlow && !activeMeeting.pendingSlotId))
+  const canSelectSlots =
+    isNonOwner &&
+    (activeMeeting.currentState === 'WAITING_FOR_SLOT_SELECTION' ||
+      (isRescheduleFlow && !activeMeeting.pendingSlotId && proposedSlots.length > 0))
+  const canFinalConfirm =
+    isNonOwner &&
+    (activeMeeting.currentState === 'WAITING_FOR_FINAL_CONFIRMATION' ||
+      (isRescheduleFlow &&
+        Boolean(activeMeeting.pendingSlotId) &&
+        activeMeeting.slotSelectedByUserId === actorUserId))
+
   async function handlePropose() {
     setSlotsValidationMessage('')
     setMessage('')
@@ -141,9 +171,11 @@ export function MeetingActionModal({
 
     setIsSubmitting(true)
 
+    // Duration may only be set in WAITING_FOR_SLOT_PROPOSAL (not during reschedule).
     if (
-      activeMeeting.durationMinutes === null ||
-      durationMinutes !== activeMeeting.durationMinutes
+      !isRescheduleFlow &&
+      (activeMeeting.durationMinutes === null ||
+        durationMinutes !== activeMeeting.durationMinutes)
     ) {
       const durationResult = await setMeetingDuration(activeMeeting.id, durationMinutes)
       if (!durationResult.ok) {
@@ -187,7 +219,11 @@ export function MeetingActionModal({
     setIsSubmitting(true)
     setMessage('')
 
-    if (activeMeeting.currentState === 'WAITING_FOR_SLOT_SELECTION') {
+    const needsSelectBeforeConfirm =
+      activeMeeting.currentState === 'WAITING_FOR_SLOT_SELECTION' ||
+      (isRescheduleFlow && !activeMeeting.pendingSlotId)
+
+    if (needsSelectBeforeConfirm) {
       if (!selectedSlotId) {
         setIsSubmitting(false)
         setMessage('נא לבחור מועד אחד.')
@@ -237,7 +273,10 @@ export function MeetingActionModal({
           </div>
           <div>
             <dt>סטטוס</dt>
-            <dd>{translateMeetingState(meeting.currentState)}</dd>
+            <dd>
+              {translateMeetingState(meeting.currentState)}
+              {meeting.reschedulingActive ? ' · בתהליך תיאום מחדש' : ''}
+            </dd>
           </div>
           <div>
             <dt>משך</dt>
@@ -249,15 +288,23 @@ export function MeetingActionModal({
           </div>
         </dl>
 
-        {isLoadingSlots ? <p>טוען מועדים…</p> : null}
+        {isLoadingSlots ? <p role="status">טוען מועדים…</p> : null}
 
         {confirmedSlot ? (
           <p className="mc-confirmed-slot">
-            מועד מאושר: {formatMeetingSlotRange(confirmedSlot, meeting.institutionTimezone)}
+            מועד מאושר נוכחי:{' '}
+            {formatMeetingSlotRange(confirmedSlot, meeting.institutionTimezone)}
+            {meeting.reschedulingActive
+              ? ' (נשאר בתוקף עד אישור מועד חדש)'
+              : ''}
           </p>
         ) : null}
 
-        {selectedSlot && meeting.currentState === 'WAITING_FOR_FINAL_CONFIRMATION' ? (
+        <MeetingHistoryList meetingId={meeting.id} directory={directory} />
+
+        {selectedSlot &&
+        (meeting.currentState === 'WAITING_FOR_FINAL_CONFIRMATION' ||
+          (isRescheduleFlow && Boolean(meeting.pendingSlotId))) ? (
           <p className="mc-selected-slot">
             מועד נבחר: {formatMeetingSlotRange(selectedSlot, meeting.institutionTimezone)}
           </p>
@@ -276,29 +323,41 @@ export function MeetingActionModal({
           </div>
         ) : null}
 
-        {isCalendarOwner && meeting.currentState === 'WAITING_FOR_SLOT_PROPOSAL' ? (
+        {canProposeSlots ? (
           <div className="mc-owner-propose">
-            <label className="ds-field" htmlFor={durationId}>
-              <span>משך הפגישה</span>
-              <select
-                id={durationId}
-                value={durationMinutes ?? ''}
-                onChange={(event) =>
-                  setDurationMinutes(
-                    event.target.value
-                      ? (Number(event.target.value) as MeetingDurationMinutes)
-                      : null,
-                  )
-                }
-              >
-                <option value="">בחרו משך</option>
-                {MEETING_DURATION_OPTIONS.map((option) => (
-                  <option key={option} value={option}>
-                    {option} דקות
-                  </option>
-                ))}
-              </select>
-            </label>
+            {isRescheduleFlow ? (
+              <p className="mc-help-text">
+                בחרו 1–5 מועדים חדשים. הפגישה המאושרת תישאר ביומן עד אישור מועד מחליף.
+              </p>
+            ) : null}
+
+            {!isRescheduleFlow || !durationMinutes ? (
+              <label className="ds-field" htmlFor={durationId}>
+                <span>משך הפגישה</span>
+                <select
+                  id={durationId}
+                  value={durationMinutes ?? ''}
+                  onChange={(event) =>
+                    setDurationMinutes(
+                      event.target.value
+                        ? (Number(event.target.value) as MeetingDurationMinutes)
+                        : null,
+                    )
+                  }
+                >
+                  <option value="">בחרו משך</option>
+                  {MEETING_DURATION_OPTIONS.map((option) => (
+                    <option key={option} value={option}>
+                      {option} דקות
+                    </option>
+                  ))}
+                </select>
+              </label>
+            ) : (
+              <p className="mc-help-text">
+                משך הפגישה: {translateMeetingDuration(durationMinutes)}
+              </p>
+            )}
 
             {durationMinutes ? (
               <MeetingProposeSlotsForm
@@ -322,7 +381,7 @@ export function MeetingActionModal({
           </div>
         ) : null}
 
-        {isNonOwner && meeting.currentState === 'WAITING_FOR_SLOT_SELECTION' ? (
+        {canSelectSlots ? (
           <div className="mc-select-slots">
             <fieldset>
               <legend>בחירת מועד</legend>
@@ -373,7 +432,7 @@ export function MeetingActionModal({
           </div>
         ) : null}
 
-        {isNonOwner && meeting.currentState === 'WAITING_FOR_FINAL_CONFIRMATION' ? (
+        {canFinalConfirm && !canSelectSlots ? (
           <div className="mc-actions">
             <button
               type="button"
@@ -387,7 +446,7 @@ export function MeetingActionModal({
           </div>
         ) : null}
 
-        {meeting.currentState === 'CONFIRMED' ? (
+        {meeting.currentState === 'CONFIRMED' && !meeting.reschedulingActive ? (
           <p className="ds-form-message ds-form-message--success">הפגישה אושרה.</p>
         ) : null}
 

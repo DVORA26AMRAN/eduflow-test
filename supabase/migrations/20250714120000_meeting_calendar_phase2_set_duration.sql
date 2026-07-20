@@ -84,6 +84,14 @@ BEGIN
         RAISE EXCEPTION 'Subject and reason are required.' USING ERRCODE = 'P0001';
     END IF;
 
+    IF char_length(btrim(p_subject)) > 150 THEN
+        RAISE EXCEPTION 'Subject exceeds the maximum length of 150 characters.' USING ERRCODE = 'P0001';
+    END IF;
+
+    IF char_length(btrim(p_reason)) > 1000 THEN
+        RAISE EXCEPTION 'Reason exceeds the maximum length of 1000 characters.' USING ERRCODE = 'P0001';
+    END IF;
+
     IF NOT public.meeting_calendar_validate_role_pair(v_actor_role, v_recipient_role) THEN
         RAISE EXCEPTION 'Unauthorized role combination.' USING ERRCODE = '42501';
     END IF;
@@ -192,7 +200,7 @@ BEGIN
         RAISE EXCEPTION 'Only the calendar owner may set the meeting duration.' USING ERRCODE = '42501';
     END IF;
 
-    IF v_meeting.current_state NOT IN ('WAITING_FOR_OWNER_APPROVAL', 'WAITING_FOR_SLOT_PROPOSAL') THEN
+    IF v_meeting.current_state <> 'WAITING_FOR_SLOT_PROPOSAL' THEN
         RAISE EXCEPTION 'Duration can only be set before slot proposal.' USING ERRCODE = 'P0001';
     END IF;
 
@@ -249,7 +257,6 @@ DECLARE
     v_starts_at TIMESTAMPTZ;
     v_ends_at TIMESTAMPTZ;
     v_slot_count INTEGER;
-    v_duration_minutes INTEGER;
     v_next_state TEXT;
 BEGIN
     IF auth.uid() IS NULL THEN
@@ -314,9 +321,7 @@ BEGIN
             RAISE EXCEPTION 'Past slot dates are not allowed.' USING ERRCODE = 'P0001';
         END IF;
 
-        v_duration_minutes := EXTRACT(EPOCH FROM (v_ends_at - v_starts_at))::INTEGER / 60;
-
-        IF v_duration_minutes <> v_meeting.duration_minutes THEN
+        IF v_ends_at <> (v_starts_at + make_interval(mins => v_meeting.duration_minutes)) THEN
             RAISE EXCEPTION 'Slot duration must match meeting duration.' USING ERRCODE = 'P0001';
         END IF;
 

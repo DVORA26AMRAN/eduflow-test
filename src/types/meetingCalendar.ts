@@ -61,6 +61,8 @@ export type Meeting = {
   confirmedSlotId: string | null
   pendingSlotId: string | null
   slotSelectedByUserId: string | null
+  /** Populated by pending-list RPC; used to classify reschedule overlay stages. */
+  activeProposedSlotCount?: number | null
   createdAt: string
   updatedAt: string
 }
