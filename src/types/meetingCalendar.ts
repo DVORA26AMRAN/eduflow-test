@@ -37,6 +37,12 @@ export const MEETING_AUDIT_EVENT_TYPES = [
   'meeting_confirmed',
   'meeting_cancelled',
   'meeting_rescheduled',
+  'MEET_PROVISION_REQUESTED',
+  'MEET_PROVISION_STARTED',
+  'MEET_PROVISION_READY',
+  'MEET_PROVISION_FAILED',
+  'MEET_PROVISION_RETRY',
+  'MEET_REAUTH_REQUIRED',
 ] as const
 export type MeetingAuditEventType = (typeof MEETING_AUDIT_EVENT_TYPES)[number]
 
@@ -63,6 +69,19 @@ export type Meeting = {
   slotSelectedByUserId: string | null
   /** Populated by pending-list RPC; used to classify reschedule overlay stages. */
   activeProposedSlotCount?: number | null
+  meetingFormat?: 'online' | 'phone' | 'in_person'
+  meetUrl?: string | null
+  meetProvisionStatus?:
+    | 'not_applicable'
+    | 'google_not_connected'
+    | 'pending'
+    | 'ready'
+    | 'failed'
+  meetProvisionError?: string | null
+  phoneNumber?: string | null
+  delayMinutes?: 5 | 10 | 15 | null
+  delayReportedByUserId?: string | null
+  delayReportedAt?: string | null
   createdAt: string
   updatedAt: string
 }
@@ -103,6 +122,8 @@ export type CreateMeetingInput = {
   subject: string
   reason: string
   durationMinutes: MeetingDurationMinutes | null
+  meetingFormat: 'online' | 'phone' | 'in_person'
+  phoneNumber?: string | null
   institutionTimezone?: string
 }
 

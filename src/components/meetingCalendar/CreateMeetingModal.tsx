@@ -19,8 +19,10 @@ import {
   validateCreateMeetingForm,
   type SlotDraft,
 } from '../../utils/meetingCalendarForm'
+import type { MeetingFormat } from '../../utils/meetingCalendarLive'
 import { translateRole } from '../../utils/roles'
 import { Modal } from '../ui/Modal'
+import { MeetingFormatFields } from './MeetingFormatFields'
 import { MeetingProposeSlotsForm } from './MeetingProposeSlotsForm'
 import './MeetingCalendar.css'
 
@@ -54,6 +56,8 @@ function CreateMeetingModalForm({
   const [recipientQuery, setRecipientQuery] = useState('')
   const [subject, setSubject] = useState('')
   const [reason, setReason] = useState('')
+  const [meetingFormat, setMeetingFormat] = useState<MeetingFormat | null>(null)
+  const [phoneNumber, setPhoneNumber] = useState('')
   const [durationMinutes, setDurationMinutes] = useState<MeetingDurationMinutes | null>(null)
   const [slotDrafts, setSlotDrafts] = useState<SlotDraft[]>([createEmptySlotDraft()])
   const [isSubmitting, setIsSubmitting] = useState(false)
@@ -94,6 +98,9 @@ function CreateMeetingModalForm({
       reason,
       durationMinutes,
       requireDuration: isOwnerInitiated,
+      meetingFormat,
+      phoneNumber,
+      meetUrl: null,
     })
 
     if (!validation.ok) {
@@ -128,6 +135,8 @@ function CreateMeetingModalForm({
       durationMinutes: isOwnerInitiated
         ? (validation.durationMinutes as MeetingDurationMinutes)
         : null,
+      meetingFormat: validation.meetingFormat,
+      phoneNumber: validation.phoneNumber,
     })
 
     if (!createResult.ok) {
@@ -259,6 +268,19 @@ function CreateMeetingModalForm({
         <p className="ds-helper-text" aria-live="polite">
           {reason.length}/{MEETING_REASON_MAX_LENGTH}
         </p>
+
+        <MeetingFormatFields
+          format={meetingFormat ?? ''}
+          phoneNumber={phoneNumber}
+          disabled={isSubmitting}
+          onFormatChange={(format) => {
+            setMeetingFormat(format)
+            if (format !== 'phone') {
+              setPhoneNumber('')
+            }
+          }}
+          onPhoneNumberChange={setPhoneNumber}
+        />
       </div>
 
       {isOwnerInitiated ? (

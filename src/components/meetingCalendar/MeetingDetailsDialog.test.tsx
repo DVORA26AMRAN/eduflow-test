@@ -9,11 +9,13 @@ const {
   loadMeetingAuditEventsMock,
   cancelMeetingMock,
   rescheduleMeetingMock,
+  loadMeetingLiveContextMock,
 } = vi.hoisted(() => ({
   loadMeetingSlotsMock: vi.fn(),
   loadMeetingAuditEventsMock: vi.fn(),
   cancelMeetingMock: vi.fn(),
   rescheduleMeetingMock: vi.fn(),
+  loadMeetingLiveContextMock: vi.fn(),
 }))
 
 vi.mock('../../services/meetingCalendar', () => ({
@@ -21,10 +23,15 @@ vi.mock('../../services/meetingCalendar', () => ({
   loadMeetingAuditEvents: loadMeetingAuditEventsMock,
   cancelMeeting: cancelMeetingMock,
   rescheduleMeeting: rescheduleMeetingMock,
+  loadMeetingLiveContext: loadMeetingLiveContextMock,
 }))
 
 vi.mock('./MeetingHistoryList', () => ({
   MeetingHistoryList: () => <div data-testid="meeting-history">היסטוריית פגישה</div>,
+}))
+
+vi.mock('./MeetingLiveActions', () => ({
+  MeetingLiveActions: () => <div data-testid="meeting-live-actions">פעולות חיות</div>,
 }))
 
 const directory = new Map<string, MeetingUserDirectoryEntry>([
@@ -85,7 +92,32 @@ describe('MeetingDetailsDialog', () => {
     loadMeetingAuditEventsMock.mockReset()
     cancelMeetingMock.mockReset()
     rescheduleMeetingMock.mockReset()
+    loadMeetingLiveContextMock.mockReset()
     loadMeetingAuditEventsMock.mockResolvedValue({ ok: true, events: [] })
+    loadMeetingLiveContextMock.mockResolvedValue({
+      ok: true,
+      context: {
+        meetingId: 'm1',
+        currentState: 'CONFIRMED',
+        meetingFormat: 'in_person',
+        meetUrl: null,
+        meetProvisionStatus: 'not_applicable',
+        meetProvisionError: null,
+        phoneNumber: null,
+        startsAt: confirmedSlot.startsAt,
+        endsAt: confirmedSlot.endsAt,
+        delayMinutes: null,
+        delayReportedByUserId: null,
+        delayReportedAt: null,
+        primaryActionAvailable: false,
+        delayActionAvailable: false,
+        canSetConnectionDetails: true,
+        canRequestMeetProvision: false,
+        isCalendarOwner: true,
+        ownerGoogleConnected: false,
+        ownerGoogleConnectionStatus: 'not_connected',
+      },
+    })
   })
 
   it('renders read-only meeting details and closes', () => {

@@ -3,6 +3,7 @@ import type { Meeting, MeetingDurationMinutes, MeetingSlot } from '../../types/m
 import {
   approveMeetingByOwner,
   confirmMeeting,
+  loadMeetingLiveContext,
   loadMeetingSlots,
   proposeMeetingSlots,
   selectMeetingSlot,
@@ -22,6 +23,10 @@ import {
   MEETING_DURATION_OPTIONS,
   type SlotDraft,
 } from '../../utils/meetingCalendarForm'
+import {
+  translateMeetingFormat,
+  type MeetingFormat,
+} from '../../utils/meetingCalendarLive'
 import { Modal } from '../ui/Modal'
 import { MeetingHistoryList } from './MeetingHistoryList'
 import { MeetingProposeSlotsForm } from './MeetingProposeSlotsForm'
@@ -59,6 +64,9 @@ export function MeetingActionModal({
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [syncedDuration, setSyncedDuration] = useState(meeting?.durationMinutes ?? null)
   const [syncedPendingSlotId, setSyncedPendingSlotId] = useState(meeting?.pendingSlotId ?? null)
+  const [meetingFormat, setMeetingFormat] = useState<MeetingFormat>(
+    meeting?.meetingFormat ?? 'in_person',
+  )
 
   if (
     meeting &&
@@ -99,6 +107,31 @@ export function MeetingActionModal({
           slot.id === confirmedSlotId,
       )
       setSlots(active)
+    })
+
+    return () => {
+      cancelled = true
+    }
+  }, [isOpen, meeting])
+
+  useEffect(() => {
+    if (!isOpen || !meeting || meeting.currentState === 'CANCELLED') {
+      return
+    }
+
+    const meetingId = meeting.id
+    let cancelled = false
+
+    queueMicrotask(() => {
+      if (cancelled) {
+        return
+      }
+      void loadMeetingLiveContext(meetingId).then((result) => {
+        if (cancelled || !result.ok) {
+          return
+        }
+        setMeetingFormat(result.context.meetingFormat)
+      })
     })
 
     return () => {
@@ -281,6 +314,10 @@ export function MeetingActionModal({
           <div>
             <dt>משך</dt>
             <dd>{translateMeetingDuration(meeting.durationMinutes)}</dd>
+          </div>
+          <div>
+            <dt>סוג פגישה</dt>
+            <dd>{translateMeetingFormat(meetingFormat)}</dd>
           </div>
           <div>
             <dt>נוצר בתאריך</dt>

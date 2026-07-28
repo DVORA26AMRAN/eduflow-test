@@ -2,11 +2,15 @@ import type {
   CreateMeetingInput,
   Meeting,
   MeetingAuditEvent,
+  MeetingAuditEventType,
   MeetingCommandResult,
   MeetingDurationMinutes,
   MeetingSlot,
   MeetingState,
   ProposedMeetingSlotInput,
+} from '../types/meetingCalendar'
+import {
+  MEETING_AUDIT_EVENT_TYPES,
 } from '../types/meetingCalendar'
 import {
   isMeetingDurationMinutes,
@@ -124,6 +128,21 @@ function parseMeeting(row: Record<string, unknown>): Meeting | null {
       typeof row.slot_selected_by_user_id === 'string' ? row.slot_selected_by_user_id : null,
     activeProposedSlotCount:
       typeof row.active_proposed_slot_count === 'number' ? row.active_proposed_slot_count : null,
+    meetingFormat:
+      row.meeting_format === 'online' ||
+      row.meeting_format === 'phone' ||
+      row.meeting_format === 'in_person'
+        ? row.meeting_format
+        : 'in_person',
+    meetUrl: typeof row.meet_url === 'string' ? row.meet_url : null,
+    phoneNumber: typeof row.phone_number === 'string' ? row.phone_number : null,
+    delayMinutes:
+      row.delay_minutes === 5 || row.delay_minutes === 10 || row.delay_minutes === 15
+        ? row.delay_minutes
+        : null,
+    delayReportedByUserId:
+      typeof row.delay_reported_by_user_id === 'string' ? row.delay_reported_by_user_id : null,
+    delayReportedAt: typeof row.delay_reported_at === 'string' ? row.delay_reported_at : null,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
   }
@@ -157,6 +176,10 @@ function parseMeetingSlot(row: Record<string, unknown>): MeetingSlot | null {
   }
 }
 
+function isMeetingAuditEventType(value: string): value is MeetingAuditEventType {
+  return (MEETING_AUDIT_EVENT_TYPES as readonly string[]).includes(value)
+}
+
 function parseMeetingAuditEvent(row: Record<string, unknown>): MeetingAuditEvent | null {
   if (
     typeof row.id !== 'string' ||
@@ -164,6 +187,7 @@ function parseMeetingAuditEvent(row: Record<string, unknown>): MeetingAuditEvent
     typeof row.institution_id !== 'string' ||
     typeof row.actor_user_id !== 'string' ||
     typeof row.event_type !== 'string' ||
+    !isMeetingAuditEventType(row.event_type) ||
     typeof row.created_at !== 'string'
   ) {
     return null
@@ -179,7 +203,7 @@ function parseMeetingAuditEvent(row: Record<string, unknown>): MeetingAuditEvent
     meetingId: row.meeting_id,
     institutionId: row.institution_id,
     actorUserId: row.actor_user_id,
-    eventType: row.event_type as MeetingAuditEvent['eventType'],
+    eventType: row.event_type,
     fromState,
     toState,
     proposalCycle: typeof row.proposal_cycle === 'number' ? row.proposal_cycle : null,
@@ -370,6 +394,9 @@ export async function createMeeting(input: CreateMeetingInput): Promise<MeetingC
     p_reason: input.reason.trim(),
     p_duration_minutes: input.durationMinutes,
     p_institution_timezone: input.institutionTimezone?.trim() || 'UTC',
+    p_meeting_format: input.meetingFormat,
+    p_phone_number: input.meetingFormat === 'phone' ? (input.phoneNumber ?? null) : null,
+    p_meet_url: null,
   })
 
   if (error) {
@@ -513,6 +540,210 @@ export async function completeMeeting(meetingId: string): Promise<MeetingCommand
   return parseCommandResult(data)
 }
 
+export type MeetingLiveContext = {
+  meetingId: string
+  currentState: MeetingState
+  meetingFormat: 'online' | 'phone' | 'in_person'
+  meetUrl: string | null
+  meetProvisionStatus:
+    | 'not_applicable'
+    | 'google_not_connected'
+    | 'pending'
+    | 'ready'
+    | 'failed'
+    | null
+  meetProvisionError: string | null
+  phoneNumber: string | null
+  startsAt: string | null
+  endsAt: string | null
+  delayMinutes: 5 | 10 | 15 | null
+  delayReportedByUserId: string | null
+  delayReportedAt: string | null
+  primaryActionAvailable: boolean
+  delayActionAvailable: boolean
+  canSetConnectionDetails: boolean
+  canRequestMeetProvision: boolean
+  isCalendarOwner: boolean
+  ownerGoogleConnected: boolean
+  ownerGoogleConnectionStatus: 'connected' | 'not_connected' | 'reauthorization_required'
+}
+
+export type LoadMeetingLiveContextResult =
+  | { ok: true; context: MeetingLiveContext }
+  | { ok: false; errorMessage: string }
+
+function parseLiveContext(data: unknown): MeetingLiveContext | null {
+  if (!data || typeof data !== 'object') {
+    return null
+  }
+  const row = data as Record<string, unknown>
+  if (row.ok !== true || typeof row.meeting_id !== 'string') {
+    return null
+  }
+
+  const format =
+    row.meeting_format === 'online' ||
+    row.meeting_format === 'phone' ||
+    row.meeting_format === 'in_person'
+      ? row.meeting_format
+      : 'in_person'
+
+  const provisionStatus = row.meet_provision_status
+  const meetProvisionStatus =
+    provisionStatus === 'not_applicable' ||
+    provisionStatus === 'google_not_connected' ||
+    provisionStatus === 'pending' ||
+    provisionStatus === 'ready' ||
+    provisionStatus === 'failed'
+      ? provisionStatus
+      : null
+
+  const connectionStatus = row.owner_google_connection_status
+  const ownerGoogleConnectionStatus =
+    connectionStatus === 'connected' ||
+    connectionStatus === 'not_connected' ||
+    connectionStatus === 'reauthorization_required'
+      ? connectionStatus
+      : row.owner_google_connected === true
+        ? 'connected'
+        : 'not_connected'
+
+  return {
+    meetingId: row.meeting_id,
+    currentState:
+      typeof row.current_state === 'string' && isMeetingState(row.current_state)
+        ? row.current_state
+        : 'CONFIRMED',
+    meetingFormat: format,
+    meetUrl: typeof row.meet_url === 'string' ? row.meet_url : null,
+    meetProvisionStatus,
+    meetProvisionError:
+      typeof row.meet_provision_error === 'string' ? row.meet_provision_error : null,
+    phoneNumber: typeof row.phone_number === 'string' ? row.phone_number : null,
+    startsAt: typeof row.starts_at === 'string' ? row.starts_at : null,
+    endsAt: typeof row.ends_at === 'string' ? row.ends_at : null,
+    delayMinutes:
+      row.delay_minutes === 5 || row.delay_minutes === 10 || row.delay_minutes === 15
+        ? row.delay_minutes
+        : null,
+    delayReportedByUserId:
+      typeof row.delay_reported_by_user_id === 'string' ? row.delay_reported_by_user_id : null,
+    delayReportedAt: typeof row.delay_reported_at === 'string' ? row.delay_reported_at : null,
+    primaryActionAvailable: row.primary_action_available === true,
+    delayActionAvailable: row.delay_action_available === true,
+    canSetConnectionDetails: row.can_set_connection_details === true,
+    canRequestMeetProvision: row.can_request_meet_provision === true,
+    isCalendarOwner: row.is_calendar_owner === true,
+    ownerGoogleConnected: row.owner_google_connected === true,
+    ownerGoogleConnectionStatus,
+  }
+}
+
+export async function loadMeetingLiveContext(
+  meetingId: string,
+): Promise<LoadMeetingLiveContextResult> {
+  const { data, error } = await supabase.rpc('meeting_calendar_get_live_context', {
+    p_meeting_id: meetingId,
+  })
+
+  if (error) {
+    return { ok: false, errorMessage: mapRpcError(error) }
+  }
+
+  const context = parseLiveContext(data)
+  if (!context) {
+    return { ok: false, errorMessage: 'תגובת שרת לא תקינה.' }
+  }
+
+  return { ok: true, context }
+}
+
+export async function setMeetingConnectionDetails(input: {
+  meetingId: string
+  meetingFormat: 'online' | 'phone' | 'in_person'
+  phoneNumber?: string | null
+}): Promise<{ ok: true } | { ok: false; errorMessage: string }> {
+  // Meet URLs are system-managed; never send p_meet_url from the client.
+  const { data, error } = await supabase.rpc('meeting_calendar_set_connection_details', {
+    p_meeting_id: input.meetingId,
+    p_meeting_format: input.meetingFormat,
+    p_meet_url: null,
+    p_phone_number: input.phoneNumber ?? null,
+  })
+
+  if (error) {
+    return { ok: false, errorMessage: mapRpcError(error) }
+  }
+
+  if (!data || typeof data !== 'object' || (data as { ok?: unknown }).ok !== true) {
+    return { ok: false, errorMessage: 'שמירת פרטי החיבור נכשלה.' }
+  }
+
+  return { ok: true }
+}
+
+export async function reportMeetingDelay(input: {
+  meetingId: string
+  delayMinutes: 5 | 10 | 15
+}): Promise<{ ok: true; delayMinutes: 5 | 10 | 15 } | { ok: false; errorMessage: string }> {
+  const { data, error } = await supabase.rpc('meeting_calendar_report_delay', {
+    p_meeting_id: input.meetingId,
+    p_delay_minutes: input.delayMinutes,
+  })
+
+  if (error) {
+    return { ok: false, errorMessage: mapRpcError(error) }
+  }
+
+  if (!data || typeof data !== 'object' || (data as { ok?: unknown }).ok !== true) {
+    return { ok: false, errorMessage: 'דיווח האיחור נכשל.' }
+  }
+
+  return { ok: true, delayMinutes: input.delayMinutes }
+}
+
+export type RecordLivePrimaryActionResult =
+  | {
+      ok: true
+      eventType: 'online_meeting_opened' | 'phone_call_started'
+      meetUrl: string | null
+      phoneNumber: string | null
+    }
+  | { ok: false; errorMessage: string }
+
+export async function recordLivePrimaryAction(
+  meetingId: string,
+): Promise<RecordLivePrimaryActionResult> {
+  const { data, error } = await supabase.rpc('meeting_calendar_record_live_primary_action', {
+    p_meeting_id: meetingId,
+  })
+
+  if (error) {
+    return { ok: false, errorMessage: mapRpcError(error) }
+  }
+
+  if (!data || typeof data !== 'object' || (data as { ok?: unknown }).ok !== true) {
+    return { ok: false, errorMessage: 'רישום פעולת הפגישה נכשל.' }
+  }
+
+  const row = data as Record<string, unknown>
+  const eventType =
+    row.event_type === 'online_meeting_opened' || row.event_type === 'phone_call_started'
+      ? row.event_type
+      : null
+  if (!eventType) {
+    return { ok: false, errorMessage: 'תגובת שרת לא תקינה.' }
+  }
+
+  return {
+    ok: true,
+    eventType,
+    meetUrl: typeof row.meet_url === 'string' ? row.meet_url : null,
+    phoneNumber: typeof row.phone_number === 'string' ? row.phone_number : null,
+  }
+}
+
+/** CANCELLED is the only implemented terminal state used by live actions. */
 export function isTerminalMeetingState(state: MeetingState): boolean {
-  return state === 'CANCELLED' || state === 'COMPLETED'
+  return state === 'CANCELLED'
 }

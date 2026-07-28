@@ -334,8 +334,83 @@
 }
 
 .mc-event-card__time,
-.mc-event-card__participant {
+.mc-event-card__participant,
+.mc-event-card__live {
   font-size: 0.7rem;
+}
+
+.mc-live-actions,
+.mc-delay-form,
+.mc-connection-form {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.mc-meet-provision {
+  display: grid;
+  gap: 0.5rem;
+  padding: 0.75rem 0.85rem;
+  border: 1px solid color-mix(in srgb, CanvasText 12%, transparent);
+  border-radius: 0.75rem;
+  background: color-mix(in srgb, Canvas 92%, CanvasText 8%);
+}
+
+.mc-meet-provision__status {
+  margin: 0;
+  font-weight: 650;
+}
+
+.mc-meet-provision--creating .mc-meet-provision__status {
+  color: color-mix(in srgb, #0f766e 85%, CanvasText);
+}
+
+.mc-meet-provision--ready .mc-meet-provision__status {
+  color: color-mix(in srgb, #0f766e 85%, CanvasText);
+}
+
+.mc-meet-provision--failed .mc-meet-provision__status,
+.mc-meet-provision--reauthorization_required .mc-meet-provision__status {
+  color: color-mix(in srgb, #b45309 80%, CanvasText);
+}
+
+.mc-meet-provision--not_connected .mc-meet-provision__status,
+.mc-meet-provision--create_available .mc-meet-provision__status {
+  color: color-mix(in srgb, #4338ca 75%, CanvasText);
+}
+
+.mc-meet-provision__actions {
+  flex-wrap: wrap;
+}
+
+@media (max-width: 640px) {
+  .mc-meet-provision__actions {
+    display: grid;
+    grid-template-columns: 1fr;
+  }
+
+  .mc-meet-provision__actions .ds-btn {
+    width: 100%;
+  }
+}
+
+.mc-live-status {
+  margin: 0;
+  font-weight: 650;
+}
+
+.mc-live-status--upcoming,
+.mc-event-card__live.mc-live-status--upcoming {
+  color: color-mix(in srgb, #4338ca 80%, CanvasText);
+}
+
+.mc-live-status--live,
+.mc-event-card__live.mc-live-status--live {
+  color: color-mix(in srgb, #0f766e 85%, CanvasText);
+}
+
+.mc-live-status--ended,
+.mc-event-card__live.mc-live-status--ended {
+  opacity: 0.75;
 }
 
 .mc-event-card--manager {

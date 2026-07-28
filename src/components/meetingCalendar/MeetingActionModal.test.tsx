@@ -7,11 +7,13 @@ import { MeetingActionModal } from './MeetingActionModal'
 const {
   loadMeetingSlotsMock,
   loadMeetingAuditEventsMock,
+  loadMeetingLiveContextMock,
   proposeMeetingSlotsMock,
   setMeetingDurationMock,
 } = vi.hoisted(() => ({
   loadMeetingSlotsMock: vi.fn(),
   loadMeetingAuditEventsMock: vi.fn(),
+  loadMeetingLiveContextMock: vi.fn(),
   proposeMeetingSlotsMock: vi.fn(),
   setMeetingDurationMock: vi.fn(),
 }))
@@ -19,6 +21,7 @@ const {
 vi.mock('../../services/meetingCalendar', () => ({
   loadMeetingSlots: loadMeetingSlotsMock,
   loadMeetingAuditEvents: loadMeetingAuditEventsMock,
+  loadMeetingLiveContext: loadMeetingLiveContextMock,
   proposeMeetingSlots: proposeMeetingSlotsMock,
   setMeetingDuration: setMeetingDurationMock,
   approveMeetingByOwner: vi.fn(),
@@ -57,6 +60,7 @@ const meeting: Meeting = {
   confirmedSlotId: 'slot-old',
   pendingSlotId: null,
   slotSelectedByUserId: null,
+  meetingFormat: 'online',
   createdAt: '2026-07-01T00:00:00.000Z',
   updatedAt: '2026-07-02T00:00:00.000Z',
 }
@@ -82,17 +86,42 @@ describe('MeetingActionModal reschedule propose', () => {
     window.scrollTo = vi.fn()
     loadMeetingSlotsMock.mockReset()
     loadMeetingAuditEventsMock.mockReset()
+    loadMeetingLiveContextMock.mockReset()
     proposeMeetingSlotsMock.mockReset()
     setMeetingDurationMock.mockReset()
     loadMeetingAuditEventsMock.mockResolvedValue({ ok: true, events: [] })
     loadMeetingSlotsMock.mockResolvedValue({ ok: true, slots: [confirmedSlot] })
+    loadMeetingLiveContextMock.mockResolvedValue({
+      ok: true,
+      context: {
+        meetingId: 'm1',
+        currentState: 'CONFIRMED',
+        meetingFormat: 'online',
+        meetUrl: null,
+        meetProvisionStatus: 'google_not_connected',
+        meetProvisionError: null,
+        phoneNumber: null,
+        startsAt: null,
+        endsAt: null,
+        delayMinutes: null,
+        delayReportedByUserId: null,
+        delayReportedAt: null,
+        primaryActionAvailable: false,
+        delayActionAvailable: false,
+        canSetConnectionDetails: true,
+        canRequestMeetProvision: true,
+        isCalendarOwner: true,
+        ownerGoogleConnected: false,
+        ownerGoogleConnectionStatus: 'not_connected',
+      },
+    })
     proposeMeetingSlotsMock.mockResolvedValue({
       ok: true,
       currentState: 'CONFIRMED',
     })
   })
 
-  it('lets the calendar owner propose new slots during active rescheduling without changing duration', async () => {
+  it('lets the calendar owner propose new slots without editing meeting type', async () => {
     const onChanged = vi.fn()
     const onClose = vi.fn()
 
@@ -109,6 +138,8 @@ describe('MeetingActionModal reschedule propose', () => {
 
     expect(await screen.findByRole('button', { name: 'שליחת מועדים' })).toBeInTheDocument()
     expect(await screen.findByText(/נשאר בתוקף עד אישור מועד חדש/)).toBeInTheDocument()
+    expect(await screen.findByText('מקוונת (Google Meet)')).toBeInTheDocument()
+    expect(screen.queryByLabelText('סוג פגישה')).not.toBeInTheDocument()
 
     fireEvent.change(screen.getByLabelText('תאריך'), {
       target: { value: '2099-08-01' },

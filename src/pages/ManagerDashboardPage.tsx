@@ -8,6 +8,7 @@ import {
   NavChartIcon,
   NavClipboardIcon,
   NavInboxIcon,
+  NavSettingsIcon,
   NavUsersIcon,
   type DashboardNavItem,
 } from '../components/dashboard/dashboardNav'
@@ -16,6 +17,7 @@ import { ManagerAnalyticsSection } from '../components/manager/ManagerAnalyticsS
 import { ManagerArchiveSection } from '../components/manager/ManagerArchiveSection'
 import { ManagerRecentRequestsSection } from '../components/manager/ManagerRecentRequestsSection'
 import { TeamManagementSection } from '../components/manager/TeamManagementSection'
+import { UserSettingsSection } from '../components/settings/UserSettingsSection'
 import { StaffDirectoryPage } from './StaffDirectoryPage'
 import { useAdminReminderNotifications } from '../hooks/useAdminReminderNotifications'
 import { useUnreadRequestMessageNotifications } from '../hooks/useUnreadRequestMessageNotifications'
@@ -35,6 +37,11 @@ import {
   STAFF_DIRECTORY_NAV_LABEL,
   STAFF_DIRECTORY_SECTION_ID,
 } from '../utils/staffDirectoryDisplay'
+import {
+  detectGoogleIntegrationReturn,
+  USER_SETTINGS_NAV_LABEL,
+  USER_SETTINGS_SECTION_ID,
+} from '../services/googleOAuth'
 import {
   REMINDER_BELL_NAV_ID,
   REMINDER_NAV_ARIA_LABEL,
@@ -181,6 +188,7 @@ export function ManagerDashboardPage({
       { id: STAFF_DIRECTORY_SECTION_ID, label: STAFF_DIRECTORY_NAV_LABEL, icon: <NavClipboardIcon /> },
       { id: MANAGER_ARCHIVE_SECTION_ID, label: 'הארכיון שלי', icon: <NavArchiveIcon /> },
       { id: TEAM_MANAGEMENT_SECTION_ID, label: 'ניהול משתמשים', icon: <NavUsersIcon /> },
+      { id: USER_SETTINGS_SECTION_ID, label: USER_SETTINGS_NAV_LABEL, icon: <NavSettingsIcon /> },
     )
 
     return items
@@ -254,6 +262,12 @@ export function ManagerDashboardPage({
       }
     }
   }, [])
+
+  useEffect(() => {
+    if (detectGoogleIntegrationReturn()) {
+      showSection(USER_SETTINGS_SECTION_ID)
+    }
+  }, [showSection])
 
   return (
     <DashboardShell
@@ -367,6 +381,15 @@ export function ManagerDashboardPage({
             onNewUserWeeklyHoursChange={onNewUserWeeklyHoursChange}
             onCreateUser={onCreateUser}
           />
+        </DashboardSectionPanel>
+
+        <DashboardSectionPanel
+          id="manager-user-settings"
+          sectionId={USER_SETTINGS_SECTION_ID}
+          activeSectionId={activeSectionId}
+          className="manager-dashboard__shell-section"
+        >
+          <UserSettingsSection />
         </DashboardSectionPanel>
       </div>
     </DashboardShell>

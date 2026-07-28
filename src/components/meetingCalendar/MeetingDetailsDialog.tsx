@@ -2,8 +2,10 @@ import { useEffect, useId, useState } from 'react'
 import type { Meeting, MeetingSlot } from '../../types/meetingCalendar'
 import {
   cancelMeeting,
+  loadMeetingLiveContext,
   loadMeetingSlots,
   rescheduleMeeting,
+  type MeetingLiveContext,
 } from '../../services/meetingCalendar'
 import {
   getMeetingParticipantLabel,
@@ -17,8 +19,10 @@ import {
   formatEventTimeRange,
 } from '../../utils/meetingCalendarView'
 import { MEETING_CANCEL_REASON_MAX_LENGTH } from '../../utils/meetingCalendarLifecycle'
+import { translateMeetingFormat } from '../../utils/meetingCalendarLive'
 import { ConfirmDialog, Modal } from '../ui/Modal'
 import { MeetingHistoryList } from './MeetingHistoryList'
+import { MeetingLiveActions } from './MeetingLiveActions'
 import './MeetingCalendar.css'
 
 type MeetingDetailsDialogProps = {
@@ -50,6 +54,9 @@ export function MeetingDetailsDialog({
   const [rescheduleOpen, setRescheduleOpen] = useState(false)
   const [cancelReason, setCancelReason] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [liveContext, setLiveContext] = useState<MeetingLiveContext | null>(null)
+  const [isLoadingLiveContext, setIsLoadingLiveContext] = useState(true)
+  const [liveContextTick, setLiveContextTick] = useState(0)
 
   useEffect(() => {
     if (confirmedSlot) {
@@ -81,14 +88,42 @@ export function MeetingDetailsDialog({
     }
   }, [confirmedSlot, meeting.confirmedSlotId, meeting.id])
 
+  useEffect(() => {
+    if (!isOpen) {
+      return
+    }
+
+    const meetingId = meeting.id
+    let cancelled = false
+
+    queueMicrotask(() => {
+      if (cancelled) {
+        return
+      }
+      setIsLoadingLiveContext(true)
+      void loadMeetingLiveContext(meetingId).then((result) => {
+        if (cancelled) {
+          return
+        }
+        setIsLoadingLiveContext(false)
+        if (!result.ok) {
+          setLiveContext(null)
+          return
+        }
+        setLiveContext(result.context)
+      })
+    })
+
+    return () => {
+      cancelled = true
+    }
+  }, [isOpen, meeting.id, liveContextTick])
+
   const slot = confirmedSlot ?? loadedSlot
   const participantId =
     meeting.requesterId === actorUserId ? meeting.recipientId : meeting.requesterId
   const isCalendarOwner = meeting.calendarOwnerId === actorUserId
-  const canCancel =
-    isCalendarOwner &&
-    meeting.currentState !== 'CANCELLED' &&
-    meeting.currentState !== 'COMPLETED'
+  const canCancel = isCalendarOwner && meeting.currentState !== 'CANCELLED'
   const canReschedule =
     isCalendarOwner &&
     meeting.currentState === 'CONFIRMED' &&
@@ -163,6 +198,14 @@ export function MeetingDetailsDialog({
               <dd>{translateMeetingDuration(meeting.durationMinutes)}</dd>
             </div>
             <div>
+              <dt>סוג פגישה</dt>
+              <dd>
+                {translateMeetingFormat(
+                  liveContext?.meetingFormat ?? meeting.meetingFormat ?? 'in_person',
+                )}
+              </dd>
+            </div>
+            <div>
               <dt>תאריך</dt>
               <dd>
                 {slot
@@ -190,6 +233,16 @@ export function MeetingDetailsDialog({
               </dd>
             </div>
           </dl>
+
+          <MeetingLiveActions
+            meetingId={meeting.id}
+            context={liveContext}
+            isLoading={isLoadingLiveContext}
+            onContextChanged={() => {
+              setLiveContextTick((value) => value + 1)
+              onChanged()
+            }}
+          />
 
           <MeetingHistoryList meetingId={meeting.id} directory={directory} />
 

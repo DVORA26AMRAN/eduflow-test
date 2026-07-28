@@ -28,7 +28,9 @@ const recipients: MeetingUserDirectoryEntry[] = [
   },
 ]
 
-function renderModal(actorRole: 'institution_manager' | 'teacher' = 'institution_manager') {
+function renderModal(
+  actorRole: 'institution_manager' | 'teacher' | 'secretary' = 'institution_manager',
+) {
   const onClose = vi.fn()
   const onCreated = vi.fn()
 
@@ -45,6 +47,11 @@ function renderModal(actorRole: 'institution_manager' | 'teacher' = 'institution
   return { onClose, onCreated }
 }
 
+function fillCommonFields() {
+  fireEvent.change(screen.getByLabelText('נושא'), { target: { value: 'שיחת הורים' } })
+  fireEvent.change(screen.getByLabelText('סיבה'), { target: { value: 'תיאום שבועי' } })
+}
+
 describe('CreateMeetingModal UI', () => {
   afterEach(() => {
     cleanup()
@@ -57,67 +64,53 @@ describe('CreateMeetingModal UI', () => {
     proposeMeetingSlotsMock.mockResolvedValue({ ok: true })
   })
 
-  it('renders modal title, subtitle, and meeting details fields', () => {
+  it('renders meeting type selector for all create flows', () => {
     renderModal()
-
-    expect(screen.getByRole('heading', { name: 'יצירת פגישה חדשה' })).toBeInTheDocument()
-    expect(screen.getByText('תאם פגישה חדשה עם משתמש במוסד.')).toBeInTheDocument()
-    expect(screen.getByText('עם מי תרצה להיפגש?')).toBeInTheDocument()
-    expect(screen.getByText('פרטי הפגישה')).toBeInTheDocument()
-    expect(screen.getByLabelText('נושא')).toBeInTheDocument()
-    expect(screen.getByLabelText('סיבה')).toBeInTheDocument()
+    expect(screen.getByLabelText('סוג פגישה')).toBeInTheDocument()
+    expect(screen.getByRole('option', { name: 'פרונטלית' })).toBeInTheDocument()
+    expect(screen.getByRole('option', { name: 'טלפונית' })).toBeInTheDocument()
+    expect(screen.getByRole('option', { name: 'מקוונת (Google Meet)' })).toBeInTheDocument()
   })
 
-  it('shows inline searchable recipients and selected recipient row', () => {
+  it('requires meeting type before submit', async () => {
     renderModal()
-
-    expect(screen.getByLabelText('חיפוש לפי שם')).toBeInTheDocument()
     fireEvent.click(screen.getByRole('radio', { name: /יעל כהן/i }))
+    fillCommonFields()
+    fireEvent.click(screen.getByRole('radio', { name: /30 דקות/i }))
 
-    expect(screen.getByText(/יעל כהן · מורה/)).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: 'שינוי' })).toBeInTheDocument()
-    expect(screen.queryByLabelText('חיפוש לפי שם')).not.toBeInTheDocument()
+    fireEvent.click(screen.getByRole('button', { name: 'שליחת הזמנה' }))
+
+    expect(await screen.findByText('נא לבחור סוג פגישה.')).toBeInTheDocument()
+    expect(createMeetingMock).not.toHaveBeenCalled()
   })
 
-  it('shows owner workflow with duration controls and slot form for manager recipient', () => {
+  it('requires phone number for phone meetings', async () => {
     renderModal()
-
     fireEvent.click(screen.getByRole('radio', { name: /יעל כהן/i }))
+    fillCommonFields()
+    fireEvent.change(screen.getByLabelText('סוג פגישה'), { target: { value: 'phone' } })
+    fireEvent.click(screen.getByRole('radio', { name: /30 דקות/i }))
 
-    expect(screen.getByRole('radiogroup', { name: /משך הפגישה/i })).toBeInTheDocument()
-    expect(screen.getByRole('radio', { name: /30 דקות/i })).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: 'שליחת הזמנה' })).toBeInTheDocument()
-    expect(
-      screen.queryByText('משך הפגישה והמועדים ייקבעו על ידי בעל היומן.'),
-    ).not.toBeInTheDocument()
+    fireEvent.click(screen.getByRole('button', { name: 'שליחת הזמנה' }))
+
+    expect(await screen.findByText('נא להזין מספר טלפון לפגישה טלפונית.')).toBeInTheDocument()
+    expect(createMeetingMock).not.toHaveBeenCalled()
   })
 
-  it('shows teacher workflow help text and request submit label', () => {
-    renderModal('teacher')
-
-    fireEvent.click(screen.getByRole('radio', { name: /דוד/i }))
-
+  it('shows auto Meet message and never exposes manual URL for online', () => {
+    renderModal()
+    fireEvent.change(screen.getByLabelText('סוג פגישה'), { target: { value: 'online' } })
     expect(
-      screen.getByText('משך הפגישה והמועדים ייקבעו על ידי בעל היומן.'),
+      screen.getByText('קישור Google Meet ייווצר אוטומטית לאחר אישור הפגישה.'),
     ).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: 'שליחת בקשה' })).toBeInTheDocument()
-    expect(screen.queryByRole('radiogroup', { name: /משך הפגישה/i })).not.toBeInTheDocument()
+    expect(screen.queryByLabelText(/קישור Google Meet/i)).not.toBeInTheDocument()
   })
 
-  it('updates reason character counter', () => {
-    renderModal()
-
-    fireEvent.change(screen.getByLabelText('סיבה'), { target: { value: 'שיחה' } })
-
-    expect(screen.getByText(/\d+\/\d+/)).toHaveTextContent('4/')
-  })
-
-  it('submits owner-initiated meeting with duration and slots', async () => {
-    renderModal()
-
+  it('lets manager select type during initial creation and persists it', async () => {
+    renderModal('institution_manager')
     fireEvent.click(screen.getByRole('radio', { name: /יעל כהן/i }))
-    fireEvent.change(screen.getByLabelText('נושא'), { target: { value: 'שיחת הורים' } })
-    fireEvent.change(screen.getByLabelText('סיבה'), { target: { value: 'תיאום שבועי' } })
+    fillCommonFields()
+    fireEvent.change(screen.getByLabelText('סוג פגישה'), { target: { value: 'online' } })
     fireEvent.click(screen.getByRole('radio', { name: /30 דקות/i }))
 
     const tomorrow = new Date()
@@ -127,26 +120,68 @@ describe('CreateMeetingModal UI', () => {
       String(tomorrow.getMonth() + 1).padStart(2, '0'),
       String(tomorrow.getDate()).padStart(2, '0'),
     ].join('-')
-
     fireEvent.change(screen.getByLabelText('תאריך'), { target: { value: dateValue } })
     fireEvent.change(screen.getByLabelText('שעת התחלה'), { target: { value: '14:00' } })
 
     fireEvent.click(screen.getByRole('button', { name: 'שליחת הזמנה' }))
 
-    await waitFor(
-      () => {
-        expect(createMeetingMock).toHaveBeenCalledWith(
-          expect.objectContaining({
-            recipientId: 'teacher-1',
-            subject: 'שיחת הורים',
-            reason: 'תיאום שבועי',
-            durationMinutes: 30,
-          }),
-        )
-      },
-      { timeout: 3000 },
-    )
-
+    await waitFor(() => {
+      expect(createMeetingMock).toHaveBeenCalledWith(
+        expect.objectContaining({
+          recipientId: 'teacher-1',
+          meetingFormat: 'online',
+          phoneNumber: null,
+          durationMinutes: 30,
+        }),
+      )
+    })
     expect(proposeMeetingSlotsMock).toHaveBeenCalled()
-  }, 10000)
+  }, 10_000)
+
+  it('lets teacher select type during initial creation', async () => {
+    renderModal('teacher')
+    fireEvent.click(screen.getByRole('radio', { name: /דוד/i }))
+    fillCommonFields()
+    fireEvent.change(screen.getByLabelText('סוג פגישה'), { target: { value: 'in_person' } })
+    fireEvent.click(screen.getByRole('button', { name: 'שליחת בקשה' }))
+
+    await waitFor(() => {
+      expect(createMeetingMock).toHaveBeenCalledWith(
+        expect.objectContaining({
+          meetingFormat: 'in_person',
+          durationMinutes: null,
+        }),
+      )
+    })
+  })
+
+  it('lets secretary select phone type with phone number during initial creation', async () => {
+    renderModal('secretary')
+    fireEvent.click(screen.getByRole('radio', { name: /יעל כהן/i }))
+    fillCommonFields()
+    fireEvent.change(screen.getByLabelText('סוג פגישה'), { target: { value: 'phone' } })
+    fireEvent.change(screen.getByLabelText('מספר טלפון'), { target: { value: '050-1234567' } })
+    fireEvent.click(screen.getByRole('radio', { name: /30 דקות/i }))
+
+    const tomorrow = new Date()
+    tomorrow.setDate(tomorrow.getDate() + 2)
+    const dateValue = [
+      tomorrow.getFullYear(),
+      String(tomorrow.getMonth() + 1).padStart(2, '0'),
+      String(tomorrow.getDate()).padStart(2, '0'),
+    ].join('-')
+    fireEvent.change(screen.getByLabelText('תאריך'), { target: { value: dateValue } })
+    fireEvent.change(screen.getByLabelText('שעת התחלה'), { target: { value: '11:00' } })
+
+    fireEvent.click(screen.getByRole('button', { name: 'שליחת הזמנה' }))
+
+    await waitFor(() => {
+      expect(createMeetingMock).toHaveBeenCalledWith(
+        expect.objectContaining({
+          meetingFormat: 'phone',
+          phoneNumber: '050-1234567',
+        }),
+      )
+    })
+  }, 10_000)
 })

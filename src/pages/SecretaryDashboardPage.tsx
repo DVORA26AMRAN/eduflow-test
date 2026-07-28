@@ -10,6 +10,7 @@ import {
   NavChartIcon,
   NavClipboardIcon,
   NavInboxIcon,
+  NavSettingsIcon,
   NavUsersIcon,
   type DashboardNavItem,
 } from '../components/dashboard/dashboardNav'
@@ -19,6 +20,7 @@ import { SecretaryAnalyticsSection } from '../components/secretary/SecretaryAnal
 import { SecretaryArchiveSection } from '../components/secretary/SecretaryArchiveSection'
 import { SecretaryRequestsInbox } from '../components/secretary/SecretaryRequestsInbox'
 import { SecretarySubstituteApprovalsSection } from '../components/secretary/SecretarySubstituteApprovalsSection'
+import { UserSettingsSection } from '../components/settings/UserSettingsSection'
 import { StaffDirectoryPage } from './StaffDirectoryPage'
 import { useAdminReminderNotifications } from '../hooks/useAdminReminderNotifications'
 import { useUnreadRequestMessageNotifications } from '../hooks/useUnreadRequestMessageNotifications'
@@ -42,6 +44,11 @@ import {
   STAFF_DIRECTORY_NAV_LABEL,
   STAFF_DIRECTORY_SECTION_ID,
 } from '../utils/staffDirectoryDisplay'
+import {
+  detectGoogleIntegrationReturn,
+  USER_SETTINGS_NAV_LABEL,
+  USER_SETTINGS_SECTION_ID,
+} from '../services/googleOAuth'
 
 import './SecretaryDashboardPage.css'
 
@@ -138,6 +145,7 @@ export function SecretaryDashboardPage({ profile, onLogout }: SecretaryDashboard
       { id: MEETING_CALENDAR_SECTION_ID, label: MEETING_CALENDAR_NAV_LABEL, icon: <NavCalendarIcon /> },
       { id: STAFF_DIRECTORY_SECTION_ID, label: STAFF_DIRECTORY_NAV_LABEL, icon: <NavClipboardIcon /> },
       { id: 'institutionalArchive', label: 'ארכיון מוסדי', icon: <NavArchiveIcon /> },
+      { id: USER_SETTINGS_SECTION_ID, label: USER_SETTINGS_NAV_LABEL, icon: <NavSettingsIcon /> },
     )
 
     return items
@@ -176,6 +184,12 @@ export function SecretaryDashboardPage({ profile, onLogout }: SecretaryDashboard
       }
     }
   }, [])
+
+  useEffect(() => {
+    if (detectGoogleIntegrationReturn()) {
+      showSection(USER_SETTINGS_SECTION_ID)
+    }
+  }, [showSection])
 
   function handleArchiveChanged() {
     setArchiveRefreshToken((value) => value + 1)
@@ -276,6 +290,15 @@ export function SecretaryDashboardPage({ profile, onLogout }: SecretaryDashboard
             reminderNavigationIntent={navigationIntent}
             onReminderNavigationComplete={handleReminderNavigationComplete}
           />
+        </DashboardSectionPanel>
+
+        <DashboardSectionPanel
+          id="secretary-user-settings"
+          sectionId={USER_SETTINGS_SECTION_ID}
+          activeSectionId={activeSectionId}
+          className="secretary-dashboard__shell-section"
+        >
+          <UserSettingsSection />
         </DashboardSectionPanel>
       </div>
     </DashboardShell>

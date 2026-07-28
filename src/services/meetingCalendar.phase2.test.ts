@@ -35,6 +35,7 @@ describe('meeting calendar Phase 2 RPC integration', () => {
       subject: 'פגישה',
       reason: 'תיאום',
       durationMinutes: 30,
+      meetingFormat: 'online',
     })
 
     expect(rpcMock).toHaveBeenCalledWith('meeting_calendar_create_meeting', {
@@ -43,6 +44,9 @@ describe('meeting calendar Phase 2 RPC integration', () => {
       p_reason: 'תיאום',
       p_duration_minutes: 30,
       p_institution_timezone: 'UTC',
+      p_meeting_format: 'online',
+      p_phone_number: null,
+      p_meet_url: null,
     })
     expect(result.ok).toBe(true)
   })
@@ -58,6 +62,8 @@ describe('meeting calendar Phase 2 RPC integration', () => {
       subject: 'בקשה',
       reason: 'תיאום',
       durationMinutes: null,
+      meetingFormat: 'phone',
+      phoneNumber: '0501234567',
     })
 
     expect(rpcMock).toHaveBeenCalledWith('meeting_calendar_create_meeting', {
@@ -66,6 +72,9 @@ describe('meeting calendar Phase 2 RPC integration', () => {
       p_reason: 'תיאום',
       p_duration_minutes: null,
       p_institution_timezone: 'UTC',
+      p_meeting_format: 'phone',
+      p_phone_number: '0501234567',
+      p_meet_url: null,
     })
     expect(result.ok).toBe(true)
   })

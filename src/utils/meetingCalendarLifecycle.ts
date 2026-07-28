@@ -13,6 +13,7 @@ export const MEETING_NOTIFICATION_TYPES = [
   'MEETING_RESCHEDULE_REQUESTED',
   'MEETING_RESCHEDULE_CONFIRMED',
   'MEETING_REMINDER',
+  'MEETING_DELAY_REPORTED',
 ] as const
 
 export type MeetingNotificationType = (typeof MEETING_NOTIFICATION_TYPES)[number]
@@ -25,6 +26,12 @@ const AUDIT_EVENT_LABELS: Record<MeetingAuditEventType, string> = {
   meeting_confirmed: 'אושרה',
   meeting_rescheduled: 'התחיל תיאום מחדש',
   meeting_cancelled: 'בוטלה',
+  MEET_PROVISION_REQUESTED: 'נתבקש קישור Google Meet',
+  MEET_PROVISION_STARTED: 'התחילה יצירת Google Meet',
+  MEET_PROVISION_READY: 'Google Meet מוכן',
+  MEET_PROVISION_FAILED: 'יצירת Google Meet נכשלה',
+  MEET_PROVISION_RETRY: 'ניסיון חוזר ליצירת Google Meet',
+  MEET_REAUTH_REQUIRED: 'נדרש חיבור מחדש ל-Google',
 }
 
 export function translateMeetingAuditEventType(eventType: MeetingAuditEventType): string {
@@ -54,6 +61,17 @@ export function describeMeetingAuditEvent(
         ? ` · סיבה: ${event.metadata.reason.trim()}`
         : ''
     return `${base} על ידי ${actor}${reason}`
+  }
+
+  if (
+    event.eventType === 'MEET_PROVISION_REQUESTED' ||
+    event.eventType === 'MEET_PROVISION_STARTED' ||
+    event.eventType === 'MEET_PROVISION_READY' ||
+    event.eventType === 'MEET_PROVISION_FAILED' ||
+    event.eventType === 'MEET_PROVISION_RETRY' ||
+    event.eventType === 'MEET_REAUTH_REQUIRED'
+  ) {
+    return base
   }
 
   return `${base} על ידי ${actor}`

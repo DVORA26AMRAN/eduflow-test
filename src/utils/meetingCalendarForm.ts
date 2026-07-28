@@ -10,6 +10,7 @@ import {
   MEETING_REASON_MAX_LENGTH,
   MEETING_SUBJECT_MAX_LENGTH,
 } from './meetingCalendarDisplay'
+import { isMeetingFormat, type MeetingFormat } from './meetingCalendarLive'
 
 export type CreateMeetingFormFields = {
   recipientId: string
@@ -17,6 +18,9 @@ export type CreateMeetingFormFields = {
   reason: string
   durationMinutes: number | null
   requireDuration: boolean
+  meetingFormat: MeetingFormat | null
+  phoneNumber: string
+  meetUrl?: string | null
 }
 
 export type SlotDraft = {
@@ -31,6 +35,8 @@ export type CreateMeetingFormValidation =
       subject: string
       reason: string
       durationMinutes: MeetingDurationMinutes | null
+      meetingFormat: MeetingFormat
+      phoneNumber: string | null
     }
   | { ok: false; errorMessage: string }
 
@@ -63,14 +69,47 @@ export function validateCreateMeetingForm(
     }
   }
 
+  if (!isMeetingFormat(fields.meetingFormat)) {
+    return { ok: false, errorMessage: 'נא לבחור סוג פגישה.' }
+  }
+
+  if (fields.meetUrl != null && String(fields.meetUrl).trim() !== '') {
+    return {
+      ok: false,
+      errorMessage: 'קישור Google Meet נוצר אוטומטית ולא ניתן להזין אותו ידנית.',
+    }
+  }
+
+  let phoneNumber: string | null = null
+  if (fields.meetingFormat === 'phone') {
+    phoneNumber = fields.phoneNumber.trim()
+    if (!phoneNumber) {
+      return { ok: false, errorMessage: 'נא להזין מספר טלפון לפגישה טלפונית.' }
+    }
+  }
+
   if (fields.requireDuration) {
     if (fields.durationMinutes === null || !isMeetingDurationMinutes(fields.durationMinutes)) {
       return { ok: false, errorMessage: 'נא לבחור משך פגישה חוקי.' }
     }
-    return { ok: true, subject, reason, durationMinutes: fields.durationMinutes }
+    return {
+      ok: true,
+      subject,
+      reason,
+      durationMinutes: fields.durationMinutes,
+      meetingFormat: fields.meetingFormat,
+      phoneNumber,
+    }
   }
 
-  return { ok: true, subject, reason, durationMinutes: null }
+  return {
+    ok: true,
+    subject,
+    reason,
+    durationMinutes: null,
+    meetingFormat: fields.meetingFormat,
+    phoneNumber,
+  }
 }
 
 export function buildSlotEndsAt(startsAtIso: string, durationMinutes: MeetingDurationMinutes): string {

@@ -78,44 +78,52 @@ describe('meeting calendar ownership prediction', () => {
 })
 
 describe('create meeting form validation', () => {
+  const baseFields = {
+    recipientId: 's1',
+    subject: 'נושא',
+    reason: 'סיבה',
+    durationMinutes: 30 as number | null,
+    requireDuration: true,
+    meetingFormat: 'in_person' as const,
+    phoneNumber: '',
+  }
+
   it('rejects missing recipient/subject/reason and overly long values', () => {
+    expect(validateCreateMeetingForm({ ...baseFields, recipientId: '' }).ok).toBe(false)
+    expect(validateCreateMeetingForm({ ...baseFields, subject: '' }).ok).toBe(false)
+    expect(validateCreateMeetingForm({ ...baseFields, subject: 'א'.repeat(151) }).ok).toBe(false)
+    expect(validateCreateMeetingForm({ ...baseFields, reason: 'ב'.repeat(1001) }).ok).toBe(false)
+  })
+
+  it('requires meeting type and phone number for phone meetings', () => {
     expect(
       validateCreateMeetingForm({
-        recipientId: '',
-        subject: 'נושא',
-        reason: 'סיבה',
-        durationMinutes: 30,
-        requireDuration: true,
+        ...baseFields,
+        meetingFormat: null,
       }).ok,
     ).toBe(false)
-
     expect(
       validateCreateMeetingForm({
-        recipientId: 's1',
-        subject: '',
-        reason: 'סיבה',
-        durationMinutes: 30,
-        requireDuration: true,
+        ...baseFields,
+        meetingFormat: 'phone',
+        phoneNumber: '',
       }).ok,
     ).toBe(false)
-
     expect(
       validateCreateMeetingForm({
-        recipientId: 's1',
-        subject: 'א'.repeat(151),
-        reason: 'סיבה',
-        durationMinutes: 30,
-        requireDuration: true,
+        ...baseFields,
+        meetingFormat: 'phone',
+        phoneNumber: '050-1234567',
       }).ok,
-    ).toBe(false)
+    ).toBe(true)
+  })
 
+  it('rejects manual Meet URL on create', () => {
     expect(
       validateCreateMeetingForm({
-        recipientId: 's1',
-        subject: 'נושא',
-        reason: 'ב'.repeat(1001),
-        durationMinutes: 30,
-        requireDuration: true,
+        ...baseFields,
+        meetingFormat: 'online',
+        meetUrl: 'https://meet.google.com/abc-defg-hij',
       }).ok,
     ).toBe(false)
   })
@@ -123,9 +131,7 @@ describe('create meeting form validation', () => {
   it('requires duration for owner-initiated creates only', () => {
     expect(
       validateCreateMeetingForm({
-        recipientId: 't1',
-        subject: 'נושא',
-        reason: 'סיבה',
+        ...baseFields,
         durationMinutes: null,
         requireDuration: true,
       }).ok,
@@ -133,9 +139,7 @@ describe('create meeting form validation', () => {
 
     expect(
       validateCreateMeetingForm({
-        recipientId: 'm1',
-        subject: 'נושא',
-        reason: 'סיבה',
+        ...baseFields,
         durationMinutes: null,
         requireDuration: false,
       }).ok,
