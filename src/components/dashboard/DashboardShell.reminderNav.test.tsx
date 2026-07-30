@@ -12,7 +12,13 @@ import {
 const profile = {
   fullName: 'מזכירה',
   role: 'secretary' as const,
-  school: { id: 'school-1', name: 'בית ספר', logoUrl: null, logoUpdatedAt: null },
+  school: {
+    id: 'school-1',
+    name: 'בית ספר',
+    timeZone: 'Asia/Jerusalem',
+    logoUrl: null,
+    logoUpdatedAt: null,
+  },
 }
 
 afterEach(() => {

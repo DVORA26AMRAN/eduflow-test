@@ -231,8 +231,20 @@ describe('Edge Function authorization model (source guards)', () => {
     expect(callback).toContain('p_has_new_refresh_token')
     expect(callback).toContain('encryptRefreshToken')
     expect(callback).toContain('no credentials stored on error')
+    expect(callback).toContain('safeOAuthConfigError')
+    expect(callback).toContain('oauth2.googleapis.com/token')
+    expect(callback).toContain('client_secret: config.clientSecret')
+    expect(callback).toContain('code_verifier: consumed.code_verifier')
+    expect(callback).toContain("grant_type: 'authorization_code'")
+    expect(callback).toContain("googleError === 'invalid_client' ? 'invalid_client'")
     expect(callback).not.toContain('meeting_calendar_claim_meet_provision')
     expect(callback).not.toContain('calendar/v3/calendars')
+  })
+
+  it('start surfaces safe misconfigured reasons without Vite secrets', () => {
+    expect(start).toContain('safeOAuthConfigError')
+    expect(start).toContain('Missing env:')
+    expect(start).not.toContain('VITE_')
   })
 
   it('disconnect revokes remotely then clears local credentials', () => {

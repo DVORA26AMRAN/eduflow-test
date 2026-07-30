@@ -388,12 +388,17 @@ export async function createMeeting(input: CreateMeetingInput): Promise<MeetingC
     return { ok: false, errorMessage: 'משך הפגישה אינו חוקי.' }
   }
 
+  const institutionTimezone = input.institutionTimezone.trim()
+  if (!institutionTimezone) {
+    return { ok: false, errorMessage: 'אזור הזמן של המוסד אינו מוגדר.' }
+  }
+
   const { data, error } = await supabase.rpc('meeting_calendar_create_meeting', {
     p_recipient_id: input.recipientId,
     p_subject: input.subject.trim(),
     p_reason: input.reason.trim(),
     p_duration_minutes: input.durationMinutes,
-    p_institution_timezone: input.institutionTimezone?.trim() || 'UTC',
+    p_institution_timezone: institutionTimezone,
     p_meeting_format: input.meetingFormat,
     p_phone_number: input.meetingFormat === 'phone' ? (input.phoneNumber ?? null) : null,
     p_meet_url: null,

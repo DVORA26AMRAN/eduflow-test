@@ -39,6 +39,8 @@ function mapReturnError(code: string | null): string {
       return 'בקשת החיבור אינה תקפה. נסו שוב.'
     case 'redirect_uri_mismatch':
       return 'כתובת החזרה אינה תואמת את הגדרות Google.'
+    case 'invalid_client':
+      return 'הגדרות Google של המערכת אינן תקינות. פנו למנהל המערכת.'
     case 'token_exchange_failed':
     case 'upsert_failed':
       return 'חיבור Google נכשל. לא נשמרו פרטי התחברות.'

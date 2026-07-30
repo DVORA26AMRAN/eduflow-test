@@ -173,7 +173,13 @@ const profile = {
   id: 'user-1',
   fullName: 'משתמש',
   role: 'teacher' as const,
-  school: { id: 'school-1', name: 'בית ספר', logoUrl: null, logoUpdatedAt: null },
+  school: {
+    id: 'school-1',
+    name: 'בית ספר',
+    timeZone: 'Asia/Jerusalem',
+    logoUrl: null,
+    logoUpdatedAt: null,
+  },
 }
 
 function expectOnlyOverviewSection(container: HTMLElement) {

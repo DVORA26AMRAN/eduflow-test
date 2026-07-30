@@ -261,7 +261,11 @@ export function SecretaryDashboardPage({ profile, onLogout }: SecretaryDashboard
           activeSectionId={activeSectionId}
           className="secretary-dashboard__shell-section"
         >
-          <MeetingCalendarSection actorUserId={profile.id} actorRole="secretary" />
+          <MeetingCalendarSection
+            actorUserId={profile.id}
+            actorRole="secretary"
+            institutionTimezone={profile.school!.timeZone}
+          />
         </DashboardSectionPanel>
 
         <DashboardSectionPanel

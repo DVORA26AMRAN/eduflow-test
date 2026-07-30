@@ -2,14 +2,18 @@
  * meeting-meet-provisioner
  * Durable outbox worker for Google Meet join URL creation.
  * Claims pending rows only. Never claims awaiting_connection.
- * No calendar sync. Do not deploy until architecture review approval.
+ * Authorization: service_role JWT only (anon / authenticated → 403).
+ * verify_jwt=true is not sufficient by itself.
+ * No calendar sync.
  */
 import {
   CORS_HEADERS,
   createServiceClient,
+  getBearerToken,
   getGoogleApiCredentials,
   jsonResponse,
 } from '../_shared/googleOAuthEnv.ts'
+import { requireServiceRoleJwt } from '../_shared/requireServiceRole.ts'
 import { redactSecretsForLog } from '../_shared/googleOAuthCrypto.ts'
 import {
   createOrReuseMeetCalendarEvent,
@@ -32,6 +36,12 @@ Deno.serve(async (request) => {
 
   if (request.method !== 'POST') {
     return jsonResponse({ ok: false, error: 'method_not_allowed' }, 405)
+  }
+
+  // Defense in depth: reject anon/authenticated even if gateway verify_jwt passed.
+  const auth = requireServiceRoleJwt(getBearerToken(request))
+  if (!auth.ok) {
+    return jsonResponse({ ok: false, error: auth.error }, auth.status)
   }
 
   try {

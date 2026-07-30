@@ -6,6 +6,7 @@ import {
   getGoogleOAuthConfig,
   jsonResponse,
   runOAuthStateCleanup,
+  safeOAuthConfigError,
 } from '../_shared/googleOAuthEnv.ts'
 import {
   generateOAuthStateToken,
@@ -110,6 +111,16 @@ Deno.serve(async (request) => {
       // Never return state plaintext secrets beyond what the browser needs for redirect.
     })
   } catch (error) {
+    const message = error instanceof Error ? error.message : String(error)
+    if (
+      message.startsWith('Missing env:') ||
+      message.includes('GOOGLE_OAUTH_APP_RETURN_URL') ||
+      message.includes('GOOGLE_TOKEN_ENCRYPTION_KEY')
+    ) {
+      const safe = safeOAuthConfigError(error)
+      console.error('google-oauth-start misconfigured', redactSecretsForLog(safe))
+      return jsonResponse(safe, 500)
+    }
     console.error('google-oauth-start error', redactSecretsForLog(String(error)))
     return jsonResponse({ ok: false, error: 'internal_error' }, 500)
   }

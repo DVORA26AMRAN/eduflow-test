@@ -1,6 +1,7 @@
 export type School = {
   id: string
   name: string
+  timeZone: string
   logoUrl: string | null
   logoUpdatedAt: string | null
 }

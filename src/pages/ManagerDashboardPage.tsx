@@ -323,7 +323,11 @@ export function ManagerDashboardPage({
           activeSectionId={activeSectionId}
           className="manager-dashboard__shell-section"
         >
-          <MeetingCalendarSection actorUserId={profile.id} actorRole="institution_manager" />
+          <MeetingCalendarSection
+            actorUserId={profile.id}
+            actorRole="institution_manager"
+            institutionTimezone={profile.school!.timeZone}
+          />
         </DashboardSectionPanel>
 
         <DashboardSectionPanel

@@ -3,7 +3,9 @@ import {
   CORS_HEADERS,
   createServiceClient,
   getGoogleOAuthConfig,
+  jsonResponse,
   runOAuthStateCleanup,
+  safeOAuthConfigError,
 } from '../_shared/googleOAuthEnv.ts'
 import {
   encryptRefreshToken,
@@ -34,8 +36,10 @@ Deno.serve(async (request) => {
   try {
     config = getGoogleOAuthConfig()
   } catch (error) {
-    console.error('google-oauth-callback misconfigured', redactSecretsForLog(String(error)))
-    return new Response('misconfigured', { status: 500 })
+    const safe = safeOAuthConfigError(error)
+    console.error('google-oauth-callback misconfigured', redactSecretsForLog(safe))
+    // Safe JSON: reason may include env *names* only (e.g. Missing env: GOOGLE_CLIENT_SECRET).
+    return jsonResponse(safe, 500)
   }
 
   const fail = (code: string) =>
@@ -100,15 +104,17 @@ Deno.serve(async (request) => {
     const tokenJson = (await tokenRes.json()) as Record<string, unknown>
 
     if (!tokenRes.ok) {
+      const googleError = typeof tokenJson.error === 'string' ? tokenJson.error : null
       console.error(
         'google-oauth-callback token exchange failed',
         redactSecretsForLog({
           status: tokenRes.status,
-          error: tokenJson.error,
+          error: googleError,
           error_description: tokenJson.error_description,
         }),
       )
-      return fail('token_exchange_failed')
+      // invalid_client = configured credentials rejected by Google (ops), not a user/state fault.
+      return fail(googleError === 'invalid_client' ? 'invalid_client' : 'token_exchange_failed')
     }
 
     const refreshToken =

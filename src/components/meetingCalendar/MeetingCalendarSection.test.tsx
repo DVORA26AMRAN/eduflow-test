@@ -61,7 +61,13 @@ describe('MeetingCalendarSection', () => {
     loadUpcomingConfirmedMeetingsMock.mockResolvedValue({ ok: true, items: [] })
     loadMeetingUserDirectoryMock.mockResolvedValue({ ok: true, users: [] })
 
-    render(<MeetingCalendarSection actorUserId="u1" actorRole="institution_manager" />)
+    render(
+      <MeetingCalendarSection
+        actorUserId="u1"
+        actorRole="institution_manager"
+        institutionTimezone="Asia/Jerusalem"
+      />,
+    )
 
     expect(await screen.findByRole('alert')).toHaveTextContent('לא ניתן לטעון פגישות.')
   })
@@ -72,7 +78,13 @@ describe('MeetingCalendarSection', () => {
     loadUpcomingConfirmedMeetingsMock.mockResolvedValue({ ok: true, items: [] })
     loadMeetingUserDirectoryMock.mockResolvedValue({ ok: true, users: [] })
 
-    render(<MeetingCalendarSection actorUserId="u1" actorRole="institution_manager" />)
+    render(
+      <MeetingCalendarSection
+        actorUserId="u1"
+        actorRole="institution_manager"
+        institutionTimezone="Asia/Jerusalem"
+      />,
+    )
 
     await waitFor(() => {
       expect(loadPendingMeetingsMock).toHaveBeenCalled()

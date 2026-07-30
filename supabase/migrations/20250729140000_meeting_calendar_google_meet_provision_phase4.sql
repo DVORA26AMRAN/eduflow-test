@@ -185,14 +185,16 @@ COMMENT ON FUNCTION public.meeting_calendar_owner_google_connection_status(UUID)
 -- Sync: emit REQUESTED / RETRY audit (no secrets)
 -- -----------------------------------------------------------------------------
 
+-- Preserve Phase 1 parameter defaults. PostgreSQL 42P13 rejects CREATE OR REPLACE
+-- that removes defaults from an existing function; never DROP ... CASCADE.
 CREATE OR REPLACE FUNCTION public.meeting_calendar_sync_meet_provision_request(
     p_meeting_id UUID,
     p_institution_id UUID,
     p_calendar_owner_id UUID,
     p_confirmed_slot_id UUID,
     p_meeting_format TEXT,
-    p_previous_confirmed_slot_id UUID,
-    p_trigger_source TEXT
+    p_previous_confirmed_slot_id UUID DEFAULT NULL,
+    p_trigger_source TEXT DEFAULT 'confirm'
 )
 RETURNS JSONB
 LANGUAGE plpgsql

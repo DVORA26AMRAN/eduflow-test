@@ -124,7 +124,7 @@ export type CreateMeetingInput = {
   durationMinutes: MeetingDurationMinutes | null
   meetingFormat: 'online' | 'phone' | 'in_person'
   phoneNumber?: string | null
-  institutionTimezone?: string
+  institutionTimezone: string
 }
 
 export type MeetingCommandResult =

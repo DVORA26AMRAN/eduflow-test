@@ -331,7 +331,11 @@ export function TeacherDashboardPage({ profile, onLogout }: TeacherDashboardPage
 
         >
 
-          <MeetingCalendarSection actorUserId={profile.id} actorRole="teacher" />
+          <MeetingCalendarSection
+            actorUserId={profile.id}
+            actorRole="teacher"
+            institutionTimezone={profile.school!.timeZone}
+          />
 
         </DashboardSectionPanel>
 

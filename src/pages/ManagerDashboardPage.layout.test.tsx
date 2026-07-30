@@ -104,7 +104,13 @@ const managerProfile = {
   id: 'manager-1',
   fullName: 'מנהלת',
   role: 'institution_manager' as const,
-  school: { id: 'school-1', name: 'בית ספר', logoUrl: null, logoUpdatedAt: null },
+  school: {
+    id: 'school-1',
+    name: 'בית ספר',
+    timeZone: 'Asia/Jerusalem',
+    logoUrl: null,
+    logoUpdatedAt: null,
+  },
 }
 
 describe('Manager dashboard requests layout', () => {

@@ -35,6 +35,7 @@ describe('meeting calendar Phase 2 RPC integration', () => {
       subject: 'פגישה',
       reason: 'תיאום',
       durationMinutes: 30,
+      institutionTimezone: 'Asia/Jerusalem',
       meetingFormat: 'online',
     })
 
@@ -43,7 +44,7 @@ describe('meeting calendar Phase 2 RPC integration', () => {
       p_subject: 'פגישה',
       p_reason: 'תיאום',
       p_duration_minutes: 30,
-      p_institution_timezone: 'UTC',
+      p_institution_timezone: 'Asia/Jerusalem',
       p_meeting_format: 'online',
       p_phone_number: null,
       p_meet_url: null,
@@ -62,6 +63,7 @@ describe('meeting calendar Phase 2 RPC integration', () => {
       subject: 'בקשה',
       reason: 'תיאום',
       durationMinutes: null,
+      institutionTimezone: 'Asia/Jerusalem',
       meetingFormat: 'phone',
       phoneNumber: '0501234567',
     })
@@ -71,12 +73,26 @@ describe('meeting calendar Phase 2 RPC integration', () => {
       p_subject: 'בקשה',
       p_reason: 'תיאום',
       p_duration_minutes: null,
-      p_institution_timezone: 'UTC',
+      p_institution_timezone: 'Asia/Jerusalem',
       p_meeting_format: 'phone',
       p_phone_number: '0501234567',
       p_meet_url: null,
     })
     expect(result.ok).toBe(true)
+  })
+
+  it('does not silently default a known institution timezone to UTC', async () => {
+    const result = await createMeeting({
+      recipientId: 'u2',
+      subject: 'פגישה',
+      reason: 'תיאום',
+      durationMinutes: 30,
+      institutionTimezone: '   ',
+      meetingFormat: 'in_person',
+    })
+
+    expect(result).toEqual({ ok: false, errorMessage: 'אזור הזמן של המוסד אינו מוגדר.' })
+    expect(rpcMock).not.toHaveBeenCalled()
   })
 
   it('approves, sets duration, proposes, selects, and confirms through RPCs', async () => {

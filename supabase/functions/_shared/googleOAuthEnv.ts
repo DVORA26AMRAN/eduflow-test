@@ -15,11 +15,43 @@ export function jsonResponse(body: unknown, status = 200): Response {
 }
 
 export function requireEnv(name: string): string {
-  const value = Deno.env.get(name)
+  // Trim: whitespace-only secrets are treated as missing (avoids Google invalid_client).
+  const value = Deno.env.get(name)?.trim()
+
   if (!value) {
     throw new Error(`Missing env: ${name}`)
   }
+
   return value
+}
+
+/**
+ * Safe config-error payload for ops. Includes env *names* / allowlist class only — never values.
+ */
+export function safeOAuthConfigError(error: unknown): {
+  ok: false
+  error: 'misconfigured'
+  reason: string
+} {
+  const message = error instanceof Error ? error.message : String(error)
+  if (message.startsWith('Missing env:')) {
+    return { ok: false, error: 'misconfigured', reason: message }
+  }
+  if (message.includes('GOOGLE_OAUTH_APP_RETURN_URL')) {
+    return {
+      ok: false,
+      error: 'misconfigured',
+      reason: 'GOOGLE_OAUTH_APP_RETURN_URL allowlist/validation failed',
+    }
+  }
+  if (message.includes('GOOGLE_TOKEN_ENCRYPTION_KEY')) {
+    return {
+      ok: false,
+      error: 'misconfigured',
+      reason: 'GOOGLE_TOKEN_ENCRYPTION_KEY configuration invalid',
+    }
+  }
+  return { ok: false, error: 'misconfigured', reason: 'oauth_config_error' }
 }
 
 /**

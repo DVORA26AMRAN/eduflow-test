@@ -29,6 +29,7 @@ import './MeetingCalendar.css'
 type CreateMeetingModalProps = {
   isOpen: boolean
   actorRole: MeetingCalendarRole
+  institutionTimezone: string
   eligibleRecipients: MeetingUserDirectoryEntry[]
   onClose: () => void
   onCreated: () => void
@@ -36,6 +37,7 @@ type CreateMeetingModalProps = {
 
 type CreateMeetingModalFormProps = {
   actorRole: MeetingCalendarRole
+  institutionTimezone: string
   eligibleRecipients: MeetingUserDirectoryEntry[]
   onClose: () => void
   onCreated: () => void
@@ -43,6 +45,7 @@ type CreateMeetingModalFormProps = {
 
 function CreateMeetingModalForm({
   actorRole,
+  institutionTimezone,
   eligibleRecipients,
   onClose,
   onCreated,
@@ -135,6 +138,7 @@ function CreateMeetingModalForm({
       durationMinutes: isOwnerInitiated
         ? (validation.durationMinutes as MeetingDurationMinutes)
         : null,
+      institutionTimezone,
       meetingFormat: validation.meetingFormat,
       phoneNumber: validation.phoneNumber,
     })
@@ -354,6 +358,7 @@ function CreateMeetingModalForm({
 export function CreateMeetingModal({
   isOpen,
   actorRole,
+  institutionTimezone,
   eligibleRecipients,
   onClose,
   onCreated,
@@ -363,6 +368,7 @@ export function CreateMeetingModal({
       {isOpen ? (
         <CreateMeetingModalForm
           actorRole={actorRole}
+          institutionTimezone={institutionTimezone}
           eligibleRecipients={eligibleRecipients}
           onClose={onClose}
           onCreated={onCreated}

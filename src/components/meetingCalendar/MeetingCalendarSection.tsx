@@ -35,6 +35,7 @@ import './MeetingCalendar.css'
 type MeetingCalendarSectionProps = {
   actorUserId: string
   actorRole: MeetingCalendarRole
+  institutionTimezone: string
 }
 
 type DialogMode = 'action' | 'details'
@@ -49,7 +50,11 @@ function toMeetingsAndSlots(items: ConfirmedMeetingWithSlot[]): {
   }
 }
 
-export function MeetingCalendarSection({ actorUserId, actorRole }: MeetingCalendarSectionProps) {
+export function MeetingCalendarSection({
+  actorUserId,
+  actorRole,
+  institutionTimezone,
+}: MeetingCalendarSectionProps) {
   const [pendingMeetings, setPendingMeetings] = useState<Meeting[]>([])
   const [rangeMeetings, setRangeMeetings] = useState<Meeting[]>([])
   const [rangeSlots, setRangeSlots] = useState<MeetingSlot[]>([])
@@ -354,6 +359,7 @@ export function MeetingCalendarSection({ actorUserId, actorRole }: MeetingCalend
         <CreateMeetingModal
           isOpen
           actorRole={actorRole}
+          institutionTimezone={institutionTimezone}
           eligibleRecipients={eligibleRecipients}
           onClose={() => setCreateOpen(false)}
           onCreated={() => void refreshAll()}
@@ -392,12 +398,17 @@ export function MeetingCalendarSection({ actorUserId, actorRole }: MeetingCalend
 export function MeetingCalendarSectionForProfile(props: {
   actorUserId: string
   actorRole: string
+  institutionTimezone: string
 }) {
   if (!isMeetingCalendarRole(props.actorRole)) {
     return null
   }
 
   return (
-    <MeetingCalendarSection actorUserId={props.actorUserId} actorRole={props.actorRole} />
+    <MeetingCalendarSection
+      actorUserId={props.actorUserId}
+      actorRole={props.actorRole}
+      institutionTimezone={props.institutionTimezone}
+    />
   )
 }

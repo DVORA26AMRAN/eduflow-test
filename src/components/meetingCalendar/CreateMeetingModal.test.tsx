@@ -38,6 +38,7 @@ function renderModal(
     <CreateMeetingModal
       isOpen
       actorRole={actorRole}
+      institutionTimezone="Asia/Jerusalem"
       eligibleRecipients={recipients}
       onClose={onClose}
       onCreated={onCreated}
@@ -132,6 +133,7 @@ describe('CreateMeetingModal UI', () => {
           meetingFormat: 'online',
           phoneNumber: null,
           durationMinutes: 30,
+          institutionTimezone: 'Asia/Jerusalem',
         }),
       )
     })

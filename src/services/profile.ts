@@ -30,17 +30,24 @@ function parseInstitutionRow(value: unknown): School | null {
   const institution = row as {
     id?: unknown
     name?: unknown
+    timezone?: unknown
     logo_url?: unknown
     logo_updated_at?: unknown
   }
 
-  if (typeof institution.id !== 'string' || typeof institution.name !== 'string') {
+  if (
+    typeof institution.id !== 'string' ||
+    typeof institution.name !== 'string' ||
+    typeof institution.timezone !== 'string' ||
+    institution.timezone.trim() === ''
+  ) {
     return null
   }
 
   return {
     id: institution.id,
     name: institution.name,
+    timeZone: institution.timezone,
     logoUrl: typeof institution.logo_url === 'string' ? institution.logo_url : null,
     logoUpdatedAt:
       typeof institution.logo_updated_at === 'string' ? institution.logo_updated_at : null,
@@ -92,7 +99,7 @@ export async function loadCurrentUserProfile(
     userId: queryUserId,
     hasAccessToken: !!accessToken,
     query:
-      "from('users').select('id, full_name, primary_role, institution_id, institutions(id, name, logo_url, logo_updated_at)')",
+      "from('users').select('id, full_name, primary_role, institution_id, institutions(id, name, timezone, logo_url, logo_updated_at)')",
   })
 
   if (!accessToken) {
@@ -113,7 +120,7 @@ export async function loadCurrentUserProfile(
 
   const queryUrl =
     `${supabaseUrl}/rest/v1/users` +
-    `?select=id,full_name,primary_role,institution_id,institutions(id,name,logo_url,logo_updated_at)` +
+    `?select=id,full_name,primary_role,institution_id,institutions(id,name,timezone,logo_url,logo_updated_at)` +
     `&id=eq.${encodeURIComponent(queryUserId)}`
 
   const response = await fetch(queryUrl, {

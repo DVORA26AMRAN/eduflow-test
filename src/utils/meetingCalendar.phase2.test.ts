@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest'
+import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import {
   classifyMeetingPendingBucket,
   filterEligibleMeetingRecipients,
@@ -14,6 +14,7 @@ import {
   validateCreateMeetingForm,
 } from './meetingCalendarForm'
 import type { Meeting } from '../types/meetingCalendar'
+import { formatEventTimeRange } from './meetingCalendarView'
 
 const directory: MeetingUserDirectoryEntry[] = [
   { id: 't1', fullName: 'יעל מורה', primaryRole: 'teacher', status: 'active' },
@@ -188,6 +189,42 @@ describe('slot draft validation', () => {
     if (result.ok) {
       expect(result.slots).toHaveLength(2)
     }
+  })
+})
+
+describe('Israel institution production timezone flow', () => {
+  const previousTimezone = process.env.TZ
+
+  beforeAll(() => {
+    process.env.TZ = 'Asia/Jerusalem'
+  })
+
+  afterAll(() => {
+    process.env.TZ = previousTimezone
+  })
+
+  it('stores 15:00 Israel as 12:00Z and renders it as 15:00', () => {
+    const result = draftSlotsToProposedInputs(
+      [{ id: 'israel-slot', date: '2099-07-30', startTime: '15:00' }],
+      30,
+    )
+
+    expect(result.ok).toBe(true)
+    if (!result.ok) return
+
+    const storedSlot = result.slots[0]
+    const productionMeeting = baseMeeting({
+      institutionTimezone: 'Asia/Jerusalem',
+    })
+
+    expect(storedSlot?.startsAt).toBe('2099-07-30T12:00:00.000Z')
+    expect(
+      formatEventTimeRange(
+        storedSlot!.startsAt,
+        storedSlot!.endsAt,
+        productionMeeting.institutionTimezone,
+      ),
+    ).toBe('15:00–15:30')
   })
 })
 
