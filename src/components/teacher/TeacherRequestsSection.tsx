@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import type { DashboardRequestNavigationIntent } from '../../types/dashboardAnalytics'
 import type { RequestPayload, RequestType, GeneralRequestRecipientRole, RequestStatus, TeacherRequest } from '../../types/request'
+import type { TeacherRequestCategoryValue } from '../../utils/requests'
 import { REQUEST_CREATED_ATTACHMENT_UPLOAD_FAILED_MESSAGE } from '../../types/attachment'
 import { uploadRequestAttachment } from '../../services/attachments'
 import { archiveRequest, createTeacherRequest, loadTeacherRequests } from '../../services/requests'
@@ -19,10 +20,15 @@ import { TeacherCreateRequestModal } from './TeacherCreateRequestModal'
 import { ConfirmDialog } from '../ui/Modal'
 import { TeacherRequestCategorySelector } from './TeacherRequestCategorySelector'
 import { TeacherRequestsList } from './TeacherRequestsList'
+import { TeacherPrintingArea } from './printing/TeacherPrintingArea'
 
 type TeacherRequestsSectionProps = {
   refreshToken: number
   onArchived: () => void
+  teacherUserId: string
+  teacherFullName: string
+  institutionId: string
+  institutionTimeZone: string
   unreadMessageRequestIds?: ReadonlySet<string>
   requestIdsWithMessages?: ReadonlySet<string>
   onConversationOpened?: (requestId: string) => void | Promise<boolean>
@@ -46,6 +52,10 @@ function getSubmitMessageClassName(message: string): string {
 export function TeacherRequestsSection({
   refreshToken,
   onArchived,
+  teacherUserId,
+  teacherFullName,
+  institutionId,
+  institutionTimeZone,
   unreadMessageRequestIds = new Set(),
   requestIdsWithMessages = new Set(),
   onConversationOpened,
@@ -53,6 +63,7 @@ export function TeacherRequestsSection({
   requestNavigationReturnFocus = null,
   onRequestNavigationIntentConsumed,
 }: TeacherRequestsSectionProps) {
+  const [printingOpen, setPrintingOpen] = useState(false)
   const [requests, setRequests] = useState<TeacherRequest[]>([])
   const [listStatusFilter, setListStatusFilter] = useState<RequestStatus | 'all'>('all')
   const [listTypeFilter, setListTypeFilter] = useState<RequestType | 'all'>('all')
@@ -140,7 +151,9 @@ export function TeacherRequestsSection({
   })
   const [formKey, setFormKey] = useState(0)
   const [activeRequestType, setActiveRequestType] = useState<RequestType | null>(null)
-  const [selectedCategoryType, setSelectedCategoryType] = useState<RequestType | ''>('')
+  const [selectedCategoryType, setSelectedCategoryType] = useState<TeacherRequestCategoryValue | ''>(
+    '',
+  )
   const [archivingRequestId, setArchivingRequestId] = useState<string | null>(null)
   const [remindingRequestId, setRemindingRequestId] = useState<string | null>(null)
   const [reminderStatesByRequestId, setReminderStatesByRequestId] = useState<
@@ -180,14 +193,20 @@ export function TeacherRequestsSection({
     })
   }, [fetchRequests, requestsListVersion, refreshToken])
 
-  function handleSelectRequestType(requestType: RequestType) {
+  function handleSelectRequestType(category: TeacherRequestCategoryValue) {
     if (isSubmitting || activeRequestType !== null) {
       return
     }
 
-    setSelectedCategoryType(requestType)
+    setSelectedCategoryType(category)
     setSubmitMessage('')
-    setActiveRequestType(requestType)
+
+    if (category === 'printing') {
+      setPrintingOpen(true)
+      return
+    }
+
+    setActiveRequestType(category)
   }
 
   function handleCloseCreateModal() {
@@ -352,19 +371,34 @@ export function TeacherRequestsSection({
   return (
     <section className="teacher-dashboard__requests">
       <DashboardSection title="הבקשות שלי" icon={<NavClipboardIcon />}>
-        <div className="ds-card teacher-dashboard__create-card">
-          <h3 className="teacher-dashboard__subsection-title">פתיחת בקשה חדשה</h3>
+        {printingOpen ? (
+          <div className="ds-card teacher-dashboard__create-card">
+            <TeacherPrintingArea
+              teacherUserId={teacherUserId}
+              teacherFullName={teacherFullName}
+              institutionId={institutionId}
+              institutionTimeZone={institutionTimeZone}
+              onBack={() => {
+                setPrintingOpen(false)
+                setSelectedCategoryType('')
+              }}
+            />
+          </div>
+        ) : (
+          <div className="ds-card teacher-dashboard__create-card">
+            <h3 className="teacher-dashboard__subsection-title">פתיחת בקשה חדשה</h3>
 
-          <TeacherRequestCategorySelector
-            selectedType={selectedCategoryType}
-            isDisabled={isSubmitting || activeRequestType !== null}
-            onSelect={handleSelectRequestType}
-          />
+            <TeacherRequestCategorySelector
+              selectedType={selectedCategoryType}
+              isDisabled={isSubmitting || activeRequestType !== null}
+              onSelect={handleSelectRequestType}
+            />
 
-          {submitMessage && activeRequestType === null && (
-            <p className={getSubmitMessageClassName(submitMessage)}>{submitMessage}</p>
-          )}
-        </div>
+            {submitMessage && activeRequestType === null && (
+              <p className={getSubmitMessageClassName(submitMessage)}>{submitMessage}</p>
+            )}
+          </div>
+        )}
 
         <div className="ds-card teacher-dashboard__list-card">
           <h3 className="teacher-dashboard__subsection-title">

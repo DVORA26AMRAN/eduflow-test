@@ -22,8 +22,11 @@ const requestTypeLabels: Record<RequestType, string> = {
 
 export type TeacherNewRequestCategoryType = Exclude<RequestType, 'substitute_teacher'>
 
+/** Category values shown on the teacher new-request card grid (includes Printing). */
+export type TeacherRequestCategoryValue = TeacherNewRequestCategoryType | 'printing'
+
 export type TeacherRequestCategory = {
-  value: TeacherNewRequestCategoryType
+  value: TeacherRequestCategoryValue
   title: string
   description: string
 }
@@ -38,6 +41,11 @@ export const TEACHER_REQUEST_CATEGORIES: TeacherRequestCategory[] = [
     value: 'budget_or_equipment',
     title: 'בקשת תקציב / ציוד',
     description: 'בקשת ציוד, תקציב או משאבים',
+  },
+  {
+    value: 'printing',
+    title: 'הדפסות',
+    description: 'בקשת הדפסה עם קבצים והגדרות',
   },
   {
     value: 'general_request',

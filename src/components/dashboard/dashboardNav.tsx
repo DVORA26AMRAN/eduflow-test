@@ -135,6 +135,18 @@ export function NavEnvelopeIcon() {
   )
 }
 
+export function NavPrintIcon() {
+  const stroke = iconStroke()
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true">
+      <path d="M7 8V4.8A.8.8 0 0 1 7.8 4h8.4a.8.8 0 0 1 .8.8V8" {...stroke} />
+      <rect x="5" y="8" width="14" height="8" rx="1.5" {...stroke} />
+      <path d="M8 16v3.2c0 .4.3.8.8.8h6.4c.4 0 .8-.4.8-.8V16" {...stroke} />
+      <path d="M8 12h2" {...stroke} />
+    </svg>
+  )
+}
+
 export function NavSettingsIcon() {
   const stroke = iconStroke()
   return (

@@ -1,11 +1,11 @@
-import type { RequestType } from '../../types/request'
+import type { TeacherRequestCategoryValue } from '../../utils/requests'
 import { TEACHER_REQUEST_CATEGORIES } from '../../utils/requests'
 import { TEACHER_REQUEST_CATEGORY_ICON_COMPONENTS } from './teacherRequestCategoryIcons'
 
 type TeacherRequestCategorySelectorProps = {
-  selectedType: RequestType | ''
+  selectedType: TeacherRequestCategoryValue | ''
   isDisabled: boolean
-  onSelect: (requestType: RequestType) => void
+  onSelect: (category: TeacherRequestCategoryValue) => void
 }
 
 export function TeacherRequestCategorySelector({

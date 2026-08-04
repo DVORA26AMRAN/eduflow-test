@@ -4,7 +4,7 @@ import { useState } from 'react'
 import { cleanup, render, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import type { RequestType } from '../../types/request'
+import type { TeacherRequestCategoryValue } from '../../utils/requests'
 import { TEACHER_REQUEST_CATEGORIES } from '../../utils/requests'
 import { TeacherRequestCategorySelector } from './TeacherRequestCategorySelector'
 
@@ -12,11 +12,13 @@ vi.mock('../dashboard/dashboardNav', () => ({
   NavCalendarIcon: () => <svg data-testid="nav-calendar-icon" aria-hidden="true" />,
   NavPackageIcon: () => <svg data-testid="nav-package-icon" aria-hidden="true" />,
   NavEnvelopeIcon: () => <svg data-testid="nav-envelope-icon" aria-hidden="true" />,
+  NavPrintIcon: () => <svg data-testid="nav-print-icon" aria-hidden="true" />,
 }))
 
 const CATEGORY_ICON_TEST_IDS = {
   absence: 'nav-calendar-icon',
   budget_or_equipment: 'nav-package-icon',
+  printing: 'nav-print-icon',
   general_request: 'nav-envelope-icon',
 } as const
 
@@ -26,7 +28,7 @@ afterEach(() => {
   cleanup()
 })
 
-function renderSelector(selectedType: RequestType | '' = '') {
+function renderSelector(selectedType: TeacherRequestCategoryValue | '' = '') {
   const onSelect = vi.fn()
 
   render(
@@ -44,7 +46,7 @@ function renderSelector(selectedType: RequestType | '' = '') {
 
 function renderControlledSelector() {
   function ControlledSelector() {
-    const [selectedType, setSelectedType] = useState<RequestType | ''>('')
+    const [selectedType, setSelectedType] = useState<TeacherRequestCategoryValue | ''>('')
 
     return (
       <TeacherRequestCategorySelector

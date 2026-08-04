@@ -287,6 +287,11 @@ export function TeacherDashboardPage({ profile, onLogout }: TeacherDashboardPage
 
             onArchived={handleArchiveChanged}
 
+            teacherUserId={profile.id}
+            teacherFullName={profile.fullName}
+            institutionId={profile.school!.id}
+            institutionTimeZone={profile.school!.timeZone}
+
             unreadMessageRequestIds={unreadMessageRequestIds}
             requestIdsWithMessages={requestIdsWithMessages}
             onConversationOpened={handleConversationOpened}

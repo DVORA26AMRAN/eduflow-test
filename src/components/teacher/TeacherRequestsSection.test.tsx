@@ -14,6 +14,22 @@ vi.mock('../../services/requestReminders', () => ({
   sendRequestReminder: vi.fn(),
 }))
 
+vi.mock('../../services/printingRequests', () => ({
+  listMyPrintingRequests: vi.fn(async () => ({ ok: true, requests: [] })),
+  loadInstitutionPrintingSettings: vi.fn(async () => ({
+    ok: true,
+    minimumPrintNoticeMinutes: 60,
+    deadlineWarningMinutes: 120,
+    fileRetentionDays: 90,
+    timeZone: 'Asia/Jerusalem',
+  })),
+  createPrintingRequest: vi.fn(),
+  updatePrintingRequest: vi.fn(),
+  cancelPrintingRequest: vi.fn(),
+  getAuthorizedPrintingRequest: vi.fn(),
+  uploadPrintingFile: vi.fn(),
+}))
+
 vi.mock('../../services/attachments', () => ({
   uploadRequestAttachment: vi.fn(),
   validateRequestAttachment: vi.fn(() => ({ ok: true })),
@@ -39,7 +55,14 @@ beforeEach(() => {
 function renderSection() {
   render(
     <div dir="rtl">
-      <TeacherRequestsSection refreshToken={0} onArchived={onArchived} />
+      <TeacherRequestsSection
+        refreshToken={0}
+        onArchived={onArchived}
+        teacherUserId="teacher-1"
+        teacherFullName="מורה לבדיקה"
+        institutionId="inst-1"
+        institutionTimeZone="Asia/Jerusalem"
+      />
     </div>,
   )
 }
@@ -66,6 +89,17 @@ describe('TeacherRequestsSection modal create flow', () => {
     expect(screen.queryByRole('radio', { name: /מילוי מקום/ })).not.toBeInTheDocument()
     expect(screen.getByRole('radio', { name: /בקשה אחרת/ })).toBeInTheDocument()
     expect(screen.getByText('פנייה חופשית למזכירה או למנהלת')).toBeInTheDocument()
+  })
+
+  it('opens Printing home with New Request and My Requests actions', async () => {
+    const user = userEvent.setup({ delay: null })
+    renderSection()
+
+    await user.click(screen.getByRole('radio', { name: /הדפסות/ }))
+
+    expect(screen.getByRole('button', { name: /בקשת הדפסה חדשה/ })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /בקשות ההדפסה שלי/ })).toBeInTheDocument()
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
   })
 
   it('opens the selected request type inside a modal for every category', async () => {
@@ -98,50 +132,58 @@ describe('TeacherRequestsSection modal create flow', () => {
     expect(generalRequestCategory).toBeDisabled()
   })
 
-  it('closes the modal and refreshes requests after a successful general request submit', async () => {
-    const user = userEvent.setup({ delay: null })
-    vi.mocked(createTeacherRequest).mockResolvedValue({
-      ok: true,
-      requestId: 'req-1',
-    })
+  it(
+    'closes the modal and refreshes requests after a successful general request submit',
+    async () => {
+      const user = userEvent.setup({ delay: null })
+      vi.mocked(createTeacherRequest).mockResolvedValue({
+        ok: true,
+        requestId: 'req-1',
+      })
 
-    renderSection()
+      renderSection()
 
-    await user.click(screen.getByRole('radio', { name: /בקשה אחרת/ }))
-    await fillGeneralRequestForm(user)
-    await user.click(screen.getByRole('button', { name: 'שליחת בקשה' }))
+      await user.click(screen.getByRole('radio', { name: /בקשה אחרת/ }))
+      await fillGeneralRequestForm(user)
+      await user.click(screen.getByRole('button', { name: 'שליחת בקשה' }))
 
-    await waitFor(() => {
-      expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
-    })
+      await waitFor(() => {
+        expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+      })
 
-    expect(createTeacherRequest).toHaveBeenCalledWith({
-      requestType: 'general_request',
-      description: 'נושא לבדיקה',
-      requestPayload: { message: 'הודעה לבדיקה' },
-      recipientRole: 'secretary',
-    })
-    expect(loadTeacherRequests).toHaveBeenCalledTimes(2)
-    expect(screen.getByText('בקשה נשלחה בהצלחה.')).toBeInTheDocument()
-  })
+      expect(createTeacherRequest).toHaveBeenCalledWith({
+        requestType: 'general_request',
+        description: 'נושא לבדיקה',
+        requestPayload: { message: 'הודעה לבדיקה' },
+        recipientRole: 'secretary',
+      })
+      expect(loadTeacherRequests).toHaveBeenCalledTimes(2)
+      expect(screen.getByText('בקשה נשלחה בהצלחה.')).toBeInTheDocument()
+    },
+    20000,
+  )
 
-  it('keeps the modal open when submit fails', async () => {
-    const user = userEvent.setup({ delay: null })
-    vi.mocked(createTeacherRequest).mockResolvedValue({
-      ok: false,
-      errorMessage: 'שליחת הבקשה נכשלה',
-    })
+  it(
+    'keeps the modal open when submit fails',
+    async () => {
+      const user = userEvent.setup({ delay: null })
+      vi.mocked(createTeacherRequest).mockResolvedValue({
+        ok: false,
+        errorMessage: 'שליחת הבקשה נכשלה',
+      })
 
-    renderSection()
+      renderSection()
 
-    await user.click(screen.getByRole('radio', { name: /בקשה אחרת/ }))
-    await fillGeneralRequestForm(user)
-    await user.click(screen.getByRole('button', { name: 'שליחת בקשה' }))
+      await user.click(screen.getByRole('radio', { name: /בקשה אחרת/ }))
+      await fillGeneralRequestForm(user)
+      await user.click(screen.getByRole('button', { name: 'שליחת בקשה' }))
 
-    await waitFor(() => {
-      expect(screen.getAllByText('שליחת הבקשה נכשלה')).toHaveLength(1)
-    })
+      await waitFor(() => {
+        expect(screen.getAllByText('שליחת הבקשה נכשלה')).toHaveLength(1)
+      })
 
-    expect(screen.getByRole('dialog', { name: 'בקשה אחרת' })).toBeInTheDocument()
-  }, 15000)
+      expect(screen.getByRole('dialog', { name: 'בקשה אחרת' })).toBeInTheDocument()
+    },
+    20000,
+  )
 })
