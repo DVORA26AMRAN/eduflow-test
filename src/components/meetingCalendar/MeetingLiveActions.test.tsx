@@ -10,12 +10,14 @@ const {
   recordLivePrimaryActionMock,
   requestMeetProvisionMock,
   startGoogleOAuthMock,
+  getGoogleConnectionStatusMock,
 } = vi.hoisted(() => ({
   reportMeetingDelayMock: vi.fn(),
   setMeetingConnectionDetailsMock: vi.fn(),
   recordLivePrimaryActionMock: vi.fn(),
   requestMeetProvisionMock: vi.fn(),
   startGoogleOAuthMock: vi.fn(),
+  getGoogleConnectionStatusMock: vi.fn(),
 }))
 
 vi.mock('../../services/meetingCalendar', async () => {
@@ -36,6 +38,7 @@ vi.mock('../../services/meetingGoogleMeet', () => ({
 
 vi.mock('../../services/googleOAuth', () => ({
   startGoogleOAuth: (...args: unknown[]) => startGoogleOAuthMock(...args),
+  getGoogleConnectionStatus: (...args: unknown[]) => getGoogleConnectionStatusMock(...args),
 }))
 
 const baseContext: MeetingLiveContext = {
@@ -83,6 +86,7 @@ describe('MeetingLiveActions', () => {
     recordLivePrimaryActionMock.mockReset()
     requestMeetProvisionMock.mockReset()
     startGoogleOAuthMock.mockReset()
+    getGoogleConnectionStatusMock.mockReset()
     reportMeetingDelayMock.mockResolvedValue({ ok: true, delayMinutes: 10 })
     recordLivePrimaryActionMock.mockResolvedValue({
       ok: true,
@@ -101,6 +105,12 @@ describe('MeetingLiveActions', () => {
     startGoogleOAuthMock.mockResolvedValue({
       ok: true,
       authorizationUrl: 'https://accounts.google.com/o/oauth2/v2/auth?x=1',
+    })
+    getGoogleConnectionStatusMock.mockResolvedValue({
+      ok: true,
+      connected: true,
+      connectionStatus: 'connected',
+      email: 'owner@school.example',
     })
   })
 
@@ -229,6 +239,7 @@ describe('MeetingMeetProvisionPanel states', () => {
   beforeEach(() => {
     requestMeetProvisionMock.mockReset()
     startGoogleOAuthMock.mockReset()
+    getGoogleConnectionStatusMock.mockReset()
     requestMeetProvisionMock.mockResolvedValue({
       ok: true,
       meetProvisionStatus: 'pending',
@@ -240,6 +251,12 @@ describe('MeetingMeetProvisionPanel states', () => {
     startGoogleOAuthMock.mockResolvedValue({
       ok: true,
       authorizationUrl: 'https://accounts.google.com/o/oauth2/v2/auth?x=1',
+    })
+    getGoogleConnectionStatusMock.mockResolvedValue({
+      ok: true,
+      connected: true,
+      connectionStatus: 'connected',
+      email: 'owner@school.example',
     })
   })
 
@@ -341,6 +358,32 @@ describe('MeetingMeetProvisionPanel states', () => {
     expect(screen.getByRole('button', { name: 'חבר חשבון Google' })).toBeInTheDocument()
   })
 
+  it('shows create Meet when Google is active despite stale meeting reauth error', () => {
+    render(
+      <MeetingMeetProvisionPanel
+        meetingId="m1"
+        context={onlineContext({
+          meetProvisionStatus: 'google_not_connected',
+          meetProvisionError: 'REAUTHORIZATION_REQUIRED',
+          ownerGoogleConnected: true,
+          ownerGoogleConnectionStatus: 'connected',
+          canRequestMeetProvision: true,
+          isCalendarOwner: true,
+        })}
+        primaryActionAvailable={false}
+        isOpeningMeet={false}
+        onStartMeeting={vi.fn()}
+        onContextChanged={vi.fn()}
+      />,
+    )
+
+    expect(screen.getByTestId('meet-provision-status')).toHaveTextContent(
+      'מוכן ליצירת Google Meet',
+    )
+    expect(screen.getByRole('button', { name: 'צור Google Meet' })).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'חבר חשבון Google' })).not.toBeInTheDocument()
+  })
+
   it('shows create Meet CTA when connected and provision available', async () => {
     const onContextChanged = vi.fn()
     render(
@@ -388,5 +431,114 @@ describe('MeetingMeetProvisionPanel states', () => {
     expect(screen.queryByRole('button', { name: 'נסה שוב' })).not.toBeInTheDocument()
     expect(screen.queryByRole('button', { name: 'חבר חשבון Google' })).not.toBeInTheDocument()
     expect(screen.queryByRole('button', { name: 'צור Google Meet' })).not.toBeInTheDocument()
+  })
+
+  it('replaces stale connected liveContext with Connect Google when status is reauthorization_required', async () => {
+    getGoogleConnectionStatusMock.mockResolvedValue({
+      ok: true,
+      connected: false,
+      connectionStatus: 'reauthorization_required',
+      email: 'owner@school.example',
+    })
+
+    render(
+      <MeetingMeetProvisionPanel
+        meetingId="m1"
+        context={onlineContext({
+          meetProvisionStatus: 'google_not_connected',
+          meetProvisionError: null,
+          ownerGoogleConnected: true,
+          ownerGoogleConnectionStatus: 'connected',
+          canRequestMeetProvision: true,
+          isCalendarOwner: true,
+        })}
+        primaryActionAvailable={false}
+        isOpeningMeet={false}
+        onStartMeeting={vi.fn()}
+        onContextChanged={vi.fn()}
+      />,
+    )
+
+    expect(screen.getByRole('button', { name: 'צור Google Meet' })).toBeInTheDocument()
+
+    await waitFor(() => {
+      expect(getGoogleConnectionStatusMock).toHaveBeenCalled()
+      expect(screen.getByRole('button', { name: 'חבר חשבון Google' })).toBeInTheDocument()
+    })
+    expect(screen.queryByRole('button', { name: 'צור Google Meet' })).not.toBeInTheDocument()
+    expect(screen.getByTestId('meet-provision-status')).toHaveTextContent(
+      'נדרש חיבור מחדש לחשבון Google',
+    )
+    expect(startGoogleOAuthMock).not.toHaveBeenCalled()
+    expect(requestMeetProvisionMock).not.toHaveBeenCalled()
+  })
+
+  it('keeps GOOGLE_NOT_CONNECTED feedback visible and switches to Connect Google', async () => {
+    const onContextChanged = vi.fn()
+    requestMeetProvisionMock.mockResolvedValue({
+      ok: true,
+      meetProvisionStatus: 'google_not_connected',
+      enqueued: false,
+      googleConnected: false,
+      requestKey: 'adoflow-m1-slot',
+      code: 'GOOGLE_NOT_CONNECTED',
+    })
+
+    const { rerender } = render(
+      <MeetingMeetProvisionPanel
+        meetingId="m1"
+        context={onlineContext({
+          meetProvisionStatus: 'google_not_connected',
+          ownerGoogleConnected: true,
+          ownerGoogleConnectionStatus: 'connected',
+          canRequestMeetProvision: true,
+          isCalendarOwner: true,
+        })}
+        primaryActionAvailable={false}
+        isOpeningMeet={false}
+        onStartMeeting={vi.fn()}
+        onContextChanged={onContextChanged}
+      />,
+    )
+
+    fireEvent.click(screen.getByRole('button', { name: 'צור Google Meet' }))
+
+    await waitFor(() => {
+      expect(requestMeetProvisionMock).toHaveBeenCalledWith('m1')
+    })
+
+    expect(screen.getByRole('alert')).toHaveTextContent(
+      'יש לחבר חשבון Google לפני יצירת הקישור.',
+    )
+    expect(screen.getByRole('button', { name: 'חבר חשבון Google' })).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'צור Google Meet' })).not.toBeInTheDocument()
+    expect(onContextChanged).toHaveBeenCalled()
+
+    // Soft-refreshed live context arrives while the panel stays mounted.
+    rerender(
+      <MeetingMeetProvisionPanel
+        meetingId="m1"
+        context={onlineContext({
+          meetProvisionStatus: 'google_not_connected',
+          meetProvisionError: 'REAUTHORIZATION_REQUIRED',
+          ownerGoogleConnected: false,
+          ownerGoogleConnectionStatus: 'reauthorization_required',
+          canRequestMeetProvision: true,
+          isCalendarOwner: true,
+        })}
+        primaryActionAvailable={false}
+        isOpeningMeet={false}
+        onStartMeeting={vi.fn()}
+        onContextChanged={onContextChanged}
+      />,
+    )
+
+    expect(screen.getByRole('alert')).toHaveTextContent(
+      'יש לחבר חשבון Google לפני יצירת הקישור.',
+    )
+    expect(screen.getByRole('button', { name: 'חבר חשבון Google' })).toBeInTheDocument()
+    expect(screen.getByTestId('meet-provision-status')).toHaveTextContent(
+      'נדרש חיבור מחדש לחשבון Google',
+    )
   })
 })

@@ -1,7 +1,11 @@
 import { readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 import { describe, expect, it } from 'vitest'
-import { resolveMeetProvisionUi } from './meetingMeetProvisionUi'
+import {
+  mergeOwnerGoogleConnectionForMeetUi,
+  resolveMeetProvisionUi,
+  shouldShowGoogleReauthorization,
+} from './meetingMeetProvisionUi'
 
 const phase1Path = resolve(
   process.cwd(),
@@ -10,6 +14,10 @@ const phase1Path = resolve(
 const migrationPath = resolve(
   process.cwd(),
   'supabase/migrations/20250729140000_meeting_calendar_google_meet_provision_phase4.sql',
+)
+const staleReauthMigrationPath = resolve(
+  process.cwd(),
+  'supabase/migrations/20250801120000_clear_stale_meet_reauth_on_google_reconnect.sql',
 )
 
 function extractCreateOrReplaceFunction(sql: string, functionName: string): string {
@@ -180,5 +188,121 @@ describe('resolveMeetProvisionUi', () => {
     })
     expect(ui.kind).toBe('create_available')
     expect(ui.showCreateMeet).toBe(true)
+  })
+
+  it('does not hide an active Google connection behind stale meeting reauth state', () => {
+    const ui = resolveMeetProvisionUi({
+      ...base,
+      meetProvisionStatus: 'google_not_connected',
+      meetProvisionError: 'REAUTHORIZATION_REQUIRED',
+      ownerGoogleConnected: true,
+      ownerGoogleConnectionStatus: 'connected',
+      canRequestMeetProvision: true,
+      isCalendarOwner: true,
+    })
+
+    expect(shouldShowGoogleReauthorization({
+      meetUrl: null,
+      meetProvisionStatus: 'google_not_connected',
+      meetProvisionError: 'REAUTHORIZATION_REQUIRED',
+      ownerGoogleConnected: true,
+      ownerGoogleConnectionStatus: 'connected',
+    })).toBe(false)
+    expect(ui.kind).toBe('create_available')
+    expect(ui.showCreateMeet).toBe(true)
+    expect(ui.showConnectGoogle).toBe(false)
+  })
+
+  it('still shows Connect Google when the live connection requires reauthorization', () => {
+    const ui = resolveMeetProvisionUi({
+      ...base,
+      meetProvisionStatus: 'google_not_connected',
+      meetProvisionError: 'REAUTHORIZATION_REQUIRED',
+      ownerGoogleConnected: false,
+      ownerGoogleConnectionStatus: 'reauthorization_required',
+      canRequestMeetProvision: true,
+      isCalendarOwner: true,
+    })
+
+    expect(shouldShowGoogleReauthorization({
+      meetUrl: null,
+      meetProvisionStatus: 'google_not_connected',
+      meetProvisionError: 'REAUTHORIZATION_REQUIRED',
+      ownerGoogleConnected: false,
+      ownerGoogleConnectionStatus: 'reauthorization_required',
+    })).toBe(true)
+    expect(ui.kind).toBe('reauthorization_required')
+    expect(ui.showConnectGoogle).toBe(true)
+    expect(ui.showCreateMeet).toBe(false)
+  })
+
+  it('offers create Meet after successful reconnection clears stale meeting error', () => {
+    const beforeReconnect = resolveMeetProvisionUi({
+      ...base,
+      meetProvisionStatus: 'google_not_connected',
+      meetProvisionError: 'REAUTHORIZATION_REQUIRED',
+      ownerGoogleConnected: false,
+      ownerGoogleConnectionStatus: 'reauthorization_required',
+      canRequestMeetProvision: true,
+      isCalendarOwner: true,
+    })
+    expect(beforeReconnect.showConnectGoogle).toBe(true)
+
+    // Successful reconnect: live connection is active and meeting row is cleared
+    // to google_not_connected with null error (no automatic enqueue).
+    const afterReconnect = resolveMeetProvisionUi({
+      ...base,
+      meetProvisionStatus: 'google_not_connected',
+      meetProvisionError: null,
+      ownerGoogleConnected: true,
+      ownerGoogleConnectionStatus: 'connected',
+      canRequestMeetProvision: true,
+      isCalendarOwner: true,
+    })
+    expect(afterReconnect.kind).toBe('create_available')
+    expect(afterReconnect.showCreateMeet).toBe(true)
+    expect(afterReconnect.showConnectGoogle).toBe(false)
+  })
+
+  it('merges fresh reauthorization over stale connected liveContext fields', () => {
+    const merged = mergeOwnerGoogleConnectionForMeetUi({
+      ownerGoogleConnected: true,
+      ownerGoogleConnectionStatus: 'connected',
+      freshConnected: false,
+      freshConnectionStatus: 'reauthorization_required',
+    })
+    expect(merged).toEqual({
+      ownerGoogleConnected: false,
+      ownerGoogleConnectionStatus: 'reauthorization_required',
+    })
+
+    const ui = resolveMeetProvisionUi({
+      ...base,
+      ...merged,
+      meetProvisionStatus: 'google_not_connected',
+      meetProvisionError: null,
+      canRequestMeetProvision: true,
+      isCalendarOwner: true,
+    })
+    expect(ui.showCreateMeet).toBe(false)
+    expect(ui.showConnectGoogle).toBe(true)
+    expect(ui.kind).toBe('reauthorization_required')
+  })
+})
+
+describe('clear stale Meet reauth on Google reconnect migration', () => {
+  const migration = readFileSync(staleReauthMigrationPath, 'utf8')
+
+  it('clears stale meeting reauth state without auto-enqueueing provision', () => {
+    expect(migration).toContain('meeting_calendar_clear_stale_meet_reauth_state')
+    expect(migration).toContain("meet_provision_status = 'google_not_connected'")
+    expect(migration).toContain('meet_provision_error = NULL')
+    expect(migration).toContain("'REAUTHORIZATION_REQUIRED'")
+    expect(migration).toContain("'GOOGLE_NOT_CONNECTED'")
+    expect(migration).toContain('meeting_calendar_service_upsert_google_connection')
+    expect(migration).toContain('cleared_stale_meet_reauth_count')
+    expect(migration).toContain('Does not enqueue provisioning')
+    expect(migration).not.toContain('meeting_calendar_sync_meet_provision_request')
+    expect(migration).not.toContain('meeting_calendar_claim_meet_provision_batch')
   })
 })

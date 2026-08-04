@@ -1,4 +1,4 @@
-import { useEffect, useId, useState } from 'react'
+import { useEffect, useId, useRef, useState } from 'react'
 import type { Meeting, MeetingSlot } from '../../types/meetingCalendar'
 import {
   cancelMeeting,
@@ -57,6 +57,8 @@ export function MeetingDetailsDialog({
   const [liveContext, setLiveContext] = useState<MeetingLiveContext | null>(null)
   const [isLoadingLiveContext, setIsLoadingLiveContext] = useState(true)
   const [liveContextTick, setLiveContextTick] = useState(0)
+  const liveContextRef = useRef(liveContext)
+  liveContextRef.current = liveContext
 
   useEffect(() => {
     if (confirmedSlot) {
@@ -95,19 +97,27 @@ export function MeetingDetailsDialog({
 
     const meetingId = meeting.id
     let cancelled = false
+    const existing = liveContextRef.current
+    const softRefresh = existing?.meetingId === meetingId
 
     queueMicrotask(() => {
       if (cancelled) {
         return
       }
-      setIsLoadingLiveContext(true)
+      // Soft refresh keeps MeetingMeetProvisionPanel mounted so GOOGLE_NOT_CONNECTED
+      // (and similar) feedback is not wiped mid-reload.
+      if (!softRefresh) {
+        setIsLoadingLiveContext(true)
+      }
       void loadMeetingLiveContext(meetingId).then((result) => {
         if (cancelled) {
           return
         }
         setIsLoadingLiveContext(false)
         if (!result.ok) {
-          setLiveContext(null)
+          if (!softRefresh) {
+            setLiveContext(null)
+          }
           return
         }
         setLiveContext(result.context)

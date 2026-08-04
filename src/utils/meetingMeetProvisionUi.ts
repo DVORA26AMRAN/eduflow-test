@@ -51,6 +51,42 @@ function isReauthError(error: string | null): boolean {
   return error === 'REAUTHORIZATION_REQUIRED' || error === 'GOOGLE_NOT_CONNECTED'
 }
 
+/**
+ * Reauth CTA only when the live owner connection still needs reconnect.
+ * Stale meeting-level REAUTHORIZATION_REQUIRED / GOOGLE_NOT_CONNECTED must not
+ * hide an already-active Google connection.
+ */
+export function shouldShowGoogleReauthorization(input: {
+  meetUrl: string | null
+  meetProvisionStatus: MeetProvisionStatus | null
+  meetProvisionError: string | null
+  ownerGoogleConnected: boolean
+  ownerGoogleConnectionStatus: OwnerGoogleConnectionStatus
+}): boolean {
+  if (Boolean(input.meetUrl && input.meetUrl.trim())) {
+    return false
+  }
+
+  // Active connection wins over stale meeting provision failure rows.
+  if (
+    input.ownerGoogleConnectionStatus === 'connected' ||
+    input.ownerGoogleConnected
+  ) {
+    return false
+  }
+
+  if (input.ownerGoogleConnectionStatus === 'reauthorization_required') {
+    return true
+  }
+
+  const status = input.meetProvisionStatus
+  if (status === 'google_not_connected' && isReauthError(input.meetProvisionError)) {
+    return true
+  }
+
+  return status === 'failed' && input.meetProvisionError === 'REAUTHORIZATION_REQUIRED'
+}
+
 export function resolveMeetProvisionUi(input: MeetProvisionUiInput): MeetProvisionUiModel {
   if (input.meetingFormat !== 'online') {
     return {
@@ -69,12 +105,7 @@ export function resolveMeetProvisionUi(input: MeetProvisionUiInput): MeetProvisi
   const status = input.meetProvisionStatus
   const connection = input.ownerGoogleConnectionStatus
 
-  if (
-    !hasUrl &&
-    (connection === 'reauthorization_required' ||
-      (status === 'google_not_connected' && isReauthError(input.meetProvisionError)) ||
-      (status === 'failed' && input.meetProvisionError === 'REAUTHORIZATION_REQUIRED'))
-  ) {
+  if (shouldShowGoogleReauthorization(input)) {
     return {
       kind: 'reauthorization_required',
       statusLabel: 'נדרש חיבור מחדש לחשבון Google',
@@ -167,6 +198,44 @@ export function resolveMeetProvisionUi(input: MeetProvisionUiInput): MeetProvisi
     showCreateMeet: false,
     showRetry: false,
     showStartMeeting: false,
+  }
+}
+
+export const GOOGLE_MEET_CONNECT_REQUIRED_MESSAGE =
+  'יש לחבר חשבון Google לפני יצירת הקישור.'
+
+/**
+ * Merge a fresher Google connection snapshot over possibly-stale liveContext fields.
+ * Used when the open Meeting Details dialog still holds a connected snapshot after
+ * the owner connection flipped to reauthorization_required / not_connected.
+ */
+export function mergeOwnerGoogleConnectionForMeetUi(args: {
+  ownerGoogleConnected: boolean
+  ownerGoogleConnectionStatus: OwnerGoogleConnectionStatus
+  freshConnected?: boolean | null
+  freshConnectionStatus?: OwnerGoogleConnectionStatus | null
+}): {
+  ownerGoogleConnected: boolean
+  ownerGoogleConnectionStatus: OwnerGoogleConnectionStatus
+} {
+  const freshStatus = args.freshConnectionStatus
+  if (
+    freshStatus === 'reauthorization_required' ||
+    freshStatus === 'not_connected' ||
+    freshStatus === 'connected'
+  ) {
+    return {
+      ownerGoogleConnected:
+        typeof args.freshConnected === 'boolean'
+          ? args.freshConnected
+          : freshStatus === 'connected',
+      ownerGoogleConnectionStatus: freshStatus,
+    }
+  }
+
+  return {
+    ownerGoogleConnected: args.ownerGoogleConnected,
+    ownerGoogleConnectionStatus: args.ownerGoogleConnectionStatus,
   }
 }
 

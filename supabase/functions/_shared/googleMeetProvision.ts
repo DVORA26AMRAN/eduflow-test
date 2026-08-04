@@ -21,8 +21,21 @@ export async function deriveConferenceRequestIdAsync(
 }
 
 export type GoogleTokenRefreshResult =
-  | { ok: true; accessToken: string }
-  | { ok: false; code: 'REAUTHORIZATION_REQUIRED' | 'TOKEN_REFRESH_FAILED'; message: string }
+  | {
+      ok: true
+      accessToken: string
+      httpStatus: number
+      googleError: null
+      googleErrorDescription: null
+    }
+  | {
+      ok: false
+      code: 'REAUTHORIZATION_REQUIRED' | 'TOKEN_REFRESH_FAILED'
+      message: string
+      httpStatus: number | null
+      googleError: string | null
+      googleErrorDescription: string | null
+    }
 
 export async function refreshGoogleAccessToken(args: {
   clientId: string
@@ -45,6 +58,8 @@ export async function refreshGoogleAccessToken(args: {
       signal: controller.signal,
     })
     const json = (await res.json()) as Record<string, unknown>
+    const googleErrorDescription =
+      typeof json.error_description === 'string' ? json.error_description : null
     if (!res.ok) {
       const err = typeof json.error === 'string' ? json.error : ''
       if (err === 'invalid_grant' || err === 'unauthorized_client') {
@@ -52,24 +67,46 @@ export async function refreshGoogleAccessToken(args: {
           ok: false,
           code: 'REAUTHORIZATION_REQUIRED',
           message: 'Google refresh token revoked or expired.',
+          httpStatus: res.status,
+          googleError: err || null,
+          googleErrorDescription,
         }
       }
       return {
         ok: false,
         code: 'TOKEN_REFRESH_FAILED',
         message: typeof json.error === 'string' ? json.error : 'token_refresh_failed',
+        httpStatus: res.status,
+        googleError: err || null,
+        googleErrorDescription,
       }
     }
     if (typeof json.access_token !== 'string') {
-      return { ok: false, code: 'TOKEN_REFRESH_FAILED', message: 'missing_access_token' }
+      return {
+        ok: false,
+        code: 'TOKEN_REFRESH_FAILED',
+        message: 'missing_access_token',
+        httpStatus: res.status,
+        googleError: null,
+        googleErrorDescription,
+      }
     }
-    return { ok: true, accessToken: json.access_token }
+    return {
+      ok: true,
+      accessToken: json.access_token,
+      httpStatus: res.status,
+      googleError: null,
+      googleErrorDescription: null,
+    }
   } catch (error) {
     const aborted = error instanceof DOMException && error.name === 'AbortError'
     return {
       ok: false,
       code: 'TOKEN_REFRESH_FAILED',
       message: aborted ? 'token_refresh_timeout' : 'token_refresh_network_error',
+      httpStatus: null,
+      googleError: null,
+      googleErrorDescription: null,
     }
   } finally {
     clearTimeout(timer)

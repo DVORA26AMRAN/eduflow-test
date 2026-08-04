@@ -96,6 +96,23 @@ describe('Phase 3 Meet provision migration + claim guards', () => {
     expect(worker).not.toContain('VITE_')
   })
 
+  it('emits safe refresh-token diagnostics without secret material keys', () => {
+    expect(worker).toContain('meet-provisioner refresh-token diagnostic')
+    expect(worker).toContain('refresh_secret_found')
+    expect(worker).toContain('encryption_key_found_in_ring')
+    expect(worker).toContain('decrypt_success')
+    expect(worker).toContain('token_refresh_request_sent')
+    expect(worker).toContain('token_refresh_http_status')
+    expect(worker).toContain('google_oauth_error_code')
+    expect(worker).toContain('calendar_request_reached')
+    expect(worker).toContain("branch: 'decrypt_failed'")
+    expect(worker).toContain("branch: 'token_refresh_rejected'")
+    // Logged diagnostic payload must not include secret-bearing field names.
+    expect(worker).not.toMatch(/logRefreshTokenDiagnostic\(\{[^}]*ciphertext/)
+    expect(worker).not.toMatch(/logRefreshTokenDiagnostic\(\{[^}]*refresh_token/)
+    expect(worker).not.toMatch(/logRefreshTokenDiagnostic\(\{[^}]*client_secret/)
+  })
+
   it('creates Calendar events with conferenceDataVersion=1, sendUpdates=none, no attendees', () => {
     expect(googleApi).toContain('conferenceDataVersion=1')
     expect(googleApi).toContain('sendUpdates=none')

@@ -1,10 +1,17 @@
 import { useEffect, useState } from 'react'
-import { startGoogleOAuth } from '../../services/googleOAuth'
+import {
+  getGoogleConnectionStatus,
+  startGoogleOAuth,
+  type GoogleConnectionStatus,
+} from '../../services/googleOAuth'
 import { requestMeetProvision } from '../../services/meetingGoogleMeet'
 import type { MeetingLiveContext } from '../../services/meetingCalendar'
 import {
+  GOOGLE_MEET_CONNECT_REQUIRED_MESSAGE,
   mapMeetProvisionUserError,
+  mergeOwnerGoogleConnectionForMeetUi,
   resolveMeetProvisionUi,
+  type OwnerGoogleConnectionStatus,
 } from '../../utils/meetingMeetProvisionUi'
 
 type MeetingMeetProvisionPanelProps = {
@@ -14,6 +21,15 @@ type MeetingMeetProvisionPanelProps = {
   isOpeningMeet: boolean
   onStartMeeting: () => void
   onContextChanged: () => void
+}
+
+function toOwnerConnectionStatus(
+  status: GoogleConnectionStatus,
+): OwnerGoogleConnectionStatus {
+  if (status === 'connected' || status === 'reauthorization_required') {
+    return status
+  }
+  return 'not_connected'
 }
 
 export function MeetingMeetProvisionPanel({
@@ -27,18 +43,78 @@ export function MeetingMeetProvisionPanel({
   const [isConnecting, setIsConnecting] = useState(false)
   const [isRequesting, setIsRequesting] = useState(false)
   const [errorMessage, setErrorMessage] = useState('')
+  const [freshConnected, setFreshConnected] = useState<boolean | null>(null)
+  const [freshConnectionStatus, setFreshConnectionStatus] =
+    useState<OwnerGoogleConnectionStatus | null>(null)
+
+  const mergedConnection = mergeOwnerGoogleConnectionForMeetUi({
+    ownerGoogleConnected: context.ownerGoogleConnected,
+    ownerGoogleConnectionStatus: context.ownerGoogleConnectionStatus,
+    freshConnected,
+    freshConnectionStatus,
+  })
 
   const ui = resolveMeetProvisionUi({
     meetingFormat: context.meetingFormat,
     meetUrl: context.meetUrl,
     meetProvisionStatus: context.meetProvisionStatus,
     meetProvisionError: context.meetProvisionError,
-    ownerGoogleConnected: context.ownerGoogleConnected,
-    ownerGoogleConnectionStatus: context.ownerGoogleConnectionStatus,
+    ownerGoogleConnected: mergedConnection.ownerGoogleConnected,
+    ownerGoogleConnectionStatus: mergedConnection.ownerGoogleConnectionStatus,
     canRequestMeetProvision: context.canRequestMeetProvision,
     isCalendarOwner: context.isCalendarOwner,
     primaryActionAvailable,
   })
+
+  // Soft-validate when liveContext still claims Google is connected. Never starts OAuth
+  // or Meet provisioning — only corrects a stale Create Meet CTA.
+  useEffect(() => {
+    if (!context.isCalendarOwner) {
+      return
+    }
+    if (
+      !context.ownerGoogleConnected &&
+      context.ownerGoogleConnectionStatus !== 'connected'
+    ) {
+      return
+    }
+
+    let cancelled = false
+    void getGoogleConnectionStatus().then((result) => {
+      if (cancelled || !result.ok) {
+        return
+      }
+      const status = toOwnerConnectionStatus(result.connectionStatus)
+      if (status === 'connected' && result.connected) {
+        setFreshConnected(true)
+        setFreshConnectionStatus('connected')
+        return
+      }
+      setFreshConnected(false)
+      setFreshConnectionStatus(status)
+    })
+
+    return () => {
+      cancelled = true
+    }
+  }, [
+    meetingId,
+    context.isCalendarOwner,
+    context.ownerGoogleConnected,
+    context.ownerGoogleConnectionStatus,
+  ])
+
+  // Once liveContext catches up to disconnected/reauth, drop the local override.
+  useEffect(() => {
+    if (
+      context.ownerGoogleConnectionStatus === 'reauthorization_required' ||
+      context.ownerGoogleConnectionStatus === 'not_connected' ||
+      !context.ownerGoogleConnected
+    ) {
+      setFreshConnected(null)
+      setFreshConnectionStatus(null)
+    }
+  }, [context.ownerGoogleConnected, context.ownerGoogleConnectionStatus])
 
   useEffect(() => {
     if (ui.kind !== 'creating') {
@@ -85,7 +161,12 @@ export function MeetingMeetProvisionPanel({
     }
 
     if (result.code === 'GOOGLE_NOT_CONNECTED') {
-      setErrorMessage('יש לחבר חשבון Google לפני יצירת הקישור.')
+      setErrorMessage(GOOGLE_MEET_CONNECT_REQUIRED_MESSAGE)
+      setFreshConnected(false)
+      setFreshConnectionStatus('reauthorization_required')
+      // Soft-refresh parent context without requiring the panel to unmount first.
+      onContextChanged()
+      return
     }
 
     onContextChanged()

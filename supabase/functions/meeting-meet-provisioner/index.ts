@@ -29,6 +29,25 @@ function safeErrorCode(code: string): string {
   return code.replace(/https?:\/\/\S+/gi, '[REDACTED_URL]')
 }
 
+type RefreshTokenDiagnostic = {
+  request_id: string
+  meeting_id: unknown
+  branch: string
+  refresh_secret_found: boolean | null
+  encryption_key_id: string | null
+  encryption_key_found_in_ring: boolean | null
+  decrypt_success: boolean | null
+  token_refresh_request_sent: boolean | null
+  token_refresh_http_status: number | null
+  google_oauth_error_code: string | null
+  calendar_request_reached: boolean | null
+}
+
+/** Safe ops diagnostics only — never tokens, ciphertext, nonce, or key material. */
+function logRefreshTokenDiagnostic(fields: RefreshTokenDiagnostic): void {
+  console.log('meet-provisioner refresh-token diagnostic', fields)
+}
+
 Deno.serve(async (request) => {
   if (request.method === 'OPTIONS') {
     return new Response(null, { status: 204, headers: CORS_HEADERS })
@@ -138,7 +157,35 @@ Deno.serve(async (request) => {
           { p_user_id: ownerId },
         )
 
-        if (secretError || secret?.found !== true) {
+        const refreshSecretFound = !secretError && secret?.found === true
+        const encryptionKeyId =
+          refreshSecretFound && typeof secret.encryption_key_id === 'string'
+            ? secret.encryption_key_id
+            : null
+        const encryptionKeyFoundInRing =
+          encryptionKeyId !== null &&
+          (encryptionKeyId === config.tokenEncryption.activeKeyId ||
+            (encryptionKeyId === config.tokenEncryption.previousKeyId &&
+              config.tokenEncryption.previousKey !== null))
+
+        const baseDiag = {
+          request_id: requestId,
+          meeting_id: meeting.id,
+          refresh_secret_found: refreshSecretFound,
+          encryption_key_id: encryptionKeyId,
+          encryption_key_found_in_ring: encryptionKeyFoundInRing,
+          decrypt_success: null as boolean | null,
+          token_refresh_request_sent: null as boolean | null,
+          token_refresh_http_status: null as number | null,
+          google_oauth_error_code: null as string | null,
+          calendar_request_reached: null as boolean | null,
+        }
+
+        if (!refreshSecretFound) {
+          logRefreshTokenDiagnostic({
+            ...baseDiag,
+            branch: 'refresh_secret_missing',
+          })
           await service.rpc('meeting_calendar_service_mark_google_reauthorization_required', {
             p_user_id: ownerId,
           })
@@ -157,6 +204,10 @@ Deno.serve(async (request) => {
         }
 
         if (secret.institution_id && secret.institution_id !== institutionId) {
+          logRefreshTokenDiagnostic({
+            ...baseDiag,
+            branch: 'owner_institution_mismatch',
+          })
           await service.rpc('meeting_calendar_fail_meet_provision', {
             p_request_id: requestId,
             p_error: 'owner_institution_mismatch',
@@ -171,11 +222,20 @@ Deno.serve(async (request) => {
           refreshToken = await loadOwnerRefreshTokenPlaintext({
             ciphertextB64: secret.refresh_token_ciphertext,
             nonceB64: secret.refresh_token_nonce,
-            encryptionKeyId:
-              typeof secret.encryption_key_id === 'string' ? secret.encryption_key_id : null,
+            encryptionKeyId,
             ring: config.tokenEncryption,
           })
+          logRefreshTokenDiagnostic({
+            ...baseDiag,
+            branch: 'decrypt_succeeded',
+            decrypt_success: true,
+          })
         } catch {
+          logRefreshTokenDiagnostic({
+            ...baseDiag,
+            branch: 'decrypt_failed',
+            decrypt_success: false,
+          })
           await service.rpc('meeting_calendar_service_mark_google_reauthorization_required', {
             p_user_id: ownerId,
           })
@@ -188,6 +248,13 @@ Deno.serve(async (request) => {
           continue
         }
 
+        logRefreshTokenDiagnostic({
+          ...baseDiag,
+          branch: 'token_refresh_request_sent',
+          decrypt_success: true,
+          token_refresh_request_sent: true,
+        })
+
         const tokenResult = await refreshGoogleAccessToken({
           clientId: config.clientId,
           clientSecret: config.clientSecret,
@@ -195,6 +262,15 @@ Deno.serve(async (request) => {
         })
 
         if (!tokenResult.ok) {
+          logRefreshTokenDiagnostic({
+            ...baseDiag,
+            branch: 'token_refresh_rejected',
+            decrypt_success: true,
+            token_refresh_request_sent: true,
+            token_refresh_http_status: tokenResult.httpStatus,
+            google_oauth_error_code: tokenResult.googleError,
+            calendar_request_reached: false,
+          })
           if (tokenResult.code === 'REAUTHORIZATION_REQUIRED') {
             await service.rpc('meeting_calendar_service_mark_google_reauthorization_required', {
               p_user_id: ownerId,
@@ -217,6 +293,16 @@ Deno.serve(async (request) => {
           continue
         }
 
+        logRefreshTokenDiagnostic({
+          ...baseDiag,
+          branch: 'calendar_request_reached',
+          decrypt_success: true,
+          token_refresh_request_sent: true,
+          token_refresh_http_status: tokenResult.httpStatus,
+          google_oauth_error_code: null,
+          calendar_request_reached: true,
+        })
+
         const existingEventId =
           (typeof req.google_event_id === 'string' && req.google_event_id) ||
           (typeof meeting.google_meet_event_id === 'string' && meeting.google_meet_event_id) ||
@@ -233,6 +319,15 @@ Deno.serve(async (request) => {
         })
 
         if (!eventResult.ok) {
+          logRefreshTokenDiagnostic({
+            ...baseDiag,
+            branch: 'calendar_request_failed',
+            decrypt_success: true,
+            token_refresh_request_sent: true,
+            token_refresh_http_status: tokenResult.httpStatus,
+            google_oauth_error_code: null,
+            calendar_request_reached: true,
+          })
           if (eventResult.code === 'REAUTHORIZATION_REQUIRED') {
             await service.rpc('meeting_calendar_service_mark_google_reauthorization_required', {
               p_user_id: ownerId,
@@ -286,6 +381,16 @@ Deno.serve(async (request) => {
           )
           continue
         }
+
+        logRefreshTokenDiagnostic({
+          ...baseDiag,
+          branch: 'provision_succeeded',
+          decrypt_success: true,
+          token_refresh_request_sent: true,
+          token_refresh_http_status: tokenResult.httpStatus,
+          google_oauth_error_code: null,
+          calendar_request_reached: true,
+        })
 
         succeeded += 1
       } catch (error) {
