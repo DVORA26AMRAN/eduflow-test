@@ -60,6 +60,7 @@ export type PrintingErrorCode =
   | 'INVALID_STATUS_TRANSITION'
   | 'SECRETARY_NOT_AUTHORIZED'
   | 'CROSS_INSTITUTION_ACCESS_DENIED'
+  | 'PRINT_FILE_NOT_AVAILABLE'
 
 /** Centrally maintainable allow-list (MIME). Extensions alone are never authoritative. */
 export const PRINTING_ALLOWED_MIME_TYPES = [

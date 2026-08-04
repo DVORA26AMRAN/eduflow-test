@@ -8,6 +8,7 @@ import {
   NavChartIcon,
   NavClipboardIcon,
   NavInboxIcon,
+  NavPrintIcon,
   NavSettingsIcon,
   NavUsersIcon,
   type DashboardNavItem,
@@ -17,6 +18,11 @@ import { ManagerAnalyticsSection } from '../components/manager/ManagerAnalyticsS
 import { ManagerArchiveSection } from '../components/manager/ManagerArchiveSection'
 import { ManagerRecentRequestsSection } from '../components/manager/ManagerRecentRequestsSection'
 import { TeamManagementSection } from '../components/manager/TeamManagementSection'
+import { SecretaryPrintingWorkspace } from '../components/secretary/printing/SecretaryPrintingWorkspace'
+import {
+  PRINTING_WORKSPACE_NAV_LABEL,
+  PRINTING_WORKSPACE_SECTION_ID,
+} from '../utils/secretaryPrinting'
 import { UserSettingsSection } from '../components/settings/UserSettingsSection'
 import { StaffDirectoryPage } from './StaffDirectoryPage'
 import { useAdminReminderNotifications } from '../hooks/useAdminReminderNotifications'
@@ -184,6 +190,11 @@ export function ManagerDashboardPage({
         label: 'בקשות מורים',
         icon: <NavInboxIcon />,
       },
+      {
+        id: PRINTING_WORKSPACE_SECTION_ID,
+        label: PRINTING_WORKSPACE_NAV_LABEL,
+        icon: <NavPrintIcon />,
+      },
       { id: MEETING_CALENDAR_SECTION_ID, label: MEETING_CALENDAR_NAV_LABEL, icon: <NavCalendarIcon /> },
       { id: STAFF_DIRECTORY_SECTION_ID, label: STAFF_DIRECTORY_NAV_LABEL, icon: <NavClipboardIcon /> },
       { id: MANAGER_ARCHIVE_SECTION_ID, label: 'הארכיון שלי', icon: <NavArchiveIcon /> },
@@ -314,6 +325,19 @@ export function ManagerDashboardPage({
             reminderNavigationIntent={navigationIntent}
             highlightedRequestId={highlightedRequestId}
             onReminderNavigationComplete={handleReminderNavigationComplete}
+          />
+        </DashboardSectionPanel>
+
+        <DashboardSectionPanel
+          id="manager-printing-workspace"
+          sectionId={PRINTING_WORKSPACE_SECTION_ID}
+          activeSectionId={activeSectionId}
+          className="manager-dashboard__shell-section"
+        >
+          <SecretaryPrintingWorkspace
+            actorUserId={profile.id}
+            institutionId={profile.school!.id}
+            institutionTimeZone={profile.school!.timeZone}
           />
         </DashboardSectionPanel>
 

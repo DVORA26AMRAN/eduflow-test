@@ -29,6 +29,8 @@ describe('printingUi Phase 2 contracts', () => {
   it('maps backend error codes to Hebrew and keeps defaults centralized', () => {
     expect(mapPrintingErrorCode('PRINT_REQUEST_TOO_LATE')).toMatch(/מראש/)
     expect(mapPrintingErrorCode('PRINT_REQUEST_LOCKED')).toMatch(/הטיפול בבקשה כבר התחיל/)
+    expect(mapPrintingErrorCode('PRINT_REQUEST_ALREADY_CLAIMED')).toMatch(/נלקחה לטיפול/)
+    expect(mapPrintingErrorCode('SECRETARY_NOT_AUTHORIZED')).toMatch(/מזכירה/)
     expect(mapPrintingErrorCode('UNKNOWN' as never)).toMatch(/אירעה שגיאה/)
     expect(DEFAULT_PRINT_ITEM_SETTINGS.copies).toBe(1)
     expect(DEFAULT_PRINT_ITEM_SETTINGS.color_mode).toBe('black_and_white')

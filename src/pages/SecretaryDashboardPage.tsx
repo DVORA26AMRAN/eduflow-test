@@ -10,6 +10,7 @@ import {
   NavChartIcon,
   NavClipboardIcon,
   NavInboxIcon,
+  NavPrintIcon,
   NavSettingsIcon,
   NavUsersIcon,
   type DashboardNavItem,
@@ -20,6 +21,11 @@ import { SecretaryAnalyticsSection } from '../components/secretary/SecretaryAnal
 import { SecretaryArchiveSection } from '../components/secretary/SecretaryArchiveSection'
 import { SecretaryRequestsInbox } from '../components/secretary/SecretaryRequestsInbox'
 import { SecretarySubstituteApprovalsSection } from '../components/secretary/SecretarySubstituteApprovalsSection'
+import { SecretaryPrintingWorkspace } from '../components/secretary/printing/SecretaryPrintingWorkspace'
+import {
+  PRINTING_WORKSPACE_NAV_LABEL,
+  PRINTING_WORKSPACE_SECTION_ID,
+} from '../utils/secretaryPrinting'
 import { UserSettingsSection } from '../components/settings/UserSettingsSection'
 import { StaffDirectoryPage } from './StaffDirectoryPage'
 import { useAdminReminderNotifications } from '../hooks/useAdminReminderNotifications'
@@ -142,6 +148,11 @@ export function SecretaryDashboardPage({ profile, onLogout }: SecretaryDashboard
     items.push(
       { id: 'substituteApprovals', label: 'אישורי מילויי מקום', icon: <NavUsersIcon /> },
       { id: 'requestsInbox', label: 'בקשות מורים', icon: <NavInboxIcon /> },
+      {
+        id: PRINTING_WORKSPACE_SECTION_ID,
+        label: PRINTING_WORKSPACE_NAV_LABEL,
+        icon: <NavPrintIcon />,
+      },
       { id: MEETING_CALENDAR_SECTION_ID, label: MEETING_CALENDAR_NAV_LABEL, icon: <NavCalendarIcon /> },
       { id: STAFF_DIRECTORY_SECTION_ID, label: STAFF_DIRECTORY_NAV_LABEL, icon: <NavClipboardIcon /> },
       { id: 'institutionalArchive', label: 'ארכיון מוסדי', icon: <NavArchiveIcon /> },
@@ -252,6 +263,19 @@ export function SecretaryDashboardPage({ profile, onLogout }: SecretaryDashboard
             onReminderNavigationComplete={handleReminderNavigationComplete}
             requestNavigationIntent={requestNavigationIntent}
             onRequestNavigationIntentConsumed={() => setRequestNavigationIntent(null)}
+          />
+        </DashboardSectionPanel>
+
+        <DashboardSectionPanel
+          id="secretary-printing-workspace"
+          sectionId={PRINTING_WORKSPACE_SECTION_ID}
+          activeSectionId={activeSectionId}
+          className="secretary-dashboard__shell-section"
+        >
+          <SecretaryPrintingWorkspace
+            actorUserId={profile.id}
+            institutionId={profile.school!.id}
+            institutionTimeZone={profile.school!.timeZone}
           />
         </DashboardSectionPanel>
 

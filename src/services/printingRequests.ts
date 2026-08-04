@@ -275,3 +275,204 @@ export async function createPrintingFileSignedUrl(params: {
     .from('printing-files')
     .createSignedUrl(params.storageObjectPath, params.expiresInSeconds ?? 60)
 }
+
+export type InstitutionPrintingRequestRow = {
+  id: string
+  request_number: number
+  required_by: string
+  status: string
+  submitted_at: string
+  updated_at: string
+  cancelled_at: string | null
+  processing_started_at: string | null
+  assigned_secretary_user_id: string | null
+  teacher_user_id: string
+  institution_id: string
+  files_purged_at: string | null
+  teacher_full_name: string
+  assigned_secretary_full_name: string | null
+  print_items: Array<{
+    id: string
+    status: string
+    original_filename: string
+    display_order: number
+    detected_file_type: string
+    file_size_bytes: number
+    storage_object_path: string | null
+    page_selection_mode: string
+    page_selection_value: string | null
+    copies: number
+    color_mode: string
+    paper_size: string
+    orientation: string
+    sides: string
+    duplex_flip_mode: string | null
+    pages_per_sheet: number
+    scale_mode: string
+    custom_scale_percent: number | null
+    collate: boolean
+    notes: string | null
+    correction_reason: string | null
+    rejection_reason: string | null
+  }> | null
+}
+
+function extractJoinedFullName(value: unknown): string | null {
+  if (Array.isArray(value)) {
+    const first = value[0] as { full_name?: unknown } | undefined
+    return typeof first?.full_name === 'string' ? first.full_name : null
+  }
+  if (value && typeof value === 'object' && 'full_name' in value) {
+    const name = (value as { full_name: unknown }).full_name
+    return typeof name === 'string' ? name : null
+  }
+  return null
+}
+
+/**
+ * Institution-wide printing queue for secretary/manager.
+ * Visibility is enforced by Phase 1 RLS — never fetch another institution and filter locally.
+ */
+export async function listInstitutionPrintingRequests(): Promise<
+  | { ok: true; requests: InstitutionPrintingRequestRow[] }
+  | { ok: false; errorMessage: string }
+> {
+  const { data, error } = await supabase
+    .from('printing_requests')
+    .select(
+      `
+      id,
+      request_number,
+      required_by,
+      status,
+      submitted_at,
+      updated_at,
+      cancelled_at,
+      processing_started_at,
+      assigned_secretary_user_id,
+      teacher_user_id,
+      institution_id,
+      files_purged_at,
+      users!teacher_user_id ( full_name ),
+      assignee:users!assigned_secretary_user_id ( full_name ),
+      print_items (
+        id,
+        status,
+        original_filename,
+        display_order,
+        detected_file_type,
+        file_size_bytes,
+        storage_object_path,
+        page_selection_mode,
+        page_selection_value,
+        copies,
+        color_mode,
+        paper_size,
+        orientation,
+        sides,
+        duplex_flip_mode,
+        pages_per_sheet,
+        scale_mode,
+        custom_scale_percent,
+        collate,
+        notes,
+        correction_reason,
+        rejection_reason
+      )
+    `,
+    )
+    .order('required_by', { ascending: true })
+
+  if (error) {
+    return { ok: false, errorMessage: 'טעינת תור ההדפסות נכשלה.' }
+  }
+
+  const requests: InstitutionPrintingRequestRow[] = (data ?? []).map((row) => {
+    const r = row as Record<string, unknown>
+    const items = Array.isArray(r.print_items) ? r.print_items : []
+    return {
+      id: String(r.id),
+      request_number: Number(r.request_number),
+      required_by: String(r.required_by),
+      status: String(r.status),
+      submitted_at: String(r.submitted_at),
+      updated_at: String(r.updated_at),
+      cancelled_at: (r.cancelled_at as string | null) ?? null,
+      processing_started_at: (r.processing_started_at as string | null) ?? null,
+      assigned_secretary_user_id: (r.assigned_secretary_user_id as string | null) ?? null,
+      teacher_user_id: String(r.teacher_user_id),
+      institution_id: String(r.institution_id),
+      files_purged_at: (r.files_purged_at as string | null) ?? null,
+      teacher_full_name: extractJoinedFullName(r.users) ?? 'מורה',
+      assigned_secretary_full_name: extractJoinedFullName(r.assignee),
+      print_items: items as InstitutionPrintingRequestRow['print_items'],
+    }
+  })
+
+  return { ok: true, requests }
+}
+
+export type InstitutionSecretaryOption = {
+  id: string
+  fullName: string
+}
+
+/** Same-institution active secretaries for transfer (RLS scopes users). */
+export async function listInstitutionSecretariesForTransfer(): Promise<
+  | { ok: true; secretaries: InstitutionSecretaryOption[] }
+  | { ok: false; errorMessage: string }
+> {
+  const { data, error } = await supabase
+    .from('users')
+    .select('id, full_name, primary_role, status')
+    .eq('primary_role', 'secretary')
+    .eq('status', 'active')
+    .order('full_name', { ascending: true })
+
+  if (error) {
+    return { ok: false, errorMessage: 'טעינת רשימת המזכירות נכשלה.' }
+  }
+
+  const secretaries: InstitutionSecretaryOption[] = []
+  for (const row of data ?? []) {
+    if (typeof row.id !== 'string' || typeof row.full_name !== 'string') continue
+    secretaries.push({ id: row.id, fullName: row.full_name })
+  }
+  return { ok: true, secretaries }
+}
+
+/**
+ * Secure temporary access for Open / Download / Print.
+ * Never constructs public URLs; signed URL is short-lived and RLS-gated.
+ */
+export async function accessPrintingFile(params: {
+  storageObjectPath: string | null | undefined
+  filesPurgedAt: string | null | undefined
+  expiresInSeconds?: number
+}): Promise<
+  | { ok: true; signedUrl: string }
+  | { ok: false; errorCode: 'PRINT_FILE_NOT_AVAILABLE' | 'PRINT_REQUEST_FORBIDDEN'; errorMessage: string }
+> {
+  if (params.filesPurgedAt || !params.storageObjectPath) {
+    return {
+      ok: false,
+      errorCode: 'PRINT_FILE_NOT_AVAILABLE',
+      errorMessage: 'הקובץ אינו נשמר עוד במערכת.',
+    }
+  }
+
+  const { data, error } = await createPrintingFileSignedUrl({
+    storageObjectPath: params.storageObjectPath,
+    expiresInSeconds: params.expiresInSeconds ?? 60,
+  })
+
+  if (error || !data?.signedUrl) {
+    return {
+      ok: false,
+      errorCode: 'PRINT_REQUEST_FORBIDDEN',
+      errorMessage: 'אין הרשאה לפתוח את הקובץ או שהקובץ אינו זמין.',
+    }
+  }
+
+  return { ok: true, signedUrl: data.signedUrl }
+}

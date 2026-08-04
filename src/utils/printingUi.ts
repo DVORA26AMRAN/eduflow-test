@@ -61,12 +61,15 @@ const PRINTING_ERROR_MESSAGES: Partial<Record<PrintingErrorCode, string>> = {
   PRINT_REQUEST_LOCKED: 'הטיפול בבקשה כבר התחיל ולכן לא ניתן לערוך אותה.',
   PRINT_REQUEST_FORBIDDEN: 'אין הרשאה לבצע פעולה זו.',
   PRINT_REQUEST_NOT_FOUND: 'בקשת ההדפסה לא נמצאה.',
-  PRINT_REQUEST_ALREADY_CLAIMED: 'הבקשה כבר בטיפול אצל מזכירה אחרת.',
+  PRINT_REQUEST_ALREADY_CLAIMED: 'הבקשה כבר נלקחה לטיפול על ידי מזכירה אחרת.',
   PRINT_ITEM_LIMIT_EXCEEDED: `ניתן לצרף עד ${MAX_PRINT_ITEMS_PER_REQUEST} קבצים לבקשה.`,
   PRINT_FILE_TOO_LARGE: 'גודל הקובץ חייב להיות עד 50MB.',
   PRINT_FILE_TYPE_NOT_ALLOWED: 'סוג הקובץ אינו נתמך להדפסה.',
   INVALID_PRINT_SETTINGS: 'הגדרות ההדפסה אינן תקינות. בדקו את הערכים ונסו שוב.',
   INVALID_STATUS_TRANSITION: 'לא ניתן לבצע את פעולת הסטטוס המבוקשת.',
+  SECRETARY_NOT_AUTHORIZED: 'אין הרשאת מזכירה לבצע פעולה זו.',
+  CROSS_INSTITUTION_ACCESS_DENIED: 'לא ניתן לבצע פעולה מחוץ למוסד המורשה.',
+  PRINT_FILE_NOT_AVAILABLE: 'הקובץ אינו נשמר עוד במערכת.',
 }
 
 export function mapPrintingErrorCode(code: PrintingErrorCode | string | null | undefined): string {
