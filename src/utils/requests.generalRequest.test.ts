@@ -9,6 +9,12 @@ describe('Teacher request categories for general_request', () => {
 
     expect(categoryValues).not.toContain('substitute_teacher')
     expect(categoryValues).toContain('general_request')
+    expect(categoryValues).toContain('printing')
+  })
+
+  it('keeps printing as a category workflow, not a RequestType domain value', () => {
+    expect(TEACHER_REQUEST_CATEGORIES.some((category) => category.value === 'printing')).toBe(true)
+    expect(translateRequestType('absence')).toBe('היעדרויות')
   })
 
   it('shows בקשה אחרת with the approved description', () => {

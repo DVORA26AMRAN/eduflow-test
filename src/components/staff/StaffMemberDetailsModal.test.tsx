@@ -57,7 +57,7 @@ describe('StaffMemberDetailsModal', () => {
   })
 
   it('lets managers edit, saves through the service, and refreshes data', async () => {
-    const user = userEvent.setup()
+    const user = userEvent.setup({ delay: null })
     const onUpdated = vi.fn().mockResolvedValue(undefined)
 
     render(

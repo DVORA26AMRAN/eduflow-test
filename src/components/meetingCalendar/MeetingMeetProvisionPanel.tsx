@@ -47,11 +47,25 @@ export function MeetingMeetProvisionPanel({
   const [freshConnectionStatus, setFreshConnectionStatus] =
     useState<OwnerGoogleConnectionStatus | null>(null)
 
+  // Once liveContext catches up to disconnected/reauth, ignore local soft-validate override.
+  const discardFreshOverride =
+    context.ownerGoogleConnectionStatus === 'reauthorization_required' ||
+    context.ownerGoogleConnectionStatus === 'not_connected' ||
+    !context.ownerGoogleConnected
+
+  if (
+    discardFreshOverride &&
+    (freshConnected !== null || freshConnectionStatus !== null)
+  ) {
+    setFreshConnected(null)
+    setFreshConnectionStatus(null)
+  }
+
   const mergedConnection = mergeOwnerGoogleConnectionForMeetUi({
     ownerGoogleConnected: context.ownerGoogleConnected,
     ownerGoogleConnectionStatus: context.ownerGoogleConnectionStatus,
-    freshConnected,
-    freshConnectionStatus,
+    freshConnected: discardFreshOverride ? null : freshConnected,
+    freshConnectionStatus: discardFreshOverride ? null : freshConnectionStatus,
   })
 
   const ui = resolveMeetProvisionUi({
@@ -103,18 +117,6 @@ export function MeetingMeetProvisionPanel({
     context.ownerGoogleConnected,
     context.ownerGoogleConnectionStatus,
   ])
-
-  // Once liveContext catches up to disconnected/reauth, drop the local override.
-  useEffect(() => {
-    if (
-      context.ownerGoogleConnectionStatus === 'reauthorization_required' ||
-      context.ownerGoogleConnectionStatus === 'not_connected' ||
-      !context.ownerGoogleConnected
-    ) {
-      setFreshConnected(null)
-      setFreshConnectionStatus(null)
-    }
-  }, [context.ownerGoogleConnected, context.ownerGoogleConnectionStatus])
 
   useEffect(() => {
     if (ui.kind !== 'creating') {

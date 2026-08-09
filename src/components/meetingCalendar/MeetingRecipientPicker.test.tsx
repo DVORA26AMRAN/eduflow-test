@@ -1,6 +1,5 @@
-import { render, screen } from '@testing-library/react'
-import userEvent from '@testing-library/user-event'
-import { describe, expect, it, vi } from 'vitest'
+import { cleanup, fireEvent, render, screen } from '@testing-library/react'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import { MeetingRecipientPicker } from './MeetingRecipientPicker'
 import type { MeetingUserDirectoryEntry } from '../../utils/meetingCalendarDisplay'
 
@@ -10,8 +9,11 @@ const recipients: MeetingUserDirectoryEntry[] = [
 ]
 
 describe('MeetingRecipientPicker', () => {
-  it('supports searchable single selection', async () => {
-    const user = userEvent.setup()
+  afterEach(() => {
+    cleanup()
+  })
+
+  it('supports searchable single selection', () => {
     const onSelect = vi.fn()
 
     render(
@@ -27,11 +29,12 @@ describe('MeetingRecipientPicker', () => {
     expect(screen.getByRole('dialog', { name: 'בחירת נמען לפגישה' })).toBeInTheDocument()
     expect(screen.getByLabelText('חיפוש לפי שם')).toBeInTheDocument()
 
-    await user.type(screen.getByLabelText('חיפוש לפי שם'), 'נועה')
+    // fireEvent.change avoids userEvent Hebrew/RTL keystroke nondeterminism under load.
+    fireEvent.change(screen.getByLabelText('חיפוש לפי שם'), { target: { value: 'נועה' } })
     expect(screen.queryByText('רותי מזכירה')).not.toBeInTheDocument()
     expect(screen.getByText('נועה מנהלת')).toBeInTheDocument()
 
-    await user.click(screen.getByRole('radio', { name: /נועה מנהלת/i }))
+    fireEvent.click(screen.getByRole('radio', { name: /נועה מנהלת/i }))
     expect(onSelect).toHaveBeenCalledWith(recipients[1])
   })
 })

@@ -84,7 +84,9 @@ export function TeacherRequestsSection({
 
   useEffect(() => {
     if (!printingFocusRequestId) return
-    setPrintingOpen(true)
+    queueMicrotask(() => {
+      setPrintingOpen(true)
+    })
   }, [printingFocusRequestId])
 
   useEffect(() => {
@@ -215,6 +217,7 @@ export function TeacherRequestsSection({
       return
     }
 
+    // After excluding printing, category is a domain RequestType (not substitute).
     setActiveRequestType(category)
   }
 

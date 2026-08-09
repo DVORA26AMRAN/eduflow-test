@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import type { RequestType } from '../../types/request'
-import { TEACHER_REQUEST_CATEGORIES } from '../../utils/requests'
+import { TEACHER_REQUEST_CATEGORIES, translateRequestType } from '../../utils/requests'
 import { ConfirmDialog, Modal } from '../ui/Modal'
 import { CreateRequestForm } from './CreateRequestForm'
 
@@ -16,7 +16,7 @@ type TeacherCreateRequestModalProps = {
 function getRequestTypeTitle(requestType: RequestType) {
   return (
     TEACHER_REQUEST_CATEGORIES.find((category) => category.value === requestType)?.title ??
-    'בקשה חדשה'
+    translateRequestType(requestType)
   )
 }
 
@@ -61,7 +61,6 @@ export function TeacherCreateRequestModal({
         <CreateRequestForm
           key={`${requestType}-${formKey}`}
           initialRequestType={requestType}
-          hideCategorySelector
           isSubmitting={isSubmitting}
           submitMessage={submitMessage}
           onCancel={attemptClose}

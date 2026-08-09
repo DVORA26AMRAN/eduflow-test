@@ -63,7 +63,7 @@ export function shouldShowGoogleReauthorization(input: {
   ownerGoogleConnected: boolean
   ownerGoogleConnectionStatus: OwnerGoogleConnectionStatus
 }): boolean {
-  if (Boolean(input.meetUrl && input.meetUrl.trim())) {
+  if (input.meetUrl && input.meetUrl.trim()) {
     return false
   }
 

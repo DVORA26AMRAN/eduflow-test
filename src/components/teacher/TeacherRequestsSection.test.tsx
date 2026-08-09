@@ -1,4 +1,4 @@
-import { cleanup, render, screen, waitFor } from '@testing-library/react'
+import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { TeacherRequestsSection } from './TeacherRequestsSection'
@@ -67,10 +67,10 @@ function renderSection() {
   )
 }
 
-async function fillGeneralRequestForm(user: ReturnType<typeof userEvent.setup>) {
-  await user.click(screen.getByRole('radio', { name: 'מזכירה' }))
-  await user.type(screen.getByLabelText('נושא'), 'נושא לבדיקה')
-  await user.type(screen.getByLabelText('הודעה'), 'הודעה לבדיקה')
+function fillGeneralRequestForm() {
+  fireEvent.click(screen.getByRole('radio', { name: 'מזכירה' }))
+  fireEvent.change(screen.getByLabelText('נושא'), { target: { value: 'נושא לבדיקה' } })
+  fireEvent.change(screen.getByLabelText('הודעה'), { target: { value: 'הודעה לבדיקה' } })
 }
 
 describe('TeacherRequestsSection modal create flow', () => {
@@ -144,7 +144,7 @@ describe('TeacherRequestsSection modal create flow', () => {
       renderSection()
 
       await user.click(screen.getByRole('radio', { name: /בקשה אחרת/ }))
-      await fillGeneralRequestForm(user)
+      fillGeneralRequestForm()
       await user.click(screen.getByRole('button', { name: 'שליחת בקשה' }))
 
       await waitFor(() => {
@@ -175,7 +175,7 @@ describe('TeacherRequestsSection modal create flow', () => {
       renderSection()
 
       await user.click(screen.getByRole('radio', { name: /בקשה אחרת/ }))
-      await fillGeneralRequestForm(user)
+      fillGeneralRequestForm()
       await user.click(screen.getByRole('button', { name: 'שליחת בקשה' }))
 
       await waitFor(() => {

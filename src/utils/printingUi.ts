@@ -60,6 +60,7 @@ const PRINTING_ERROR_MESSAGES: Partial<Record<PrintingErrorCode, string>> = {
     'בקשות הדפסה יש לשלוח לפחות לפי מדיניות המוסד מראש. יש לבחור מועד מאוחר יותר.',
   PRINT_REQUEST_LOCKED: 'הטיפול בבקשה כבר התחיל ולכן לא ניתן לערוך אותה.',
   PRINT_REQUEST_FORBIDDEN: 'אין הרשאה לבצע פעולה זו.',
+  PRINT_REQUEST_UNKNOWN_ERROR: PRINTING_GENERIC_ERROR_MESSAGE,
   PRINT_REQUEST_NOT_FOUND: 'בקשת ההדפסה לא נמצאה.',
   PRINT_REQUEST_ALREADY_CLAIMED: 'הבקשה כבר נלקחה לטיפול על ידי מזכירה אחרת.',
   PRINT_ITEM_LIMIT_EXCEEDED: `ניתן לצרף עד ${MAX_PRINT_ITEMS_PER_REQUEST} קבצים לבקשה.`,

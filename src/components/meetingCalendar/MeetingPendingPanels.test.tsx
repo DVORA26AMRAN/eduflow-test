@@ -1,5 +1,4 @@
-import { cleanup, render, screen, within } from '@testing-library/react'
-import userEvent from '@testing-library/user-event'
+import { cleanup, fireEvent, render, screen, within } from '@testing-library/react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import type { Meeting } from '../../types/meetingCalendar'
 import type { MeetingUserDirectoryEntry } from '../../utils/meetingCalendarDisplay'
@@ -77,7 +76,6 @@ describe('MeetingPendingPanels', () => {
   })
 
   it('shows loading state and notifies selection', async () => {
-    const user = userEvent.setup()
     const onSelectMeeting = vi.fn()
 
     const { rerender } = render(
@@ -106,7 +104,7 @@ describe('MeetingPendingPanels', () => {
     )
 
     const panel = screen.getByRole('region', { name: 'פגישות ממתינות' })
-    await user.click(within(panel).getByRole('button', { name: /פגישת היכרות/ }))
+    fireEvent.click(within(panel).getByRole('button', { name: /פגישת היכרות/ }))
     expect(onSelectMeeting).toHaveBeenCalledWith('m1')
   })
 })

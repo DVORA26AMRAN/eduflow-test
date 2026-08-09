@@ -41,7 +41,7 @@ export function isValidPageSelection(
   if (mode !== 'custom') return false
   const raw = value?.trim() ?? ''
   if (!raw) return false
-  if (!/^[0-9,\-]+$/.test(raw)) return false
+  if (!/^[0-9,-]+$/.test(raw)) return false
 
   for (const token of raw.split(',')) {
     const part = token.trim()

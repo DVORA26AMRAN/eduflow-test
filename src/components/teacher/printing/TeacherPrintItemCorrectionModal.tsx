@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useMemo, useState } from 'react'
 import type {
   ColorMode,
   DuplexFlipMode,
@@ -97,14 +97,18 @@ export function TeacherPrintItemCorrectionModal({
   const [draft, setDraft] = useState<PrintingDraftItem | null>(null)
   const [error, setError] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [hydratedItemId, setHydratedItemId] = useState<string | null>(null)
 
-  useEffect(() => {
-    if (isOpen && item) {
-      setDraft(toDraft(item))
-      setError('')
-      setIsSubmitting(false)
-    }
-  }, [isOpen, item])
+  if (isOpen && item && item.id !== hydratedItemId) {
+    setHydratedItemId(item.id)
+    setDraft(toDraft(item))
+    setError('')
+    setIsSubmitting(false)
+  }
+
+  if (!isOpen && hydratedItemId !== null) {
+    setHydratedItemId(null)
+  }
 
   const settingsError = useMemo(
     () => (draft ? validateDraftItemSettings(draft) : null),

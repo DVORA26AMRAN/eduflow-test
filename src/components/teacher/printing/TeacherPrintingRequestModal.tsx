@@ -50,7 +50,6 @@ export function TeacherPrintingRequestModal({
   isOpen,
   mode,
   teacherFullName,
-  teacherUserId: _teacherUserId,
   institutionTimeZone,
   minimumPrintNoticeMinutes,
   editingRequestId = null,
@@ -70,15 +69,18 @@ export function TeacherPrintingRequestModal({
   const [successNumber, setSuccessNumber] = useState<number | null>(null)
   const [confirmClose, setConfirmClose] = useState(false)
   const [dragIndex, setDragIndex] = useState<number | null>(null)
+  const openSessionKey = isOpen ? `${mode}:${editingRequestId ?? 'new'}` : null
+  const [hydratedSessionKey, setHydratedSessionKey] = useState<string | null>(null)
 
-  useEffect(() => {
-    if (!isOpen) return
+  if (isOpen && openSessionKey && openSessionKey !== hydratedSessionKey) {
+    setHydratedSessionKey(openSessionKey)
     setStep('configure')
     setFormError('')
     setIsSubmitting(false)
     setSuccessNumber(null)
     setConfirmClose(false)
     setMoreOpenById({})
+    setDragIndex(null)
 
     if (initialRequiredByIso) {
       const d = new Date(initialRequiredByIso)
@@ -103,9 +105,11 @@ export function TeacherPrintingRequestModal({
     }
 
     setItems(initialItems)
-    // Reset draft only when the dialog opens (or edit payload identity changes).
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- intentional open-gated reset
-  }, [isOpen, editingRequestId, mode])
+  }
+
+  if (!isOpen && hydratedSessionKey !== null) {
+    setHydratedSessionKey(null)
+  }
 
   useEffect(() => {
     return () => {

@@ -58,7 +58,10 @@ export function MeetingDetailsDialog({
   const [isLoadingLiveContext, setIsLoadingLiveContext] = useState(true)
   const [liveContextTick, setLiveContextTick] = useState(0)
   const liveContextRef = useRef(liveContext)
-  liveContextRef.current = liveContext
+
+  useEffect(() => {
+    liveContextRef.current = liveContext
+  }, [liveContext])
 
   useEffect(() => {
     if (confirmedSlot) {

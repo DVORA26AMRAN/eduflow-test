@@ -1,11 +1,34 @@
 /**
  * Pure auth gate mirrored for Vitest (Edge: _shared/requireServiceRole.ts).
  * meeting-meet-provisioner must only run when JWT role === service_role.
+ *
+ * Browser-safe: uses TextEncoder / btoa / atob — no Node Buffer.
+ * This only inspects JWT payload shape for unit tests; it does not hold secrets.
  */
 
 export type ServiceRoleAuthResult =
   | { ok: true; role: 'service_role' }
   | { ok: false; status: 401 | 403; error: 'unauthorized' | 'forbidden' }
+
+function utf8ToBase64Url(text: string): string {
+  const bytes = new TextEncoder().encode(text)
+  let binary = ''
+  for (const byte of bytes) {
+    binary += String.fromCharCode(byte)
+  }
+  return btoa(binary).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/g, '')
+}
+
+function base64ToUtf8(base64: string): string {
+  const normalized = base64.replace(/-/g, '+').replace(/_/g, '/')
+  const padded = normalized + '='.repeat((4 - (normalized.length % 4)) % 4)
+  const binary = atob(padded)
+  const bytes = new Uint8Array(binary.length)
+  for (let i = 0; i < binary.length; i += 1) {
+    bytes[i] = binary.charCodeAt(i)
+  }
+  return new TextDecoder().decode(bytes)
+}
 
 function decodeJwtPayload(jwt: string): Record<string, unknown> | null {
   const parts = jwt.split('.')
@@ -13,9 +36,7 @@ function decodeJwtPayload(jwt: string): Record<string, unknown> | null {
     return null
   }
   try {
-    const b64 = parts[1].replace(/-/g, '+').replace(/_/g, '/')
-    const padded = b64 + '='.repeat((4 - (b64.length % 4)) % 4)
-    const json = Buffer.from(padded, 'base64').toString('utf8')
+    const json = base64ToUtf8(parts[1])
     const parsed = JSON.parse(json) as unknown
     if (!parsed || typeof parsed !== 'object') {
       return null
@@ -28,8 +49,8 @@ function decodeJwtPayload(jwt: string): Record<string, unknown> | null {
 
 /** Build an unsigned JWT-shaped token for unit tests (payload only is inspected). */
 export function buildTestJwt(payload: Record<string, unknown>): string {
-  const header = Buffer.from(JSON.stringify({ alg: 'none', typ: 'JWT' })).toString('base64url')
-  const body = Buffer.from(JSON.stringify(payload)).toString('base64url')
+  const header = utf8ToBase64Url(JSON.stringify({ alg: 'none', typ: 'JWT' }))
+  const body = utf8ToBase64Url(JSON.stringify(payload))
   return `${header}.${body}.test-signature`
 }
 

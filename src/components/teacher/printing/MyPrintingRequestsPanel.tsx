@@ -87,17 +87,7 @@ export function MyPrintingRequestsPanel({
     setIsLoading(false)
   }, [])
 
-  useEffect(() => {
-    void reload()
-  }, [reload, refreshToken])
-
-  useEffect(() => {
-    if (!focusRequestId || requests.length === 0) return
-    const row = requests.find((r) => r.id === focusRequestId)
-    if (row) void openDetails(row)
-  }, [focusRequestId, requests])
-
-  async function openDetails(row: PrintingRequestListRow) {
+  const openDetails = useCallback(async (row: PrintingRequestListRow) => {
     setDetails(row)
     setDetailsLoading(true)
     setActionMessage('')
@@ -116,7 +106,23 @@ export function MyPrintingRequestsPanel({
       ) as typeof detailsItems,
     )
     setDetailsLoading(false)
-  }
+  }, [])
+
+  useEffect(() => {
+    queueMicrotask(() => {
+      void reload()
+    })
+  }, [reload, refreshToken])
+
+  useEffect(() => {
+    if (!focusRequestId || requests.length === 0) return
+    const row = requests.find((r) => r.id === focusRequestId)
+    if (row) {
+      queueMicrotask(() => {
+        void openDetails(row)
+      })
+    }
+  }, [focusRequestId, requests, openDetails])
 
   async function confirmCancel() {
     if (!cancelTarget || isCancelling) return

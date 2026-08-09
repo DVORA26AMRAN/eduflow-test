@@ -35,10 +35,10 @@ function renderModal(
   )
 }
 
-async function fillGeneralRequestForm(user: ReturnType<typeof userEvent.setup>) {
-  await user.click(screen.getByRole('radio', { name: 'מזכירה' }))
-  await user.type(screen.getByLabelText('נושא'), 'נושא לבדיקה')
-  await user.type(screen.getByLabelText('הודעה'), 'הודעה לבדיקה')
+function fillGeneralRequestForm() {
+  fireEvent.click(screen.getByRole('radio', { name: 'מזכירה' }))
+  fireEvent.change(screen.getByLabelText('נושא'), { target: { value: 'נושא לבדיקה' } })
+  fireEvent.change(screen.getByLabelText('הודעה'), { target: { value: 'הודעה לבדיקה' } })
 }
 
 describe('TeacherCreateRequestModal', () => {
@@ -58,7 +58,7 @@ describe('TeacherCreateRequestModal', () => {
   })
 
   it('closes from the X button when the form is empty', async () => {
-    const user = userEvent.setup()
+    const user = userEvent.setup({ delay: null })
     renderModal()
 
     await user.click(screen.getByRole('button', { name: 'סגירת טופס בקשה' }))
@@ -68,7 +68,7 @@ describe('TeacherCreateRequestModal', () => {
   })
 
   it('closes from the cancel button when the form is empty', async () => {
-    const user = userEvent.setup()
+    const user = userEvent.setup({ delay: null })
     renderModal('general_request')
 
     await user.click(screen.getByRole('button', { name: 'ביטול' }))
@@ -90,7 +90,7 @@ describe('TeacherCreateRequestModal', () => {
   })
 
   it('closes when pressing Escape if the form is empty', async () => {
-    const user = userEvent.setup()
+    const user = userEvent.setup({ delay: null })
     renderModal()
 
     await user.keyboard('{Escape}')
@@ -99,10 +99,10 @@ describe('TeacherCreateRequestModal', () => {
   })
 
   it('shows unsaved-changes confirmation before closing a dirty general request form', async () => {
-    const user = userEvent.setup()
+    const user = userEvent.setup({ delay: null })
     renderModal('general_request')
 
-    await fillGeneralRequestForm(user)
+    fillGeneralRequestForm()
     await user.click(screen.getByRole('button', { name: 'ביטול' }))
 
     expect(onClose).not.toHaveBeenCalled()
@@ -112,10 +112,10 @@ describe('TeacherCreateRequestModal', () => {
   })
 
   it('closes without saving after confirming discard', async () => {
-    const user = userEvent.setup()
+    const user = userEvent.setup({ delay: null })
     renderModal('general_request')
 
-    await fillGeneralRequestForm(user)
+    fillGeneralRequestForm()
     await user.keyboard('{Escape}')
     await user.click(screen.getByRole('button', { name: 'סגור ללא שמירה' }))
 

@@ -81,4 +81,13 @@ describe('meeting-meet-provisioner service_role gate', () => {
       role: 'service_role',
     })
   })
+
+  it('encodes and decodes JWT payload with browser-safe base64url', () => {
+    const serviceJwt = buildTestJwt({ role: 'service_role', iss: 'supabase' })
+    const payloadPart = serviceJwt.split('.')[1]
+    expect(payloadPart).toBeTruthy()
+    expect(payloadPart).not.toContain('+')
+    expect(payloadPart).not.toContain('/')
+    expect(requireServiceRoleJwt(`Bearer ${serviceJwt}`).ok).toBe(true)
+  })
 })

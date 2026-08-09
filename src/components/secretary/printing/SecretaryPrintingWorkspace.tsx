@@ -112,7 +112,9 @@ export function SecretaryPrintingWorkspace({
   }, [institutionId, institutionTimeZone])
 
   useEffect(() => {
-    void reload()
+    queueMicrotask(() => {
+      void reload()
+    })
   }, [reload])
 
   useEffect(() => {
@@ -192,13 +194,15 @@ export function SecretaryPrintingWorkspace({
     }
 
     consumedFocusRequestIdRef.current = focusRequestId
-    setView(
-      HISTORY_PRINTING_STATUSES.includes(row.status as (typeof HISTORY_PRINTING_STATUSES)[number])
-        ? 'history'
-        : 'active',
-    )
-    void openDetails(row).finally(() => {
-      onFocusRequestConsumed?.()
+    queueMicrotask(() => {
+      setView(
+        HISTORY_PRINTING_STATUSES.includes(row.status as (typeof HISTORY_PRINTING_STATUSES)[number])
+          ? 'history'
+          : 'active',
+      )
+      void openDetails(row).finally(() => {
+        onFocusRequestConsumed?.()
+      })
     })
   }, [focusRequestId, isLoading, onFocusRequestConsumed, requests])
 
@@ -482,11 +486,8 @@ export function SecretaryPrintingWorkspace({
 
   return (
     <section className="ds-card secretary-printing">
-      <DashboardSection
-        title="הדפסות"
-        description="תור בקשות ההדפסה של המוסד — לפי מועד נדרש."
-        icon={<NavPrintIcon />}
-      >
+      <DashboardSection title="הדפסות" icon={<NavPrintIcon />}>
+        <p className="ds-helper-text">תור בקשות ההדפסה של המוסד — לפי מועד נדרש.</p>
         <div className="secretary-printing__tabs" role="tablist" aria-label="תצוגת הדפסות">
           <button
             type="button"

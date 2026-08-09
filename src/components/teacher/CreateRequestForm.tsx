@@ -16,18 +16,16 @@ import {
   validateGeneralRequestForm,
 } from '../../utils/generalRequest'
 import { isCreateRequestFormDirty } from '../../utils/createRequestForm'
-import { isRequestType } from '../../utils/requests'
 import { RequestAttachmentPicker } from '../requests/RequestAttachmentPicker'
 import { TeacherAbsenceRequestFields } from './TeacherAbsenceRequestFields'
 import { TeacherBudgetRequestFields } from './TeacherBudgetRequestFields'
 import { TeacherGeneralRequestFields } from './TeacherGeneralRequestFields'
-import { TeacherRequestCategorySelector } from './TeacherRequestCategorySelector'
 
 type CreateRequestFormProps = {
   isSubmitting: boolean
   submitMessage: string
-  initialRequestType?: RequestType
-  hideCategorySelector?: boolean
+  /** Domain request type for this form instance (not a Teacher category card value). */
+  initialRequestType: RequestType
   onCancel?: () => void
   onDirtyChange?: (isDirty: boolean) => void
   onSubmit: (input: {
@@ -78,12 +76,11 @@ export function CreateRequestForm({
   isSubmitting,
   submitMessage,
   initialRequestType,
-  hideCategorySelector = false,
   onCancel,
   onDirtyChange,
   onSubmit,
 }: CreateRequestFormProps) {
-  const [requestType, setRequestType] = useState<RequestType | ''>(initialRequestType ?? '')
+  const [requestType] = useState<RequestType>(initialRequestType)
   const [description, setDescription] = useState('')
   const [absenceFields, setAbsenceFields] = useState<AbsenceFormFields>(emptyAbsenceFields)
   const [budgetFields, setBudgetFields] = useState<BudgetFormFields>(emptyBudgetFields)
@@ -106,11 +103,6 @@ export function CreateRequestForm({
 
   function handleSubmit() {
     setValidationMessage('')
-
-    if (!requestType || !isRequestType(requestType)) {
-      setValidationMessage('נא לבחור סוג בקשה.')
-      return
-    }
 
     if (attachmentFile) {
       const attachmentValidation = validateRequestAttachment(attachmentFile)
@@ -169,6 +161,7 @@ export function CreateRequestForm({
       return
     }
 
+    // Historical / separate substitute_teacher domain type (not a Teacher category card).
     if (requestType === 'substitute_teacher') {
       if (!description.trim()) {
         setValidationMessage('נא להזין תיאור בקשה.')
@@ -180,39 +173,6 @@ export function CreateRequestForm({
         description: description.trim(),
         attachmentFile,
       })
-      return
-    }
-
-    if (!description.trim()) {
-      setValidationMessage('נא להזין תיאור בקשה.')
-      return
-    }
-
-    onSubmit({
-      requestType,
-      description: description.trim(),
-      attachmentFile,
-    })
-  }
-
-  function handleRequestTypeSelect(value: RequestType) {
-    setRequestType(value)
-    setValidationMessage('')
-
-    if (value !== 'absence') {
-      setAbsenceFields(emptyAbsenceFields)
-    }
-
-    if (value !== 'budget_or_equipment') {
-      setBudgetFields(emptyBudgetFields)
-    }
-
-    if (value !== 'general_request') {
-      setGeneralRequestFields(emptyGeneralRequestFields)
-    }
-
-    if (value !== 'substitute_teacher') {
-      setDescription('')
     }
   }
 
@@ -271,19 +231,7 @@ export function CreateRequestForm({
 
   return (
     <>
-      {!hideCategorySelector && (
-        <>
-          <h3 className="teacher-dashboard__subsection-title">פתיחת בקשה חדשה</h3>
-
-          <TeacherRequestCategorySelector
-            selectedType={requestType}
-            isDisabled={isSubmitting}
-            onSelect={handleRequestTypeSelect}
-          />
-        </>
-      )}
-
-      {hideCategorySelector && requestType === 'absence' && (
+      {requestType === 'absence' && (
         <TeacherAbsenceRequestFields
           absenceDate={absenceFields.absenceDate}
           absenceReason={absenceFields.absenceReason}
@@ -299,7 +247,7 @@ export function CreateRequestForm({
         />
       )}
 
-      {hideCategorySelector && requestType === 'budget_or_equipment' && (
+      {requestType === 'budget_or_equipment' && (
         <TeacherBudgetRequestFields
           budgetDetails={budgetFields.budgetDetails}
           requestedAmount={budgetFields.requestedAmount}
@@ -313,7 +261,7 @@ export function CreateRequestForm({
         />
       )}
 
-      {hideCategorySelector && requestType === 'general_request' && (
+      {requestType === 'general_request' && (
         <TeacherGeneralRequestFields
           recipientRole={generalRequestFields.recipientRole}
           subject={generalRequestFields.subject}
@@ -343,7 +291,7 @@ export function CreateRequestForm({
         />
       )}
 
-      {hideCategorySelector && requestType === 'substitute_teacher' && (
+      {requestType === 'substitute_teacher' && (
         <div className="ds-fieldset">
           <label className="ds-field" htmlFor="request-description">
             <span className="ds-label">תיאור הבקשה</span>
@@ -360,37 +308,33 @@ export function CreateRequestForm({
         </div>
       )}
 
-      {hideCategorySelector && requestType !== '' && (
-        <RequestAttachmentPicker
-          selectedFile={attachmentFile}
-          disabled={isSubmitting}
-          errorId={validationMessage ? 'create-request-validation' : undefined}
-          onSelectedFileChange={handleAttachmentChange}
-        />
-      )}
+      <RequestAttachmentPicker
+        selectedFile={attachmentFile}
+        disabled={isSubmitting}
+        errorId={validationMessage ? 'create-request-validation' : undefined}
+        onSelectedFileChange={handleAttachmentChange}
+      />
 
-      {hideCategorySelector && requestType !== '' && (
-        <div className="ds-form-actions">
-          {onCancel && (
-            <button
-              type="button"
-              className="ds-btn ds-btn--secondary"
-              onClick={onCancel}
-              disabled={isSubmitting}
-            >
-              ביטול
-            </button>
-          )}
+      <div className="ds-form-actions">
+        {onCancel && (
           <button
             type="button"
-            className="ds-btn ds-btn--primary teacher-dashboard__submit"
-            onClick={handleSubmit}
+            className="ds-btn ds-btn--secondary"
+            onClick={onCancel}
             disabled={isSubmitting}
           >
-            שליחת בקשה
+            ביטול
           </button>
-        </div>
-      )}
+        )}
+        <button
+          type="button"
+          className="ds-btn ds-btn--primary teacher-dashboard__submit"
+          onClick={handleSubmit}
+          disabled={isSubmitting}
+        >
+          שליחת בקשה
+        </button>
+      </div>
 
       {validationMessage && (
         <p
