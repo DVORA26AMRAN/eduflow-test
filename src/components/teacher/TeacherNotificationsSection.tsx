@@ -16,6 +16,10 @@ import {
   extractRequestIdFromNotification,
   isTeacherRequestNotification,
 } from '../../utils/teacherNotificationDisplay'
+import {
+  extractPrintingRequestIdFromNotification,
+  isPrintingNotificationType,
+} from '../../utils/printingNotifications'
 import { NavBellIcon } from '../dashboard/dashboardNav'
 import { DashboardSection } from '../dashboard/DashboardSection'
 import { TeacherNotificationsList } from './TeacherNotificationsList'
@@ -52,10 +56,12 @@ type TeacherNotificationsSectionProps = {
       returnFocusElement: HTMLButtonElement | null
     },
   ) => void
+  onNavigateToPrinting?: (printingRequestId: string) => void
 }
 
 export function TeacherNotificationsSection({
   onNavigateToRequest,
+  onNavigateToPrinting,
 }: TeacherNotificationsSectionProps) {
   const [notifications, setNotifications] = useState<TeacherNotification[]>([])
   const [requestContextsById, setRequestContextsById] = useState<
@@ -189,6 +195,14 @@ export function TeacherNotificationsSection({
           ),
         )
       }
+    }
+
+    if (isPrintingNotificationType(notification.notification_type) && onNavigateToPrinting) {
+      const printingRequestId = extractPrintingRequestIdFromNotification(notification.metadata)
+      if (printingRequestId) {
+        onNavigateToPrinting(printingRequestId)
+      }
+      return
     }
 
     if (!isTeacherRequestNotification(notification) || !onNavigateToRequest) {

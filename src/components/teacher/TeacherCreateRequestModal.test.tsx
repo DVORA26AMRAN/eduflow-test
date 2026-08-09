@@ -187,4 +187,31 @@ describe('TeacherCreateRequestModal', () => {
     expect(onSubmit).not.toHaveBeenCalled()
     expect(screen.getByText('נא לבחור נמען לבקשה.')).toBeInTheDocument()
   })
+
+  it('uses the shared attachment picker for absence, budget, and general request forms', async () => {
+    const user = userEvent.setup({ delay: null })
+    const requestTypes = [
+      'absence',
+      'budget_or_equipment',
+      'general_request',
+    ] as const
+
+    for (const requestType of requestTypes) {
+      cleanup()
+      renderModal(requestType)
+
+      expect(screen.getByRole('button', { name: 'בחירת קובץ' })).toBeInTheDocument()
+      expect(screen.queryByText('לא נבחר קובץ')).not.toBeInTheDocument()
+
+      const fileInput = document.querySelector(
+        '.request-attachment-picker__input',
+      ) as HTMLInputElement
+      expect(fileInput).toBeTruthy()
+
+      const file = new File(['doc'], `${requestType}-proof.pdf`, { type: 'application/pdf' })
+      await user.upload(fileInput, file)
+
+      expect(screen.getByText(`${requestType}-proof.pdf`)).toBeInTheDocument()
+    }
+  })
 })

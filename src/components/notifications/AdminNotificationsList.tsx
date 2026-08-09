@@ -1,6 +1,11 @@
 import type { AppNotification } from '../../services/notifications'
 import { formatRequestDateTime } from '../../utils/requests'
 import { getReminderCountFromMetadata, getReminderRequestId } from '../../utils/requestReminders'
+import {
+  extractPrintingRequestIdFromNotification,
+  isStaffPrintingNotificationType,
+} from '../../utils/printingNotifications'
+import { formatPrintingRequestNumber } from '../../utils/printingUi'
 
 type AdminNotificationsListProps = {
   notifications: AppNotification[]
@@ -17,7 +22,7 @@ export function AdminNotificationsList({
         <span className="ds-state__icon" aria-hidden="true">
           🔔
         </span>
-        <p className="ds-state__title">אין התראות תזכורת.</p>
+        <p className="ds-state__title">אין התראות.</p>
       </div>
     )
   }
@@ -25,8 +30,19 @@ export function AdminNotificationsList({
   return (
     <ul className="admin-notifications__list">
       {notifications.map((notification) => {
-        const requestId = getReminderRequestId(notification)
-        const reminderCount = getReminderCountFromMetadata(notification)
+        const isPrinting = isStaffPrintingNotificationType(notification.notification_type)
+        const reminderRequestId = isPrinting ? null : getReminderRequestId(notification)
+        const reminderCount = isPrinting ? null : getReminderCountFromMetadata(notification)
+        const printingRequestId = isPrinting
+          ? extractPrintingRequestIdFromNotification(notification.metadata)
+          : null
+        const requestNumber = notification.metadata.request_number
+        const printingLabel =
+          typeof requestNumber === 'number'
+            ? formatPrintingRequestNumber(requestNumber)
+            : printingRequestId
+              ? `בקשת הדפסה ${printingRequestId.slice(0, 8)}`
+              : null
 
         return (
           <li key={notification.id}>
@@ -52,8 +68,13 @@ export function AdminNotificationsList({
                     {reminderCount === 1 ? 'תזכורת אחת' : `${reminderCount} תזכורות`}
                   </span>
                 )}
-                {requestId && (
-                  <span className="admin-notifications__item-request">בקשה #{requestId.slice(0, 8)}</span>
+                {reminderRequestId && (
+                  <span className="admin-notifications__item-request">
+                    בקשה #{reminderRequestId.slice(0, 8)}
+                  </span>
+                )}
+                {printingLabel && (
+                  <span className="admin-notifications__item-request">{printingLabel}</span>
                 )}
                 <span className="admin-notifications__item-date">
                   {formatRequestDateTime(notification.created_at)}

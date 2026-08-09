@@ -17,6 +17,7 @@ import {
 } from '../components/dashboard/dashboardNav'
 
 import { MeetingCalendarSection } from '../components/meetingCalendar/MeetingCalendarSection'
+import { AdminNotificationsSection } from '../components/notifications/AdminNotificationsSection'
 import { SecretaryAnalyticsSection } from '../components/secretary/SecretaryAnalyticsSection'
 import { SecretaryArchiveSection } from '../components/secretary/SecretaryArchiveSection'
 import { SecretaryRequestsInbox } from '../components/secretary/SecretaryRequestsInbox'
@@ -73,6 +74,8 @@ export function SecretaryDashboardPage({ profile, onLogout }: SecretaryDashboard
     Map<string, RequestReminderSummary>
   >(new Map())
   const [liveAnnouncement, setLiveAnnouncement] = useState('')
+  const [printingFocusRequestId, setPrintingFocusRequestId] = useState<string | null>(null)
+  const [adminNotificationsUnreadCount, setAdminNotificationsUnreadCount] = useState(0)
   const announcementTimeoutRef = useRef<number | null>(null)
 
   const showSection = useDashboardSectionNavigation(setActiveSectionId)
@@ -149,6 +152,12 @@ export function SecretaryDashboardPage({ profile, onLogout }: SecretaryDashboard
       { id: 'substituteApprovals', label: 'אישורי מילויי מקום', icon: <NavUsersIcon /> },
       { id: 'requestsInbox', label: 'בקשות מורים', icon: <NavInboxIcon /> },
       {
+        id: 'adminNotifications',
+        label: 'התראות',
+        icon: <NavBellIcon />,
+        badgeCount: adminNotificationsUnreadCount > 0 ? adminNotificationsUnreadCount : undefined,
+      },
+      {
         id: PRINTING_WORKSPACE_SECTION_ID,
         label: PRINTING_WORKSPACE_NAV_LABEL,
         icon: <NavPrintIcon />,
@@ -160,7 +169,7 @@ export function SecretaryDashboardPage({ profile, onLogout }: SecretaryDashboard
     )
 
     return items
-  }, [handleReminderBellClick, unreadCount])
+  }, [adminNotificationsUnreadCount, handleReminderBellClick, unreadCount])
 
   function handleNavigateToInbox(intent: DashboardRequestNavigationIntent) {
     setRequestNavigationIntent(intent)
@@ -267,6 +276,21 @@ export function SecretaryDashboardPage({ profile, onLogout }: SecretaryDashboard
         </DashboardSectionPanel>
 
         <DashboardSectionPanel
+          id="secretary-admin-notifications"
+          sectionId="adminNotifications"
+          activeSectionId={activeSectionId}
+          className="secretary-dashboard__shell-section"
+        >
+          <AdminNotificationsSection
+            onUnreadCountChange={setAdminNotificationsUnreadCount}
+            onNavigateToPrinting={(printingRequestId) => {
+              setPrintingFocusRequestId(printingRequestId)
+              showSection(PRINTING_WORKSPACE_SECTION_ID)
+            }}
+          />
+        </DashboardSectionPanel>
+
+        <DashboardSectionPanel
           id="secretary-printing-workspace"
           sectionId={PRINTING_WORKSPACE_SECTION_ID}
           activeSectionId={activeSectionId}
@@ -276,6 +300,8 @@ export function SecretaryDashboardPage({ profile, onLogout }: SecretaryDashboard
             actorUserId={profile.id}
             institutionId={profile.school!.id}
             institutionTimeZone={profile.school!.timeZone}
+            focusRequestId={printingFocusRequestId}
+            onFocusRequestConsumed={() => setPrintingFocusRequestId(null)}
           />
         </DashboardSectionPanel>
 

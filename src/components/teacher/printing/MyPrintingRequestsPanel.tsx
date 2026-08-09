@@ -16,6 +16,10 @@ import {
 } from '../../../utils/printingUi'
 import { ConfirmDialog } from '../../ui/Modal'
 import { Modal } from '../../ui/Modal'
+import {
+  TeacherPrintItemCorrectionModal,
+  type CorrectionItemSource,
+} from './TeacherPrintItemCorrectionModal'
 
 type MyPrintingRequestsPanelProps = {
   teacherUserId: string
@@ -23,6 +27,7 @@ type MyPrintingRequestsPanelProps = {
   refreshToken: number
   onEditRequest: (requestId: string) => void
   onCreateNew: () => void
+  focusRequestId?: string | null
 }
 
 export function MyPrintingRequestsPanel({
@@ -31,6 +36,7 @@ export function MyPrintingRequestsPanel({
   refreshToken,
   onEditRequest,
   onCreateNew,
+  focusRequestId = null,
 }: MyPrintingRequestsPanelProps) {
   const [requests, setRequests] = useState<PrintingRequestListRow[]>([])
   const [isLoading, setIsLoading] = useState(true)
@@ -50,12 +56,23 @@ export function MyPrintingRequestsPanel({
       page_selection_mode: string
       page_selection_value: string | null
       storage_object_path: string | null
+      correction_reason: string | null
+      rejection_reason: string | null
+      detected_file_type: string
+      file_size_bytes: number
+      orientation: string
+      pages_per_sheet: number
+      scale_mode: string
+      custom_scale_percent: number | null
+      collate: boolean
+      file_purged_at: string | null
     }>
   >([])
   const [detailsLoading, setDetailsLoading] = useState(false)
   const [cancelTarget, setCancelTarget] = useState<PrintingRequestListRow | null>(null)
   const [isCancelling, setIsCancelling] = useState(false)
   const [actionMessage, setActionMessage] = useState('')
+  const [correctionItem, setCorrectionItem] = useState<CorrectionItemSource | null>(null)
 
   const reload = useCallback(async () => {
     setIsLoading(true)
@@ -73,6 +90,12 @@ export function MyPrintingRequestsPanel({
   useEffect(() => {
     void reload()
   }, [reload, refreshToken])
+
+  useEffect(() => {
+    if (!focusRequestId || requests.length === 0) return
+    const row = requests.find((r) => r.id === focusRequestId)
+    if (row) void openDetails(row)
+  }, [focusRequestId, requests])
 
   async function openDetails(row: PrintingRequestListRow) {
     setDetails(row)
@@ -233,9 +256,17 @@ export function MyPrintingRequestsPanel({
               assignedSecretaryUserId: details.assigned_secretary_user_id,
               processingStartedAt: details.processing_started_at,
               status: details.status as PrintingRequestStatus,
-            }) && details.status !== 'cancelled' && details.status !== 'printed' ? (
+            }) &&
+            details.status !== 'cancelled' &&
+            details.status !== 'printed' &&
+            details.status !== 'needs_correction' ? (
               <p className="ds-form-message ds-form-message--warning">
                 הטיפול בבקשה כבר התחיל ולכן לא ניתן לערוך אותה.
+              </p>
+            ) : null}
+            {details.status === 'needs_correction' ? (
+              <p className="ds-form-message ds-form-message--warning" role="status">
+                יש קובץ אחד או יותר שדורש תיקון. ניתן לתקן רק את הקבצים שהוחזרו.
               </p>
             ) : null}
             {details.files_purged_at ? (
@@ -246,7 +277,9 @@ export function MyPrintingRequestsPanel({
                 <li key={item.id}>
                   <strong>{item.original_filename}</strong>
                   {' — '}
-                  {translatePrintItemStatus(item.status as PrintItemStatus)}
+                  <span className={`ds-table__status ds-table__status--${item.status}`}>
+                    {translatePrintItemStatus(item.status as PrintItemStatus)}
+                  </span>
                   <div className="printing-details__settings">
                     {item.copies} עותקים · {item.paper_size.toUpperCase()} ·{' '}
                     {item.color_mode === 'color' ? 'צבעוני' : 'שחור־לבן'} ·{' '}
@@ -256,12 +289,69 @@ export function MyPrintingRequestsPanel({
                       : ' · כל העמודים'}
                     {item.notes ? ` · ${item.notes}` : ''}
                   </div>
+                  {item.correction_reason ? (
+                    <p className="ds-form-message ds-form-message--warning">
+                      סיבת תיקון: {item.correction_reason}
+                    </p>
+                  ) : null}
+                  {item.rejection_reason ? (
+                    <p className="ds-form-message ds-form-message--error">
+                      סיבת דחייה: {item.rejection_reason}
+                    </p>
+                  ) : null}
+                  {item.file_purged_at || (!item.storage_object_path && details.files_purged_at) ? (
+                    <p className="ds-form-message">הקובץ אינו נשמר עוד במערכת.</p>
+                  ) : null}
+                  {item.status === 'returned_for_correction' ? (
+                    <button
+                      type="button"
+                      className="ds-btn ds-btn--primary"
+                      onClick={() =>
+                        setCorrectionItem({
+                          id: item.id,
+                          printingRequestId: details.id,
+                          institutionId: details.institution_id,
+                          original_filename: item.original_filename,
+                          detected_file_type: item.detected_file_type,
+                          file_size_bytes: item.file_size_bytes,
+                          storage_object_path: item.storage_object_path,
+                          page_selection_mode: item.page_selection_mode,
+                          page_selection_value: item.page_selection_value,
+                          copies: item.copies,
+                          color_mode: item.color_mode,
+                          paper_size: item.paper_size,
+                          orientation: item.orientation,
+                          sides: item.sides,
+                          duplex_flip_mode: item.duplex_flip_mode,
+                          pages_per_sheet: item.pages_per_sheet,
+                          scale_mode: item.scale_mode,
+                          custom_scale_percent: item.custom_scale_percent,
+                          collate: item.collate,
+                          notes: item.notes,
+                          correction_reason: item.correction_reason,
+                        })
+                      }
+                    >
+                      תיקון קובץ
+                    </button>
+                  ) : null}
                 </li>
               ))}
             </ul>
           </div>
         ) : null}
       </Modal>
+
+      <TeacherPrintItemCorrectionModal
+        isOpen={correctionItem != null}
+        item={correctionItem}
+        onClose={() => setCorrectionItem(null)}
+        onResubmitted={() => {
+          setActionMessage('הקובץ נשלח מחדש.')
+          if (details) void openDetails(details)
+          void reload()
+        }}
+      />
 
       <ConfirmDialog
         isOpen={cancelTarget != null}

@@ -70,6 +70,14 @@ const PRINTING_ERROR_MESSAGES: Partial<Record<PrintingErrorCode, string>> = {
   SECRETARY_NOT_AUTHORIZED: 'אין הרשאת מזכירה לבצע פעולה זו.',
   CROSS_INSTITUTION_ACCESS_DENIED: 'לא ניתן לבצע פעולה מחוץ למוסד המורשה.',
   PRINT_FILE_NOT_AVAILABLE: 'הקובץ אינו נשמר עוד במערכת.',
+  PRINT_ITEM_NOT_RETURNED: 'ניתן לתקן רק קובץ שהוחזר לתיקון.',
+  PRINT_ITEM_CORRECTION_FORBIDDEN: 'אין הרשאה לתקן קובץ זה.',
+  PRINT_ITEM_RESUBMISSION_INVALID: 'לא ניתן לשלוח מחדש את הקובץ במצבו הנוכחי.',
+  PRINT_FILE_REPLACEMENT_FAILED: 'החלפת הקובץ נכשלה. נסו שוב.',
+  PRINT_NOTIFICATION_ALREADY_EMITTED: 'ההתראה כבר נשלחה.',
+  PRINT_RETENTION_NOT_ELIGIBLE: 'הקובץ אינו זכאי למחיקת אחסון.',
+  PRINT_FILE_ALREADY_PURGED: 'הקובץ כבר הוסר מהאחסון.',
+  PRINT_RETENTION_DELETE_FAILED: 'מחיקת הקובץ מהאחסון נכשלה. ניתן לנסות שוב מאוחר יותר.',
 }
 
 export function mapPrintingErrorCode(code: PrintingErrorCode | string | null | undefined): string {

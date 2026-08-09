@@ -18,6 +18,7 @@ type TeacherPrintingAreaProps = {
   institutionId: string
   institutionTimeZone: string
   onBack: () => void
+  focusRequestId?: string | null
 }
 
 type View = 'home' | 'my-requests'
@@ -28,8 +29,9 @@ export function TeacherPrintingArea({
   institutionId,
   institutionTimeZone,
   onBack,
+  focusRequestId = null,
 }: TeacherPrintingAreaProps) {
-  const [view, setView] = useState<View>('home')
+  const [view, setView] = useState<View>(focusRequestId ? 'my-requests' : 'home')
   const [settingsLoading, setSettingsLoading] = useState(true)
   const [settingsError, setSettingsError] = useState('')
   const [minimumNotice, setMinimumNotice] = useState(60)
@@ -182,6 +184,7 @@ export function TeacherPrintingArea({
             refreshToken={listRefresh}
             onEditRequest={(id) => void openEdit(id)}
             onCreateNew={openCreate}
+            focusRequestId={focusRequestId}
           />
         </div>
       )}

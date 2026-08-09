@@ -35,6 +35,8 @@ type TeacherRequestsSectionProps = {
   requestNavigationIntent?: DashboardRequestNavigationIntent | null
   requestNavigationReturnFocus?: HTMLElement | null
   onRequestNavigationIntentConsumed?: () => void
+  printingFocusRequestId?: string | null
+  onPrintingFocusConsumed?: () => void
 }
 
 function getSubmitMessageClassName(message: string): string {
@@ -62,8 +64,10 @@ export function TeacherRequestsSection({
   requestNavigationIntent = null,
   requestNavigationReturnFocus = null,
   onRequestNavigationIntentConsumed,
+  printingFocusRequestId = null,
+  onPrintingFocusConsumed,
 }: TeacherRequestsSectionProps) {
-  const [printingOpen, setPrintingOpen] = useState(false)
+  const [printingOpen, setPrintingOpen] = useState(Boolean(printingFocusRequestId))
   const [requests, setRequests] = useState<TeacherRequest[]>([])
   const [listStatusFilter, setListStatusFilter] = useState<RequestStatus | 'all'>('all')
   const [listTypeFilter, setListTypeFilter] = useState<RequestType | 'all'>('all')
@@ -77,6 +81,11 @@ export function TeacherRequestsSection({
   const [detailsReturnFocusElement, setDetailsReturnFocusElement] = useState<HTMLElement | null>(
     null,
   )
+
+  useEffect(() => {
+    if (!printingFocusRequestId) return
+    setPrintingOpen(true)
+  }, [printingFocusRequestId])
 
   useEffect(() => {
     if (!requestNavigationIntent || requestNavigationIntent.requestId) {
@@ -378,9 +387,11 @@ export function TeacherRequestsSection({
               teacherFullName={teacherFullName}
               institutionId={institutionId}
               institutionTimeZone={institutionTimeZone}
+              focusRequestId={printingFocusRequestId}
               onBack={() => {
                 setPrintingOpen(false)
                 setSelectedCategoryType('')
+                onPrintingFocusConsumed?.()
               }}
             />
           </div>

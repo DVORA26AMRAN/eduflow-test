@@ -14,6 +14,7 @@ import {
   type DashboardNavItem,
 } from '../components/dashboard/dashboardNav'
 import { MeetingCalendarSection } from '../components/meetingCalendar/MeetingCalendarSection'
+import { AdminNotificationsSection } from '../components/notifications/AdminNotificationsSection'
 import { ManagerAnalyticsSection } from '../components/manager/ManagerAnalyticsSection'
 import { ManagerArchiveSection } from '../components/manager/ManagerArchiveSection'
 import { ManagerRecentRequestsSection } from '../components/manager/ManagerRecentRequestsSection'
@@ -112,6 +113,8 @@ export function ManagerDashboardPage({
     Map<string, RequestReminderSummary>
   >(new Map())
   const [liveAnnouncement, setLiveAnnouncement] = useState('')
+  const [printingFocusRequestId, setPrintingFocusRequestId] = useState<string | null>(null)
+  const [adminNotificationsUnreadCount, setAdminNotificationsUnreadCount] = useState(0)
   const announcementTimeoutRef = useRef<number | null>(null)
 
   const showSection = useDashboardSectionNavigation(setActiveSectionId)
@@ -191,6 +194,12 @@ export function ManagerDashboardPage({
         icon: <NavInboxIcon />,
       },
       {
+        id: 'adminNotifications',
+        label: 'התראות',
+        icon: <NavBellIcon />,
+        badgeCount: adminNotificationsUnreadCount > 0 ? adminNotificationsUnreadCount : undefined,
+      },
+      {
         id: PRINTING_WORKSPACE_SECTION_ID,
         label: PRINTING_WORKSPACE_NAV_LABEL,
         icon: <NavPrintIcon />,
@@ -203,7 +212,7 @@ export function ManagerDashboardPage({
     )
 
     return items
-  }, [handleReminderBellClick, unreadCount])
+  }, [adminNotificationsUnreadCount, handleReminderBellClick, unreadCount])
 
   function handleNavigateToTeacherRequests(intent: DashboardRequestNavigationIntent) {
     void intent
@@ -329,6 +338,21 @@ export function ManagerDashboardPage({
         </DashboardSectionPanel>
 
         <DashboardSectionPanel
+          id="manager-admin-notifications"
+          sectionId="adminNotifications"
+          activeSectionId={activeSectionId}
+          className="manager-dashboard__shell-section"
+        >
+          <AdminNotificationsSection
+            onUnreadCountChange={setAdminNotificationsUnreadCount}
+            onNavigateToPrinting={(printingRequestId) => {
+              setPrintingFocusRequestId(printingRequestId)
+              showSection(PRINTING_WORKSPACE_SECTION_ID)
+            }}
+          />
+        </DashboardSectionPanel>
+
+        <DashboardSectionPanel
           id="manager-printing-workspace"
           sectionId={PRINTING_WORKSPACE_SECTION_ID}
           activeSectionId={activeSectionId}
@@ -338,6 +362,8 @@ export function ManagerDashboardPage({
             actorUserId={profile.id}
             institutionId={profile.school!.id}
             institutionTimeZone={profile.school!.timeZone}
+            focusRequestId={printingFocusRequestId}
+            onFocusRequestConsumed={() => setPrintingFocusRequestId(null)}
           />
         </DashboardSectionPanel>
 

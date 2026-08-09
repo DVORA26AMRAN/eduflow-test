@@ -97,6 +97,7 @@ export function TeacherDashboardPage({ profile, onLogout }: TeacherDashboardPage
     useState<DashboardRequestNavigationIntent | null>(null)
   const [requestNavigationReturnFocus, setRequestNavigationReturnFocus] =
     useState<HTMLElement | null>(null)
+  const [printingFocusRequestId, setPrintingFocusRequestId] = useState<string | null>(null)
 
   const [reminderStatesByRequestId, setReminderStatesByRequestId] = useState<
 
@@ -263,7 +264,13 @@ export function TeacherDashboardPage({ profile, onLogout }: TeacherDashboardPage
 
         >
 
-          <TeacherNotificationsSection onNavigateToRequest={handleNavigateFromNotification} />
+          <TeacherNotificationsSection
+            onNavigateToRequest={handleNavigateFromNotification}
+            onNavigateToPrinting={(printingRequestId) => {
+              setPrintingFocusRequestId(printingRequestId)
+              showSection('requests')
+            }}
+          />
 
         </DashboardSectionPanel>
 
@@ -299,6 +306,8 @@ export function TeacherDashboardPage({ profile, onLogout }: TeacherDashboardPage
             requestNavigationIntent={requestNavigationIntent}
             requestNavigationReturnFocus={requestNavigationReturnFocus}
             onRequestNavigationIntentConsumed={handleRequestNavigationIntentConsumed}
+            printingFocusRequestId={printingFocusRequestId}
+            onPrintingFocusConsumed={() => setPrintingFocusRequestId(null)}
 
           />
 

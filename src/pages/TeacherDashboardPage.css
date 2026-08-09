@@ -411,14 +411,6 @@
   margin-top: var(--ds-label-gap);
 }
 
-.teacher-dashboard__file-input {
-  padding: var(--ds-control-gap);
-}
-
-.teacher-dashboard__upload-fieldset {
-  margin-top: var(--ds-label-gap);
-}
-
 .teacher-dashboard__empty-state {
   margin: 0;
 }

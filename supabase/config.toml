@@ -412,3 +412,11 @@ enabled = true
 # declarative_schema_path = "./database"
 # JSON string passed through to pg-delta SQL formatting.
 # format_options = "{\"keywordCase\":\"upper\",\"indent\":2,\"maxWidth\":80,\"commaStyle\":\"trailing\"}"
+
+# Printing Phase 4 workers — service_role Authorization required (app gate).
+# Keep verify_jwt=true so anonymous callers cannot reach the handler.
+[functions.printing-overdue-dispatcher]
+verify_jwt = true
+
+[functions.printing-retention-cleanup]
+verify_jwt = true

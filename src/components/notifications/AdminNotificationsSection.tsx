@@ -10,6 +10,10 @@ import {
 } from '../../services/notifications'
 import { NOTIFICATION_TYPE_REQUEST_REMINDER } from '../../types/requestReminder'
 import { supabase } from '../../services/supabase'
+import {
+  extractPrintingRequestIdFromNotification,
+  isStaffPrintingNotificationType,
+} from '../../utils/printingNotifications'
 import { NavBellIcon } from '../dashboard/dashboardNav'
 import { DashboardSection } from '../dashboard/DashboardSection'
 import { AdminNotificationsList } from './AdminNotificationsList'
@@ -17,6 +21,14 @@ import { AdminNotificationsList } from './AdminNotificationsList'
 type AdminNotificationsSectionProps = {
   onUnreadCountChange?: (unreadCount: number) => void
   onUnreadReminderRequestIdsChange?: (requestIds: Set<string>) => void
+  onNavigateToPrinting?: (printingRequestId: string) => void
+}
+
+function isAdminListNotification(notification: AppNotification): boolean {
+  return (
+    notification.notification_type === NOTIFICATION_TYPE_REQUEST_REMINDER ||
+    isStaffPrintingNotificationType(notification.notification_type)
+  )
 }
 
 function prependNotificationIfNew(
@@ -33,22 +45,28 @@ function prependNotificationIfNew(
 export function AdminNotificationsSection({
   onUnreadCountChange,
   onUnreadReminderRequestIdsChange,
+  onNavigateToPrinting,
 }: AdminNotificationsSectionProps) {
   const [notifications, setNotifications] = useState<AppNotification[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [loadError, setLoadError] = useState('')
 
-  const reminderNotifications = useMemo(
-    () =>
-      notifications.filter(
-        (notification) => notification.notification_type === NOTIFICATION_TYPE_REQUEST_REMINDER,
-      ),
+  const visibleNotifications = useMemo(
+    () => notifications.filter(isAdminListNotification),
     [notifications],
   )
 
+  const reminderNotifications = useMemo(
+    () =>
+      visibleNotifications.filter(
+        (notification) => notification.notification_type === NOTIFICATION_TYPE_REQUEST_REMINDER,
+      ),
+    [visibleNotifications],
+  )
+
   const unreadCount = useMemo(
-    () => reminderNotifications.filter((notification) => !notification.is_read).length,
-    [reminderNotifications],
+    () => visibleNotifications.filter((notification) => !notification.is_read).length,
+    [visibleNotifications],
   )
 
   const unreadReminderRequestIds = useMemo(
@@ -105,7 +123,7 @@ export function AdminNotificationsSection({
         }
 
         const subscribedChannel = subscribeToAdminNotifications(userId, (notification) => {
-          if (notification.notification_type !== NOTIFICATION_TYPE_REQUEST_REMINDER) {
+          if (!isAdminListNotification(notification)) {
             return
           }
 
@@ -140,27 +158,37 @@ export function AdminNotificationsSection({
 
   async function handleNotificationClick(notificationId: string) {
     const notification = notifications.find((item) => item.id === notificationId)
-    if (!notification || notification.is_read) {
+    if (!notification) {
       return
     }
 
-    const result = await markNotificationAsRead(notificationId)
+    if (!notification.is_read) {
+      const result = await markNotificationAsRead(notificationId)
 
-    if (!result.ok) {
-      return
+      if (result.ok) {
+        setNotifications((currentNotifications) =>
+          currentNotifications.map((item) =>
+            item.id === notificationId ? { ...item, is_read: true } : item,
+          ),
+        )
+      }
     }
 
-    setNotifications((currentNotifications) =>
-      currentNotifications.map((item) =>
-        item.id === notificationId ? { ...item, is_read: true } : item,
-      ),
-    )
+    if (
+      isStaffPrintingNotificationType(notification.notification_type) &&
+      onNavigateToPrinting
+    ) {
+      const printingRequestId = extractPrintingRequestIdFromNotification(notification.metadata)
+      if (printingRequestId) {
+        onNavigateToPrinting(printingRequestId)
+      }
+    }
   }
 
   return (
     <section className="admin-notifications">
       <DashboardSection
-        title="התראות תזכורת"
+        title="התראות"
         icon={<NavBellIcon />}
         headerAddon={
           !isLoading && !loadError ? (
@@ -182,7 +210,7 @@ export function AdminNotificationsSection({
 
           {!isLoading && !loadError && (
             <AdminNotificationsList
-              notifications={reminderNotifications}
+              notifications={visibleNotifications}
               onNotificationClick={handleNotificationClick}
             />
           )}

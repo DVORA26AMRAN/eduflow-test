@@ -136,6 +136,14 @@ vi.mock('../components/secretary/SecretaryArchiveSection', () => ({
   SecretaryArchiveSection: () => <div data-testid="secretary-archive">ארכיון מוסדי</div>,
 }))
 
+vi.mock('../components/notifications/AdminNotificationsSection', () => ({
+  AdminNotificationsSection: () => <div data-testid="admin-notifications">התראות מנהל</div>,
+}))
+
+vi.mock('../components/secretary/printing/SecretaryPrintingWorkspace', () => ({
+  SecretaryPrintingWorkspace: () => <div data-testid="secretary-printing">הדפסות</div>,
+}))
+
 vi.mock('../components/manager/ManagerRecentRequestsSection', () => ({
   ManagerRecentRequestsSection: () => <div data-testid="manager-recent-requests">בקשות מורים</div>,
 }))
@@ -284,6 +292,9 @@ describe('sidebar section navigation', () => {
 
     await user.click(screen.getByRole('button', { name: 'בקשות מורים' }))
     expect(screen.getByTestId('secretary-requests-inbox')).toBeInTheDocument()
+
+    await user.click(screen.getByRole('button', { name: 'התראות' }))
+    expect(screen.getByTestId('admin-notifications')).toBeInTheDocument()
 
     await user.click(screen.getByRole('button', { name: 'ארכיון מוסדי' }))
     expect(screen.getByTestId('secretary-archive')).toBeInTheDocument()

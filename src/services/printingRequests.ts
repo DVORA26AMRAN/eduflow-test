@@ -314,6 +314,7 @@ export type InstitutionPrintingRequestRow = {
     notes: string | null
     correction_reason: string | null
     rejection_reason: string | null
+    file_purged_at?: string | null
   }> | null
 }
 
@@ -377,7 +378,8 @@ export async function listInstitutionPrintingRequests(): Promise<
         collate,
         notes,
         correction_reason,
-        rejection_reason
+        rejection_reason,
+        file_purged_at
       )
     `,
     )
@@ -448,12 +450,13 @@ export async function listInstitutionSecretariesForTransfer(): Promise<
 export async function accessPrintingFile(params: {
   storageObjectPath: string | null | undefined
   filesPurgedAt: string | null | undefined
+  itemFilePurgedAt?: string | null | undefined
   expiresInSeconds?: number
 }): Promise<
   | { ok: true; signedUrl: string }
   | { ok: false; errorCode: 'PRINT_FILE_NOT_AVAILABLE' | 'PRINT_REQUEST_FORBIDDEN'; errorMessage: string }
 > {
-  if (params.filesPurgedAt || !params.storageObjectPath) {
+  if (params.filesPurgedAt || params.itemFilePurgedAt || !params.storageObjectPath) {
     return {
       ok: false,
       errorCode: 'PRINT_FILE_NOT_AVAILABLE',

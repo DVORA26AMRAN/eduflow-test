@@ -404,4 +404,26 @@ describe('SecretaryPrintingWorkspace', () => {
     },
     30000,
   )
+
+  it('opens focused request details from notification deep link without claiming', async () => {
+    const onFocusRequestConsumed = vi.fn()
+    mockDefaults([baseRequest({ id: 'req-focus', request_number: 2042 })])
+
+    render(
+      <div dir="rtl">
+        <SecretaryPrintingWorkspace
+          actorUserId="sec-1"
+          institutionId="inst-1"
+          institutionTimeZone="UTC"
+          focusRequestId="req-focus"
+          onFocusRequestConsumed={onFocusRequestConsumed}
+        />
+      </div>,
+    )
+
+    const details = await screen.findByRole('dialog', { name: /בקשת הדפסה #2042/ })
+    expect(within(details).getByText(/worksheet\.pdf/)).toBeInTheDocument()
+    expect(claimPrintingRequest).not.toHaveBeenCalled()
+    await waitFor(() => expect(onFocusRequestConsumed).toHaveBeenCalled())
+  })
 })

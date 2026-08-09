@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { DashboardSection } from '../../dashboard/DashboardSection'
 import { NavPrintIcon } from '../../dashboard/dashboardNav'
 import { ConfirmDialog, Modal } from '../../ui/Modal'
@@ -33,6 +33,7 @@ import {
   filterSecretaryPrintingRequests,
   formatPrintItemSettingsHebrew,
   groupActivePrintingRequests,
+  HISTORY_PRINTING_STATUSES,
   isApproachingPrintingDeadline,
   wasUpdatedAfterSubmission,
   type PrintingDeadlineGroup,
@@ -47,6 +48,8 @@ type SecretaryPrintingWorkspaceProps = {
   actorUserId: string
   institutionId: string
   institutionTimeZone: string
+  focusRequestId?: string | null
+  onFocusRequestConsumed?: () => void
 }
 
 type ItemActionKind = 'print_mark' | 'return' | 'reject'
@@ -55,6 +58,8 @@ export function SecretaryPrintingWorkspace({
   actorUserId,
   institutionId,
   institutionTimeZone,
+  focusRequestId = null,
+  onFocusRequestConsumed,
 }: SecretaryPrintingWorkspaceProps) {
   const [view, setView] = useState<PrintingWorkspaceView>('active')
   const [filters, setFilters] = useState<SecretaryPrintingFilters>(DEFAULT_SECRETARY_PRINTING_FILTERS)
@@ -81,6 +86,7 @@ export function SecretaryPrintingWorkspace({
     filename: string
   } | null>(null)
   const [itemReason, setItemReason] = useState('')
+  const consumedFocusRequestIdRef = useRef<string | null>(null)
 
   const reload = useCallback(async () => {
     setIsLoading(true)
@@ -169,6 +175,32 @@ export function SecretaryPrintingWorkspace({
     }
     setDetailsLoading(false)
   }
+
+  useEffect(() => {
+    if (!focusRequestId) {
+      consumedFocusRequestIdRef.current = null
+      return
+    }
+    if (isLoading) return
+    if (consumedFocusRequestIdRef.current === focusRequestId) return
+
+    const row = requests.find((request) => request.id === focusRequestId)
+    if (!row) {
+      consumedFocusRequestIdRef.current = focusRequestId
+      onFocusRequestConsumed?.()
+      return
+    }
+
+    consumedFocusRequestIdRef.current = focusRequestId
+    setView(
+      HISTORY_PRINTING_STATUSES.includes(row.status as (typeof HISTORY_PRINTING_STATUSES)[number])
+        ? 'history'
+        : 'active',
+    )
+    void openDetails(row).finally(() => {
+      onFocusRequestConsumed?.()
+    })
+  }, [focusRequestId, isLoading, onFocusRequestConsumed, requests])
 
   function refreshDetailsFromList(next: InstitutionPrintingRequestRow[]) {
     setRequests(next)
@@ -294,6 +326,7 @@ export function SecretaryPrintingWorkspace({
     const access = await accessPrintingFile({
       storageObjectPath: item.storage_object_path,
       filesPurgedAt: details.files_purged_at,
+      itemFilePurgedAt: item.file_purged_at,
     })
     setBusyAction(null)
     if (!access.ok) {
@@ -719,9 +752,14 @@ export function SecretaryPrintingWorkspace({
                   {item.rejection_reason ? (
                     <p className="ds-form-message">סיבת דחייה: {item.rejection_reason}</p>
                   ) : null}
+                  {item.status === 'resubmitted' ? (
+                    <p className="ds-form-message ds-form-message--warning" role="status">
+                      הקובץ נשלח מחדש
+                    </p>
+                  ) : null}
 
                   <div className="secretary-printing-details__item-actions">
-                    {filesAvailable && item.storage_object_path ? (
+                    {filesAvailable && item.storage_object_path && !item.file_purged_at ? (
                       <>
                         <button
                           type="button"

@@ -1,6 +1,5 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useState } from 'react'
 import type { RequestPayload, RequestType, GeneralRequestFormFields, GeneralRequestRecipientRole } from '../../types/request'
-import { REQUEST_ATTACHMENT_ACCEPT } from '../../types/attachment'
 import { validateRequestAttachment } from '../../services/attachments'
 import {
   buildAbsenceDescription,
@@ -18,6 +17,7 @@ import {
 } from '../../utils/generalRequest'
 import { isCreateRequestFormDirty } from '../../utils/createRequestForm'
 import { isRequestType } from '../../utils/requests'
+import { RequestAttachmentPicker } from '../requests/RequestAttachmentPicker'
 import { TeacherAbsenceRequestFields } from './TeacherAbsenceRequestFields'
 import { TeacherBudgetRequestFields } from './TeacherBudgetRequestFields'
 import { TeacherGeneralRequestFields } from './TeacherGeneralRequestFields'
@@ -91,7 +91,6 @@ export function CreateRequestForm({
     useState<GeneralRequestFormFields>(emptyGeneralRequestFields)
   const [attachmentFile, setAttachmentFile] = useState<File | null>(null)
   const [validationMessage, setValidationMessage] = useState('')
-  const fileInputRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
     onDirtyChange?.(
@@ -264,9 +263,6 @@ export function CreateRequestForm({
     if (!attachmentValidation.ok) {
       setAttachmentFile(null)
       setValidationMessage(attachmentValidation.errorMessage)
-      if (fileInputRef.current) {
-        fileInputRef.current.value = ''
-      }
       return
     }
 
@@ -365,21 +361,12 @@ export function CreateRequestForm({
       )}
 
       {hideCategorySelector && requestType !== '' && (
-        <div className="ds-fieldset teacher-dashboard__upload-fieldset">
-          <label className="ds-field" htmlFor="request-attachment">
-            <span className="ds-label">קובץ מצורף</span>
-            <input
-              ref={fileInputRef}
-              id="request-attachment"
-              type="file"
-              className="ds-input teacher-dashboard__file-input"
-              accept={REQUEST_ATTACHMENT_ACCEPT}
-              onChange={(e) => handleAttachmentChange(e.target.files?.[0] ?? null)}
-              disabled={isSubmitting}
-            />
-            <p className="ds-helper-text">אפשר לצרף מסמך תומך אם יש צורך.</p>
-          </label>
-        </div>
+        <RequestAttachmentPicker
+          selectedFile={attachmentFile}
+          disabled={isSubmitting}
+          errorId={validationMessage ? 'create-request-validation' : undefined}
+          onSelectedFileChange={handleAttachmentChange}
+        />
       )}
 
       {hideCategorySelector && requestType !== '' && (
@@ -406,7 +393,13 @@ export function CreateRequestForm({
       )}
 
       {validationMessage && (
-        <p className="ds-form-message ds-form-message--error">{validationMessage}</p>
+        <p
+          id="create-request-validation"
+          className="ds-form-message ds-form-message--error"
+          role="alert"
+        >
+          {validationMessage}
+        </p>
       )}
 
       {submitMessage && (

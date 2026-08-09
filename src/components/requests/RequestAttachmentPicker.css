@@ -1,0 +1,35 @@
+.request-attachment-picker {
+  margin-top: var(--ds-label-gap);
+}
+
+.request-attachment-picker__input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.request-attachment-picker__row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--ds-control-gap);
+}
+
+.request-attachment-picker__button {
+  flex-shrink: 0;
+}
+
+.request-attachment-picker__filename {
+  margin: 0;
+  min-width: 0;
+  font-size: var(--ds-font-size-sm);
+  font-weight: var(--ds-font-weight-medium);
+  color: var(--ds-color-text-primary);
+  word-break: break-word;
+}
