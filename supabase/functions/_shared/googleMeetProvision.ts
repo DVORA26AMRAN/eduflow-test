@@ -4,9 +4,16 @@
  */
 
 import {
+  classifyGoogleCalendarHttpFailure,
+  type CalendarFailureCode,
+} from './googleCalendarErrors.ts'
+import {
   decryptRefreshTokenWithKeyRing,
   type TokenEncryptionKeyRing,
 } from './googleOAuthCrypto.ts'
+
+export const CALENDAR_EVENTS_INSERT_OPERATION = 'calendar.events.insert'
+export const CALENDAR_PRIMARY_GET_OPERATION = 'calendar.calendars.get'
 
 /** Async SHA-256 hex truncated to 32 chars for conferenceData.createRequest.requestId */
 export async function deriveConferenceRequestIdAsync(
@@ -138,9 +145,17 @@ export type CreateMeetEventResult =
   | { ok: true; eventId: string; meetUrl: string; reused: boolean }
   | {
       ok: false
-      code: 'GOOGLE_API_FAILED' | 'GOOGLE_API_TIMEOUT' | 'MEET_URL_MISSING' | 'REAUTHORIZATION_REQUIRED'
+      code:
+        | CalendarFailureCode
+        | 'GOOGLE_API_FAILED'
+        | 'GOOGLE_API_TIMEOUT'
+        | 'MEET_URL_MISSING'
       message: string
-      httpStatus?: number
+      httpStatus?: number | null
+      googleReason?: string | null
+      googleMessage?: string | null
+      operation?: string
+      invalidateOAuth?: boolean
     }
 
 export async function findExistingEventByRequestKey(args: {
@@ -270,24 +285,23 @@ export async function createOrReuseMeetCalendarEvent(args: {
       signal: controller.signal,
     })
 
-    const json = (await res.json()) as Record<string, unknown>
-
-    if (res.status === 401 || res.status === 403) {
-      return {
-        ok: false,
-        code: 'REAUTHORIZATION_REQUIRED',
-        message: 'Google Calendar authorization failed.',
-        httpStatus: res.status,
-      }
-    }
+    const json = (await res.json().catch(() => ({}))) as Record<string, unknown>
 
     if (!res.ok) {
-      const err = json.error as Record<string, unknown> | undefined
+      const classified = classifyGoogleCalendarHttpFailure({
+        httpStatus: res.status,
+        responseBody: json,
+        operation: CALENDAR_EVENTS_INSERT_OPERATION,
+      })
       return {
         ok: false,
-        code: 'GOOGLE_API_FAILED',
-        message: typeof err?.message === 'string' ? 'google_calendar_error' : 'google_calendar_error',
-        httpStatus: res.status,
+        code: classified.classification,
+        message: classified.message ?? classified.classification.toLowerCase(),
+        httpStatus: classified.httpStatus,
+        googleReason: classified.reason,
+        googleMessage: classified.message,
+        operation: classified.operation,
+        invalidateOAuth: classified.invalidateOAuth,
       }
     }
 
@@ -303,6 +317,74 @@ export async function createOrReuseMeetCalendarEvent(args: {
       ok: false,
       code: aborted ? 'GOOGLE_API_TIMEOUT' : 'GOOGLE_API_FAILED',
       message: aborted ? 'google_api_timeout' : 'google_api_network_error',
+      invalidateOAuth: false,
+    }
+  } finally {
+    clearTimeout(timer)
+  }
+}
+
+/**
+ * Non-destructive Calendar capability probe (GET primary calendar).
+ * Does not create events, mutate meetings, or clear OAuth tokens.
+ */
+export async function probeGoogleCalendarAccess(args: {
+  accessToken: string
+  timeoutMs?: number
+}): Promise<{
+  ok: boolean
+  httpStatus: number | null
+  googleReason: string | null
+  googleMessage: string | null
+  classification: CalendarFailureCode | 'CALENDAR_PROBE_OK' | 'CALENDAR_PROBE_TIMEOUT' | 'CALENDAR_PROBE_NETWORK'
+  operation: string
+  invalidateOAuth: boolean
+}> {
+  const operation = CALENDAR_PRIMARY_GET_OPERATION
+  const controller = new AbortController()
+  const timer = setTimeout(() => controller.abort(), args.timeoutMs ?? 15000)
+  try {
+    const res = await fetch('https://www.googleapis.com/calendar/v3/calendars/primary', {
+      method: 'GET',
+      headers: { Authorization: `Bearer ${args.accessToken}` },
+      signal: controller.signal,
+    })
+    const json = (await res.json().catch(() => ({}))) as Record<string, unknown>
+    if (res.ok) {
+      return {
+        ok: true,
+        httpStatus: res.status,
+        googleReason: null,
+        googleMessage: null,
+        classification: 'CALENDAR_PROBE_OK',
+        operation,
+        invalidateOAuth: false,
+      }
+    }
+    const classified = classifyGoogleCalendarHttpFailure({
+      httpStatus: res.status,
+      responseBody: json,
+      operation,
+    })
+    return {
+      ok: false,
+      httpStatus: classified.httpStatus,
+      googleReason: classified.reason,
+      googleMessage: classified.message,
+      classification: classified.classification,
+      operation: classified.operation,
+      invalidateOAuth: classified.invalidateOAuth,
+    }
+  } catch (error) {
+    const aborted = error instanceof DOMException && error.name === 'AbortError'
+    return {
+      ok: false,
+      httpStatus: null,
+      googleReason: null,
+      googleMessage: null,
+      classification: aborted ? 'CALENDAR_PROBE_TIMEOUT' : 'CALENDAR_PROBE_NETWORK',
+      operation,
+      invalidateOAuth: false,
     }
   } finally {
     clearTimeout(timer)

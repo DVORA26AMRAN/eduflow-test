@@ -15,7 +15,10 @@ function toBase64Url(bytes: Uint8Array): string {
 }
 
 function fromBase64(base64: string): Uint8Array {
-  const normalized = base64.replace(/-/g, '+').replace(/_/g, '/')
+  // Strip whitespace first: Postgres encode(bytea, 'base64') emits MIME line breaks.
+  // Padding must be computed from the cleaned length or atob throws InvalidCharacterError.
+  const clean = base64.replace(/\s+/g, '')
+  const normalized = clean.replace(/-/g, '+').replace(/_/g, '/')
   const padded = normalized + '='.repeat((4 - (normalized.length % 4)) % 4)
   const binary = atob(padded)
   const out = new Uint8Array(binary.length)

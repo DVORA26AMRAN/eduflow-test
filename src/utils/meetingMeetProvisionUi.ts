@@ -4,6 +4,7 @@
  */
 
 import type { MeetProvisionStatus } from './meetingMeetProvision'
+import { isMeetProvisionReauthErrorCode } from './googleCalendarErrors'
 
 export const OWNER_GOOGLE_CONNECTION_STATUSES = [
   'connected',
@@ -48,7 +49,7 @@ export type MeetProvisionUiInput = {
 }
 
 function isReauthError(error: string | null): boolean {
-  return error === 'REAUTHORIZATION_REQUIRED' || error === 'GOOGLE_NOT_CONNECTED'
+  return isMeetProvisionReauthErrorCode(error)
 }
 
 /**
@@ -84,7 +85,7 @@ export function shouldShowGoogleReauthorization(input: {
     return true
   }
 
-  return status === 'failed' && input.meetProvisionError === 'REAUTHORIZATION_REQUIRED'
+  return status === 'failed' && isMeetProvisionReauthErrorCode(input.meetProvisionError)
 }
 
 export function resolveMeetProvisionUi(input: MeetProvisionUiInput): MeetProvisionUiModel {

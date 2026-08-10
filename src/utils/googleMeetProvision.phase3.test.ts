@@ -105,12 +105,22 @@ describe('Phase 3 Meet provision migration + claim guards', () => {
     expect(worker).toContain('token_refresh_http_status')
     expect(worker).toContain('google_oauth_error_code')
     expect(worker).toContain('calendar_request_reached')
+    expect(worker).toContain('calendar_failure_code')
+    expect(worker).toContain('oauth_invalidated')
     expect(worker).toContain("branch: 'decrypt_failed'")
     expect(worker).toContain("branch: 'token_refresh_rejected'")
     // Logged diagnostic payload must not include secret-bearing field names.
     expect(worker).not.toMatch(/logRefreshTokenDiagnostic\(\{[^}]*ciphertext/)
     expect(worker).not.toMatch(/logRefreshTokenDiagnostic\(\{[^}]*refresh_token/)
     expect(worker).not.toMatch(/logRefreshTokenDiagnostic\(\{[^}]*client_secret/)
+  })
+
+  it('classifies Calendar failures instead of blanketing REAUTHORIZATION_REQUIRED', () => {
+    expect(googleApi).toContain('classifyGoogleCalendarHttpFailure')
+    expect(googleApi).not.toMatch(
+      /if \(res\.status === 401 \|\| res\.status === 403\)[\s\S]{0,200}REAUTHORIZATION_REQUIRED/,
+    )
+    expect(worker).toContain('if (invalidateOAuth)')
   })
 
   it('creates Calendar events with conferenceDataVersion=1, sendUpdates=none, no attendees', () => {

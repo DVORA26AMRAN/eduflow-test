@@ -167,6 +167,40 @@ describe('OAuth state hashing + token encryption', () => {
     expect(dec).toBe(plain)
   })
 
+  it('decrypts ciphertext Base64 that includes Postgres MIME line breaks', async () => {
+    const keyBytes = new Uint8Array(32)
+    crypto.getRandomValues(keyBytes)
+    const keyB64 = btoa(String.fromCharCode(...keyBytes))
+    const key = await importAesGcmKeyFromBase64(keyB64)
+    // Long enough that encode(..., 'base64') would insert newlines past 76 chars.
+    const plain = `1//refresh-token-${'x'.repeat(80)}`
+    const enc = await encryptRefreshToken(plain, key)
+    const mimeWrap = (b64: string) => {
+      const parts: string[] = []
+      for (let i = 0; i < b64.length; i += 76) {
+        parts.push(b64.slice(i, i + 76))
+      }
+      return parts.join('\n')
+    }
+    const mimeCiphertext = mimeWrap(enc.ciphertextBase64)
+    expect(mimeCiphertext).toContain('\n')
+    const dec = await decryptRefreshToken(mimeCiphertext, enc.nonceBase64, key)
+    expect(dec).toBe(plain)
+  })
+
+  it('keeps Edge fromBase64 strip-before-pad order in sync', () => {
+    const edge = readFileSync(
+      resolve(process.cwd(), 'supabase/functions/_shared/googleOAuthCrypto.ts'),
+      'utf8',
+    )
+    const fromIdx = edge.indexOf('function fromBase64')
+    const cleanIdx = edge.indexOf("replace(/\\s+/g, '')", fromIdx)
+    const padIdx = edge.indexOf('length % 4', fromIdx)
+    expect(fromIdx).toBeGreaterThanOrEqual(0)
+    expect(cleanIdx).toBeGreaterThan(fromIdx)
+    expect(padIdx).toBeGreaterThan(cleanIdx)
+  })
+
   it('redacts tokens from log payloads', () => {
     const redacted = redactSecretsForLog({
       refresh_token: 'secret',

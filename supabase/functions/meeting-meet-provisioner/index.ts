@@ -41,6 +41,12 @@ type RefreshTokenDiagnostic = {
   token_refresh_http_status: number | null
   google_oauth_error_code: string | null
   calendar_request_reached: boolean | null
+  calendar_http_status?: number | null
+  calendar_error_reason?: string | null
+  calendar_error_message?: string | null
+  calendar_operation?: string | null
+  calendar_failure_code?: string | null
+  oauth_invalidated?: boolean | null
 }
 
 /** Safe ops diagnostics only — never tokens, ciphertext, nonce, or key material. */
@@ -319,6 +325,7 @@ Deno.serve(async (request) => {
         })
 
         if (!eventResult.ok) {
+          const invalidateOAuth = eventResult.invalidateOAuth === true
           logRefreshTokenDiagnostic({
             ...baseDiag,
             branch: 'calendar_request_failed',
@@ -327,34 +334,44 @@ Deno.serve(async (request) => {
             token_refresh_http_status: tokenResult.httpStatus,
             google_oauth_error_code: null,
             calendar_request_reached: true,
+            calendar_http_status: eventResult.httpStatus ?? null,
+            calendar_error_reason: eventResult.googleReason ?? null,
+            calendar_error_message: eventResult.googleMessage ?? null,
+            calendar_operation: eventResult.operation ?? null,
+            calendar_failure_code: eventResult.code,
+            oauth_invalidated: invalidateOAuth,
           })
-          if (eventResult.code === 'REAUTHORIZATION_REQUIRED') {
+          // Only invalidate OAuth when Calendar proves the grant itself is unusable.
+          // Generic 403 (API disabled, quota, policy, etc.) must NOT clear refresh tokens.
+          if (invalidateOAuth) {
             await service.rpc('meeting_calendar_service_mark_google_reauthorization_required', {
               p_user_id: ownerId,
             })
-            await service.rpc('meeting_calendar_fail_meet_provision', {
-              p_request_id: requestId,
-              p_error: 'REAUTHORIZATION_REQUIRED',
-              p_retry_delay_seconds: 0,
-            })
-          } else {
-            const attempts = Number(req.attempt_count ?? 1)
-            const retry =
-              eventResult.code === 'GOOGLE_API_TIMEOUT' ||
-              eventResult.code === 'GOOGLE_API_FAILED'
-            await service.rpc('meeting_calendar_fail_meet_provision', {
-              p_request_id: requestId,
-              p_error: safeErrorCode(eventResult.code),
-              p_retry_delay_seconds:
-                retry && attempts < MAX_ATTEMPTS_BEFORE_HARD_FAIL
-                  ? TRANSIENT_RETRY_SECONDS
-                  : 0,
-            })
           }
+          const attempts = Number(req.attempt_count ?? 1)
+          const retry =
+            eventResult.code === 'GOOGLE_API_TIMEOUT' ||
+            eventResult.code === 'GOOGLE_API_FAILED' ||
+            eventResult.code === 'CALENDAR_RATE_LIMIT' ||
+            eventResult.code === 'CALENDAR_OTHER'
+          await service.rpc('meeting_calendar_fail_meet_provision', {
+            p_request_id: requestId,
+            p_error: safeErrorCode(eventResult.code),
+            p_retry_delay_seconds:
+              !invalidateOAuth && retry && attempts < MAX_ATTEMPTS_BEFORE_HARD_FAIL
+                ? TRANSIENT_RETRY_SECONDS
+                : 0,
+          })
           failed += 1
           console.error(
             'meet-provisioner google event failed',
-            redactSecretsForLog({ code: eventResult.code }),
+            redactSecretsForLog({
+              code: eventResult.code,
+              httpStatus: eventResult.httpStatus ?? null,
+              reason: eventResult.googleReason ?? null,
+              operation: eventResult.operation ?? null,
+              invalidateOAuth,
+            }),
           )
           continue
         }
