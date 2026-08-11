@@ -165,4 +165,16 @@ describe('Calendar classification Edge + provisioner contracts', () => {
     expect(edgeMeet).toContain('hangoutsMeet')
     expect(edgeMeet).toContain('createOrReuseMeetCalendarEvent')
   })
+
+  it('uses events.list probe compatible with calendar.events (not calendars.get)', () => {
+    expect(edgeMeet).toContain("CALENDAR_EVENTS_LIST_OPERATION")
+    expect(edgeMeet).toContain("calendars/primary/events")
+    expect(edgeMeet).toMatch(
+      /probeGoogleCalendarAccess[\s\S]*calendars\/primary\/events/,
+    )
+    // Must not call calendars.get as the live probe (requires broader scopes).
+    expect(edgeMeet).not.toMatch(
+      /probeGoogleCalendarAccess[\s\S]*fetch\('https:\/\/www\.googleapis\.com\/calendar\/v3\/calendars\/primary'/,
+    )
+  })
 })

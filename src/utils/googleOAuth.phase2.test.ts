@@ -253,8 +253,29 @@ describe('Edge Function authorization model (source guards)', () => {
     expect(start).toContain('meeting_calendar_get_google_oauth_actor')
     expect(start).toContain('access_type')
     expect(start).toContain('offline')
+    expect(start).toContain('prompt')
+    expect(start).toContain('consent')
     expect(start).toContain('meeting_calendar_service_create_oauth_state')
     expect(start).not.toContain('VITE_')
+  })
+
+  it('requests only calendar.events (no broad calendar scope)', () => {
+    const env = readFileSync(
+      resolve(process.cwd(), 'supabase/functions/_shared/googleOAuthEnv.ts'),
+      'utf8',
+    )
+    expect(env).toContain("'https://www.googleapis.com/auth/calendar.events'")
+    expect(env).toContain('GOOGLE_OAUTH_SCOPES')
+    // Default must not request full calendar access.
+    expect(env).not.toMatch(
+      /GOOGLE_OAUTH_SCOPES[\s\S]{0,120}'https:\/\/www\.googleapis\.com\/auth\/calendar'/,
+    )
+    expect(start).toContain("config.scopes.join(' ')")
+  })
+
+  it('callback stores granted token_scopes from Google', () => {
+    expect(callback).toContain('p_token_scopes')
+    expect(callback).toContain('tokenJson.scope')
   })
 
   it('callback rejects bad state and does not store credentials on error paths', () => {

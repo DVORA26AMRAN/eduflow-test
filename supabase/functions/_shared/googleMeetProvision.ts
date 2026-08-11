@@ -13,6 +13,8 @@ import {
 } from './googleOAuthCrypto.ts'
 
 export const CALENDAR_EVENTS_INSERT_OPERATION = 'calendar.events.insert'
+export const CALENDAR_EVENTS_LIST_OPERATION = 'calendar.events.list'
+/** @deprecated Prefer events.list probe — calendars.get is not covered by calendar.events scope. */
 export const CALENDAR_PRIMARY_GET_OPERATION = 'calendar.calendars.get'
 
 /** Async SHA-256 hex truncated to 32 chars for conferenceData.createRequest.requestId */
@@ -325,7 +327,10 @@ export async function createOrReuseMeetCalendarEvent(args: {
 }
 
 /**
- * Non-destructive Calendar capability probe (GET primary calendar).
+ * Non-destructive Calendar capability probe.
+ * Uses events.list (compatible with https://www.googleapis.com/auth/calendar.events).
+ * Does not use calendars.get — that endpoint requires calendar / calendars scopes
+ * and would false-positive as CALENDAR_INSUFFICIENT_SCOPE under the production grant.
  * Does not create events, mutate meetings, or clear OAuth tokens.
  */
 export async function probeGoogleCalendarAccess(args: {
@@ -340,11 +345,14 @@ export async function probeGoogleCalendarAccess(args: {
   operation: string
   invalidateOAuth: boolean
 }> {
-  const operation = CALENDAR_PRIMARY_GET_OPERATION
+  const operation = CALENDAR_EVENTS_LIST_OPERATION
   const controller = new AbortController()
   const timer = setTimeout(() => controller.abort(), args.timeoutMs ?? 15000)
   try {
-    const res = await fetch('https://www.googleapis.com/calendar/v3/calendars/primary', {
+    const url = new URL('https://www.googleapis.com/calendar/v3/calendars/primary/events')
+    url.searchParams.set('maxResults', '1')
+    url.searchParams.set('singleEvents', 'true')
+    const res = await fetch(url, {
       method: 'GET',
       headers: { Authorization: `Bearer ${args.accessToken}` },
       signal: controller.signal,
