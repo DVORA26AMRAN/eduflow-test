@@ -21,6 +21,10 @@ export function translateStaffMemberStatus(status: string): string {
   return status
 }
 
+export function formatStaffEmail(email: string | null): string {
+  return email?.trim() || '—'
+}
+
 export function formatStaffJobTitle(jobTitle: string | null): string {
   return jobTitle?.trim() || 'מורה'
 }
@@ -54,7 +58,7 @@ export function filterStaffDirectoryMembers(
   }
 
   return members.filter((member) => {
-    const haystack = [member.fullName, member.email, member.phone ?? '']
+    const haystack = [member.fullName, member.email ?? '', member.phone ?? '']
       .join(' ')
       .toLowerCase()
     return haystack.includes(normalizedQuery)

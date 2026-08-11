@@ -1,6 +1,6 @@
 import { useState, type FormEvent } from 'react'
 import type { StaffMemberDetails, UpdateStaffMemberInput } from '../../types/staffDirectory'
-import { formatStaffJoinDate } from '../../utils/staffDirectoryDisplay'
+import { formatStaffEmail, formatStaffJoinDate } from '../../utils/staffDirectoryDisplay'
 import { validateStaffMemberEdit } from '../../utils/staffMemberEdit'
 
 type StaffMemberEditFormProps = {
@@ -111,7 +111,7 @@ export function StaffMemberEditForm({
       <dl className="staff-directory__readonly-list">
         <div className="staff-directory__details-row">
           <dt>מייל</dt>
-          <dd>{member.email}</dd>
+          <dd>{formatStaffEmail(member.email)}</dd>
         </div>
         <div className="staff-directory__details-row">
           <dt>מוסד</dt>

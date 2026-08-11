@@ -4,6 +4,7 @@ import { loadStaffMemberDetails, updateStaffMember } from '../../services/staffD
 import {
   STAFF_DIRECTORY_ERROR_MESSAGE,
   STAFF_MEMBER_DETAILS_LOADING_MESSAGE,
+  formatStaffEmail,
   formatStaffJobTitle,
   formatStaffJoinDate,
   formatWeeklyHours,
@@ -138,7 +139,7 @@ function StaffMemberDetailsContent({
             </div>
             <div className="staff-directory__details-row">
               <dt>מייל</dt>
-              <dd>{member.email}</dd>
+              <dd>{formatStaffEmail(member.email)}</dd>
             </div>
             <div className="staff-directory__details-row">
               <dt>טלפון</dt>

@@ -3,7 +3,7 @@ export type StaffMemberStatus = 'active' | 'inactive' | string
 export type StaffDirectoryMember = {
   id: string
   fullName: string
-  email: string
+  email: string | null
   phone: string | null
   jobTitle: string | null
   weeklyHours: number | null

@@ -1,6 +1,6 @@
-import { render, screen } from '@testing-library/react'
+import { cleanup, render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { StaffMemberDetails } from '../../types/staffDirectory'
 import { StaffMemberDetailsModal } from './StaffMemberDetailsModal'
 
@@ -27,6 +27,10 @@ const member: StaffMemberDetails = {
 }
 
 describe('StaffMemberDetailsModal', () => {
+  afterEach(() => {
+    cleanup()
+  })
+
   beforeEach(() => {
     loadDetailsMock.mockReset()
     updateMemberMock.mockReset()
@@ -88,4 +92,33 @@ describe('StaffMemberDetailsModal', () => {
     expect(await screen.findByText('פרטי העובד עודכנו.')).toBeInTheDocument()
     expect(loadDetailsMock).toHaveBeenCalledTimes(2)
   })
+
+  it('renders null email as an em dash and keeps edit working', async () => {
+    const user = userEvent.setup({ delay: null })
+    loadDetailsMock.mockResolvedValue({
+      ok: true,
+      member: { ...member, email: null },
+    })
+
+    render(
+      <StaffMemberDetailsModal
+        isOpen
+        memberId="teacher-1"
+        canEdit
+        institutionName="בית ספר"
+        onUpdated={vi.fn().mockResolvedValue(undefined)}
+        onClose={vi.fn()}
+      />,
+    )
+
+    expect(await screen.findByText('יעל כהן')).toBeInTheDocument()
+    expect(screen.getByText('—')).toBeInTheDocument()
+    expect(screen.queryByText('null')).not.toBeInTheDocument()
+
+    await user.click(screen.getByRole('button', { name: 'עריכת פרטים' }))
+    expect(screen.getByLabelText('שם מלא')).toHaveValue('יעל כהן')
+    expect(screen.getByText('—')).toBeInTheDocument()
+    expect(screen.queryByLabelText('מייל')).not.toBeInTheDocument()
+  })
 })
+

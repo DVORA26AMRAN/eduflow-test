@@ -38,25 +38,30 @@ function parseStaffDirectoryMember(row: Record<string, unknown>): StaffDirectory
   if (
     typeof row.id !== 'string' ||
     typeof row.full_name !== 'string' ||
-    typeof row.email !== 'string' ||
     typeof row.status !== 'string' ||
     typeof row.created_at !== 'string'
   ) {
     return null
   }
 
+  const email = parseOptionalText(row.email)
   const phone = parseOptionalText(row.phone)
   const jobTitle = parseOptionalText(row.job_title)
   const weeklyHours = parseWeeklyHours(row.weekly_hours)
 
-  if (phone === undefined || jobTitle === undefined || weeklyHours === undefined) {
+  if (
+    email === undefined ||
+    phone === undefined ||
+    jobTitle === undefined ||
+    weeklyHours === undefined
+  ) {
     return null
   }
 
   return {
     id: row.id,
     fullName: row.full_name,
-    email: row.email,
+    email,
     phone,
     jobTitle,
     weeklyHours,

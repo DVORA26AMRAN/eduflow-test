@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 import type { StaffDirectoryMember } from '../types/staffDirectory'
 import {
   filterStaffDirectoryMembers,
+  formatStaffEmail,
   sortStaffDirectoryMembers,
 } from './staffDirectoryDisplay'
 
@@ -19,7 +20,7 @@ const members: StaffDirectoryMember[] = [
   {
     id: '2',
     fullName: 'יעל לוי',
-    email: 'yael@school.com',
+    email: null,
     phone: '052-2222222',
     jobTitle: null,
     weeklyHours: 22,
@@ -29,10 +30,17 @@ const members: StaffDirectoryMember[] = [
 ]
 
 describe('staff directory display utilities', () => {
-  it('filters by full name, email, and phone', () => {
+  it('formats missing email as an em dash', () => {
+    expect(formatStaffEmail('danny@school.com')).toBe('danny@school.com')
+    expect(formatStaffEmail(null)).toBe('—')
+    expect(formatStaffEmail('   ')).toBe('—')
+  })
+
+  it('filters by full name, email, and phone including members with null email', () => {
     expect(filterStaffDirectoryMembers(members, 'יעל').map((member) => member.id)).toEqual(['2'])
     expect(filterStaffDirectoryMembers(members, 'danny@').map((member) => member.id)).toEqual(['1'])
     expect(filterStaffDirectoryMembers(members, '050-111').map((member) => member.id)).toEqual(['1'])
+    expect(filterStaffDirectoryMembers(members, '052-222').map((member) => member.id)).toEqual(['2'])
   })
 
   it('sorts by full name and weekly hours', () => {

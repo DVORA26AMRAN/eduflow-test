@@ -4,6 +4,7 @@ import type {
   StaffDirectorySortKey,
 } from '../../utils/staffDirectoryDisplay'
 import {
+  formatStaffEmail,
   formatStaffJobTitle,
   formatWeeklyHours,
   translateStaffMemberStatus,
@@ -87,7 +88,7 @@ export function StaffDirectoryTable({
               <td>{formatStaffJobTitle(member.jobTitle)}</td>
               <td>{member.phone?.trim() || '—'}</td>
               <td>{formatWeeklyHours(member.weeklyHours)}</td>
-              <td>{member.email}</td>
+              <td>{formatStaffEmail(member.email)}</td>
               <td>
                 <span
                   className={
