@@ -121,4 +121,13 @@
   .request-conversation__messages {
     max-height: 240px;
   }
+
+  .request-conversation__actions {
+    align-items: stretch;
+  }
+
+  .request-conversation__actions .ds-btn {
+    width: 100%;
+    min-width: 0;
+  }
 }

@@ -420,3 +420,11 @@ verify_jwt = true
 
 [functions.printing-retention-cleanup]
 verify_jwt = true
+
+# Privileged invite + public.users provisioning (manager: teacher|secretary; secretary: teacher).
+[functions.clever-processor]
+verify_jwt = true
+
+# Meeting reminder worker — service_role Authorization required (app gate).
+[functions.meeting-reminder-dispatcher]
+verify_jwt = true

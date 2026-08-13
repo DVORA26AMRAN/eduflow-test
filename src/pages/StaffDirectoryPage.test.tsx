@@ -68,13 +68,48 @@ describe('StaffDirectoryPage loading', () => {
     expect(screen.queryByText('טעינת פרטי הצוות נכשלה.')).not.toBeInTheDocument()
   })
 
-  it('loads the secretary staff directory including null emails', async () => {
-    render(<StaffDirectoryPage canEdit={false} institutionName="בית ספר" />)
+  it('loads the secretary staff directory with teacher onboarding and edit enabled', async () => {
+    const onCreateUser = vi.fn()
+
+    render(
+      <StaffDirectoryPage
+        canEdit
+        institutionName="בית ספר"
+        teacherOnboarding={{
+          newUserName: '',
+          newUserEmail: '',
+          newUserRole: 'teacher',
+          newUserPhone: '',
+          newUserNationalId: '',
+          newUserJobTitle: '',
+          newUserWeeklyHours: '',
+          createUserMessage: '',
+          allowedRoles: ['teacher'],
+          onNewUserNameChange: vi.fn(),
+          onNewUserEmailChange: vi.fn(),
+          onNewUserRoleChange: vi.fn(),
+          onNewUserPhoneChange: vi.fn(),
+          onNewUserNationalIdChange: vi.fn(),
+          onNewUserJobTitleChange: vi.fn(),
+          onNewUserWeeklyHoursChange: vi.fn(),
+          onCreateUser,
+        }}
+      />,
+    )
 
     expect(await screen.findByText('דני כהן')).toBeInTheDocument()
-    expect(screen.getByText('יעל לוי')).toBeInTheDocument()
-    expect(screen.getByText('—')).toBeInTheDocument()
-    expect(screen.queryByText('טעינת פרטי הצוות נכשלה.')).not.toBeInTheDocument()
+    expect(screen.getByTestId('create-user-form')).toBeInTheDocument()
+    expect(screen.getByDisplayValue('מורה')).toBeInTheDocument()
+    expect(screen.queryByRole('option', { name: 'מזכירה' })).not.toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'שמירת משתמש' })).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: /השבתה|מחיקה|הסרה/ })).not.toBeInTheDocument()
+  })
+
+  it('manager directory without onboarding slot has no create form', async () => {
+    render(<StaffDirectoryPage canEdit institutionName="בית ספר" />)
+
+    expect(await screen.findByText('דני כהן')).toBeInTheDocument()
+    expect(screen.queryByTestId('create-user-form')).not.toBeInTheDocument()
   })
 
   it('still searches by name and phone when some emails are null', async () => {

@@ -77,9 +77,9 @@ const teacherNavItems: DashboardNavItem[] = [
 
   { id: 'substituteBoard', label: 'לוח מילויי מקום', icon: <NavUsersIcon /> },
 
-  { id: MEETING_CALENDAR_SECTION_ID, label: MEETING_CALENDAR_NAV_LABEL, icon: <NavCalendarIcon /> },
+  { id: 'archive', label: 'ארכיון', icon: <NavArchiveIcon /> },
 
-  { id: 'archive', label: 'הארכיון שלי', icon: <NavArchiveIcon /> },
+  { id: MEETING_CALENDAR_SECTION_ID, label: MEETING_CALENDAR_NAV_LABEL, icon: <NavCalendarIcon /> },
 
 ]
 

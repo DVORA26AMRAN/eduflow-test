@@ -55,6 +55,7 @@
 #root {
   width: 1126px;
   max-width: 100%;
+  min-width: 0;
   margin: 0 auto;
   text-align: center;
   border-inline: 1px solid var(--border);

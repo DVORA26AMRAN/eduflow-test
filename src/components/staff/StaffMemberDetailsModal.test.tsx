@@ -38,28 +38,6 @@ describe('StaffMemberDetailsModal', () => {
     updateMemberMock.mockResolvedValue({ ok: true })
   })
 
-  it('keeps secretary details read-only and trusts server national ID redaction', async () => {
-    loadDetailsMock.mockResolvedValue({
-      ok: true,
-      member: { ...member, nationalId: null },
-    })
-
-    render(
-      <StaffMemberDetailsModal
-        isOpen
-        memberId="teacher-1"
-        canEdit={false}
-        institutionName="בית ספר"
-        onUpdated={vi.fn()}
-        onClose={vi.fn()}
-      />,
-    )
-
-    expect(await screen.findByText('יעל כהן')).toBeInTheDocument()
-    expect(screen.queryByRole('button', { name: 'עריכת פרטים' })).not.toBeInTheDocument()
-    expect(screen.queryByText('תעודת זהות')).not.toBeInTheDocument()
-  })
-
   it('lets managers edit, saves through the service, and refreshes data', async () => {
     const user = userEvent.setup({ delay: null })
     const onUpdated = vi.fn().mockResolvedValue(undefined)
@@ -91,6 +69,58 @@ describe('StaffMemberDetailsModal', () => {
     expect(onUpdated).toHaveBeenCalledTimes(1)
     expect(await screen.findByText('פרטי העובד עודכנו.')).toBeInTheDocument()
     expect(loadDetailsMock).toHaveBeenCalledTimes(2)
+  })
+
+  it('lets secretaries edit teacher details through the same service path', async () => {
+    const user = userEvent.setup({ delay: null })
+    const onUpdated = vi.fn().mockResolvedValue(undefined)
+
+    render(
+      <StaffMemberDetailsModal
+        isOpen
+        memberId="teacher-1"
+        canEdit
+        institutionName="בית ספר"
+        onUpdated={onUpdated}
+        onClose={vi.fn()}
+      />,
+    )
+
+    await user.click(await screen.findByRole('button', { name: 'עריכת פרטים' }))
+    await user.clear(screen.getByLabelText('שם מלא'))
+    await user.type(screen.getByLabelText('שם מלא'), 'יעל מזכירה')
+    await user.click(screen.getByRole('button', { name: 'שמירת שינויים' }))
+
+    expect(updateMemberMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        userId: 'teacher-1',
+        fullName: 'יעל מזכירה',
+      }),
+    )
+    expect(onUpdated).toHaveBeenCalledTimes(1)
+    expect(screen.queryByRole('button', { name: /השבתה|מחיקה|הסרה/ })).not.toBeInTheDocument()
+  })
+
+  it('keeps read-only mode without edit or destructive controls', async () => {
+    loadDetailsMock.mockResolvedValue({
+      ok: true,
+      member: { ...member, nationalId: null },
+    })
+
+    render(
+      <StaffMemberDetailsModal
+        isOpen
+        memberId="teacher-1"
+        canEdit={false}
+        institutionName="בית ספר"
+        onUpdated={vi.fn()}
+        onClose={vi.fn()}
+      />,
+    )
+
+    expect(await screen.findByText('יעל כהן')).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'עריכת פרטים' })).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: /השבתה|מחיקה|הסרה/ })).not.toBeInTheDocument()
   })
 
   it('renders null email as an em dash and keeps edit working', async () => {

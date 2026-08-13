@@ -110,4 +110,41 @@ describe('validateCreateUserForm', () => {
       expect(result.values.jobTitle).toBe('מחנכת')
     }
   })
+
+  it('rejects roles outside the caller allow-list (secretary cannot create secretary)', () => {
+    expect(
+      validateCreateUserForm(
+        {
+          fullName: 'יעל',
+          email: 'yael@school.com',
+          role: 'secretary',
+          phone: '',
+          nationalId: '',
+          jobTitle: '',
+          weeklyHours: '',
+        },
+        { allowedRoles: ['teacher'] },
+      ),
+    ).toEqual({
+      ok: false,
+      errorMessage: 'אין לך הרשאה ליצור תפקיד זה.',
+    })
+  })
+
+  it('allows teacher when secretary allow-list is teacher-only', () => {
+    const result = validateCreateUserForm(
+      {
+        fullName: 'יעל',
+        email: 'yael@school.com',
+        role: 'teacher',
+        phone: '',
+        nationalId: '',
+        jobTitle: '',
+        weeklyHours: '',
+      },
+      { allowedRoles: ['teacher'] },
+    )
+
+    expect(result.ok).toBe(true)
+  })
 })

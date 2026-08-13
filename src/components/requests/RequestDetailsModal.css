@@ -159,11 +159,21 @@
 
 @media (max-width: 768px) {
   .request-details__details-row {
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr);
   }
 
   .request-details__attachment-item {
     flex-direction: column;
     align-items: stretch;
+  }
+
+  .request-details__actions {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .request-details__actions .ds-btn {
+    width: 100%;
+    min-width: 0;
   }
 }

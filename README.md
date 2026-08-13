@@ -21,8 +21,8 @@ EduFlow supports the full lifecycle of internal school requests—from a teacher
 
 **Key characteristics:**
 
-- **Multi-tenant by institution** — All data is scoped to an `institution_id`. Users belong to exactly one institution.
-- **Role-based dashboards** — Managers, teachers, and secretaries each see a tailored experience after login.
+- **Multi-tenant by institution** — Tenant data is scoped to an `institution_id`. Teachers, secretaries, and institution managers belong to exactly one institution. Platform Admin is global (`institution_id` NULL).
+- **Role-based dashboards** — Managers, teachers, secretaries, and platform admins each see a tailored experience after login.
 - **Database-enforced security** — Row Level Security (RLS) policies restrict reads and writes at the PostgreSQL layer.
 - **Hebrew-first UI** — Labels, messages, and layout are designed for Hebrew-speaking users (RTL).
 
@@ -31,6 +31,17 @@ EduFlow supports the full lifecycle of internal school requests—from a teacher
 
 
 ## Main user roles
+
+
+
+### Platform Admin
+
+- Global operator (not tied to a school): `primary_role = platform_admin`, `institution_id` MUST be NULL, `status = active`.
+- Manages institutions (Phase 1): list/create/view/edit school metadata and upload institution logos.
+- Does **not** invite Institution Managers yet (Phase 2).
+- Logo Storage writes are limited to the `institution-logos` bucket via `auth_user_is_active_platform_admin()`.
+
+See [docs/platform-admin.md](docs/platform-admin.md).
 
 
 
@@ -69,9 +80,9 @@ EduFlow supports the full lifecycle of internal school requests—from a teacher
 
 ### User invitation
 
-1. An institution manager fills out the create-user form (name, email, role).
-2. The frontend calls the `clever-processor` Supabase Edge Function with the manager's session token.
-3. The Edge Function invites the user by email and creates a corresponding row in `public.users` for the manager's institution.
+1. An institution manager or secretary fills out the shared create-user form (name, email, role).
+2. The frontend calls the `clever-processor` Supabase Edge Function with the caller's session token.
+3. The Edge Function authorizes the caller (manager: `teacher`|`secretary`; secretary: `teacher` only), invites by email, and creates a `public.users` row for the caller's institution.
 
 
 
@@ -194,7 +205,8 @@ eduflow-test/
 
 ### Tenant isolation
 
-- Every user row references one `institution_id`.
+- Teachers, secretaries, and institution managers each reference one `institution_id` (enforced by CHECK).
+- Platform Admin is global: `institution_id` MUST be NULL (same CHECK).
 - Tenant-owned tables (`requests`, `notifications`, `request_status_history`, etc.) carry `institution_id` for scoped policies and indexing.
 
 
@@ -205,18 +217,19 @@ RLS is enabled on sensitive tables. Policies typically verify:
 
 - The authenticated user is **active** (`status = 'active'`).
 - The user's `primary_role` matches the intended operation.
-- `institution_id` on the target row matches the user's institution.
+- For tenant roles, `institution_id` on the target row matches the user's institution.
 
-**SECURITY DEFINER helper functions** (e.g. `auth_user_is_active_secretary_for_institution`, `auth_user_is_active_institution_manager_for_institution`) read `public.users` without triggering recursive RLS on the users table.
+**SECURITY DEFINER helper functions** (e.g. `auth_user_is_active_secretary_for_institution`, `auth_user_is_active_institution_manager_for_institution`, `auth_user_is_active_platform_admin`) read `public.users` without triggering recursive RLS on the users table.
 
 ### Role capabilities (summary)
 
 
-| Role      | Requests                        | Status history             | Notifications   | Team / analytics      |
-| --------- | ------------------------------- | -------------------------- | --------------- | --------------------- |
-| Teacher   | Create own; read own            | Read own requests          | Read/update own | —                     |
-| Secretary | Read institution; update status | Read institution           | —               | —                     |
-| Manager   | Read institution                | Read institution (via RLS) | —               | Read users; analytics |
+| Role            | Requests                        | Status history             | Notifications   | Team / analytics / schools                          |
+| --------------- | ------------------------------- | -------------------------- | --------------- | --------------------------------------------------- |
+| Teacher         | Create own; read own            | Read own requests          | Read/update own | —                                                   |
+| Secretary       | Read institution; update status | Read institution           | —               | Invite/edit teachers (own institution)              |
+| Manager         | Read institution                | Read institution (via RLS) | —               | Read users; analytics; invite teacher/secretary     |
+| Platform Admin  | —                               | —                          | —               | Institution metadata + logos (global; Phase 1)      |
 
 
 
@@ -230,7 +243,7 @@ Writes from triggers use `SECURITY DEFINER` so clients do not need broad INSERT 
 
 ### Edge Functions
 
-- `clever-processor` — Privileged user invitation and `public.users` provisioning. Called only with a valid manager session Bearer token.
+- `clever-processor` — Privileged user invitation and `public.users` provisioning. Active institution managers may invite `teacher` or `secretary`; active secretaries may invite `teacher` only. Institution is taken from the caller row.
 
 
 
@@ -289,6 +302,7 @@ Supabase URL and anon key are configured in `src/services/supabase.ts`. For a di
 | Area                                                                             | Status |
 | -------------------------------------------------------------------------------- | ------ |
 | Multi-tenant schema (institutions, users, capabilities, audit logs)              | Done   |
+| Platform Admin global model + institution management Phase 1 (metadata + logos)  | Done   |
 | Supabase Auth login and invite / password setup flow                             | Done   |
 | Manager dashboard (team management, analytics cards, recent requests & activity) | Done   |
 | Teacher dashboard (create request, list requests, notifications)                 | Done   |

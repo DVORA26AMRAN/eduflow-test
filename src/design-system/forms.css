@@ -3,6 +3,8 @@
 .ds-field {
   display: block;
   margin-bottom: var(--ds-control-gap);
+  min-width: 0;
+  max-width: 100%;
 }
 
 .ds-fieldset {
@@ -11,6 +13,8 @@
   border: 1px solid var(--ds-color-border);
   border-radius: var(--ds-radius-lg);
   background: var(--ds-color-surface-soft);
+  min-width: 0;
+  max-width: 100%;
 }
 
 .ds-fieldset + .ds-fieldset {
@@ -36,6 +40,8 @@
 .ds-textarea {
   display: block;
   width: 100%;
+  max-width: 100%;
+  min-width: 0;
   box-sizing: border-box;
   padding: var(--ds-label-gap) var(--ds-control-gap);
   border: 1px solid var(--ds-color-border);

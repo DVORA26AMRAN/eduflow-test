@@ -47,14 +47,24 @@ function parseOptionalPositiveWeeklyHours(
   return { ok: true, value: parsed }
 }
 
+export type ValidateCreateUserFormOptions = {
+  /** When set, rejects roles outside this allow-list (server still enforces). */
+  allowedRoles?: readonly UserRole[]
+}
+
 export function validateCreateUserForm(
   fields: CreateUserFormFields,
+  options?: ValidateCreateUserFormOptions,
 ): CreateUserFormValidationResult {
   const fullName = fields.fullName.trim()
   const email = fields.email.trim()
 
   if (!fullName || !email) {
     return { ok: false, errorMessage: 'נא למלא שם מלא וכתובת מייל.' }
+  }
+
+  if (options?.allowedRoles && !options.allowedRoles.includes(fields.role)) {
+    return { ok: false, errorMessage: 'אין לך הרשאה ליצור תפקיד זה.' }
   }
 
   const weeklyHoursResult = parseOptionalPositiveWeeklyHours(fields.weeklyHours)

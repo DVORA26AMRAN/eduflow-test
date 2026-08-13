@@ -61,7 +61,7 @@
   justify-content: center;
   width: 28px;
   height: 28px;
-  margin-left: var(--ds-label-gap);
+  margin-inline-end: var(--ds-label-gap);
   border-radius: var(--ds-radius-pill);
   background: var(--ds-color-surface-soft);
   font-size: var(--ds-font-size-label);

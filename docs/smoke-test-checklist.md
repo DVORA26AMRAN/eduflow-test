@@ -649,18 +649,25 @@ Manual QA checklist for verifying core EduFlow functionality before release or a
 
 ---
 
-### 6.3 Secretary cannot create users
+### 6.3 Secretary teacher onboarding and edit (same institution)
 
 **Test steps**
 
 1. Sign in as a secretary.
-2. Confirm there is no create-user form or team management UI.
-3. Optionally attempt to call the `clever-processor` Edge Function with the secretary's session token.
+2. Open Staff Directory / team area.
+3. Confirm the same Teacher create form is available (teacher role locked; no secretary/manager options).
+4. Add a Teacher and confirm they appear in the institution staff directory.
+5. Open Teacher details and edit approved profile fields.
+6. Confirm no Teacher remove/deactivate controls are shown.
+7. Optionally attempt `clever-processor` with `role=secretary` or a foreign `institution_id` using the secretary session.
 
 **Expected result**
 
-- Secretary dashboard has no user-creation capability.
-- Edge Function call is rejected (unauthorized / not manager).
+- Secretary can invite/add and edit Teachers in their own institution via the shared Manager flow.
+- Secretary cannot create Manager/Secretary/Platform Admin roles.
+- Cross-institution create/edit is rejected server-side.
+- Teacher remove/deactivate remains unavailable (UI and server).
+- Edge Function / RPC authorization enforces the above (not frontend-only).
 
 **Result**
 

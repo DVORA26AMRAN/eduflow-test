@@ -3,6 +3,7 @@ type PasswordSetupPageProps = {
   confirmPassword: string
   passwordSetupMessage: string
   isSavingPassword: boolean
+  isRecovery?: boolean
   onNewPasswordChange: (value: string) => void
   onConfirmPasswordChange: (value: string) => void
   onSavePassword: () => void
@@ -13,6 +14,7 @@ export function PasswordSetupPage({
   confirmPassword,
   passwordSetupMessage,
   isSavingPassword,
+  isRecovery = false,
   onNewPasswordChange,
   onConfirmPasswordChange,
   onSavePassword,
@@ -20,8 +22,14 @@ export function PasswordSetupPage({
   return (
     <main dir="rtl" className="ds-page-shell ds-page-shell--narrow">
       <section className="ds-card ds-card--flat">
-        <h1 className="ds-card__title">הגדרת סיסמה</h1>
-        <p className="ds-card__subtitle">ברוכה הבאה! נא לבחור סיסמה חדשה לחשבון שלך.</p>
+        <h1 className="ds-card__title">
+          {isRecovery ? 'הגדרת סיסמה חדשה' : 'הגדרת סיסמה'}
+        </h1>
+        <p className="ds-card__subtitle">
+          {isRecovery
+            ? 'נא לבחור סיסמה חדשה לחשבון שלך.'
+            : 'ברוכה הבאה! נא לבחור סיסמה חדשה לחשבון שלך.'}
+        </p>
 
         <label className="ds-field">
           <span className="ds-label">סיסמה חדשה</span>

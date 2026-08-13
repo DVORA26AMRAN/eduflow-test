@@ -190,6 +190,26 @@ const profile = {
   },
 }
 
+const secretaryCreateUserProps = {
+  newUserName: '',
+  newUserEmail: '',
+  newUserRole: 'teacher' as const,
+  newUserPhone: '',
+  newUserNationalId: '',
+  newUserJobTitle: '',
+  newUserWeeklyHours: '',
+  message: '',
+  usersListVersion: 0,
+  onNewUserNameChange: () => undefined,
+  onNewUserEmailChange: () => undefined,
+  onNewUserRoleChange: () => undefined,
+  onNewUserPhoneChange: () => undefined,
+  onNewUserNationalIdChange: () => undefined,
+  onNewUserJobTitleChange: () => undefined,
+  onNewUserWeeklyHoursChange: () => undefined,
+  onCreateUser: () => undefined,
+}
+
 function expectOnlyOverviewSection(container: HTMLElement) {
   const sections = container.querySelectorAll('[data-section-id]')
   expect(sections).toHaveLength(1)
@@ -213,6 +233,7 @@ describe('dashboard overview section isolation', () => {
     const { container } = render(
       <SecretaryDashboardPage
         profile={{ ...profile, role: 'secretary' }}
+        {...secretaryCreateUserProps}
         onLogout={() => undefined}
       />,
     )
@@ -274,7 +295,7 @@ describe('sidebar section navigation', () => {
     await user.click(screen.getByRole('button', { name: 'לוח מילויי מקום' }))
     expect(screen.getByTestId('teacher-substitute-board')).toBeInTheDocument()
 
-    await user.click(screen.getByRole('button', { name: 'הארכיון שלי' }))
+    await user.click(screen.getByRole('button', { name: 'ארכיון' }))
     expect(screen.getByTestId('teacher-archive')).toBeInTheDocument()
 
     await user.click(screen.getByRole('button', { name: 'סקירה כללית' }))
@@ -286,6 +307,7 @@ describe('sidebar section navigation', () => {
     render(
       <SecretaryDashboardPage
         profile={{ ...profile, role: 'secretary' }}
+        {...secretaryCreateUserProps}
         onLogout={() => undefined}
       />,
     )

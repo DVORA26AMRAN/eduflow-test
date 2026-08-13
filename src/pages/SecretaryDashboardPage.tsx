@@ -45,7 +45,7 @@ import {
   REMINDER_NAV_ARIA_LABEL,
   REMINDER_NAV_LABEL,
 } from '../utils/reminderNavigation'
-import type { AuthenticatedUserProfile } from '../types/user'
+import type { AuthenticatedUserProfile, UserRole } from '../types/user'
 import { MEETING_CALENDAR_NAV_LABEL, MEETING_CALENDAR_SECTION_ID } from '../utils/meetingCalendarDisplay'
 import {
   STAFF_DIRECTORY_NAV_LABEL,
@@ -61,10 +61,47 @@ import './SecretaryDashboardPage.css'
 
 type SecretaryDashboardPageProps = {
   profile: AuthenticatedUserProfile
+  newUserName: string
+  newUserEmail: string
+  newUserRole: UserRole
+  newUserPhone: string
+  newUserNationalId: string
+  newUserJobTitle: string
+  newUserWeeklyHours: string
+  message: string
+  usersListVersion: number
+  onNewUserNameChange: (value: string) => void
+  onNewUserEmailChange: (value: string) => void
+  onNewUserRoleChange: (value: UserRole) => void
+  onNewUserPhoneChange: (value: string) => void
+  onNewUserNationalIdChange: (value: string) => void
+  onNewUserJobTitleChange: (value: string) => void
+  onNewUserWeeklyHoursChange: (value: string) => void
+  onCreateUser: () => void
   onLogout: () => void
 }
 
-export function SecretaryDashboardPage({ profile, onLogout }: SecretaryDashboardPageProps) {
+export function SecretaryDashboardPage({
+  profile,
+  newUserName,
+  newUserEmail,
+  newUserRole,
+  newUserPhone,
+  newUserNationalId,
+  newUserJobTitle,
+  newUserWeeklyHours,
+  message,
+  usersListVersion,
+  onNewUserNameChange,
+  onNewUserEmailChange,
+  onNewUserRoleChange,
+  onNewUserPhoneChange,
+  onNewUserNationalIdChange,
+  onNewUserJobTitleChange,
+  onNewUserWeeklyHoursChange,
+  onCreateUser,
+  onLogout,
+}: SecretaryDashboardPageProps) {
   const [activeSectionId, setActiveSectionId] = useState<string>(DASHBOARD_OVERVIEW_SECTION_ID)
   const [archiveRefreshToken, setArchiveRefreshToken] = useState(0)
   const [analyticsRefreshToken, setAnalyticsRefreshToken] = useState(0)
@@ -325,8 +362,28 @@ export function SecretaryDashboardPage({ profile, onLogout }: SecretaryDashboard
           className="secretary-dashboard__shell-section"
         >
           <StaffDirectoryPage
-            canEdit={false}
+            key={usersListVersion}
+            canEdit
             institutionName={profile.school?.name ?? ''}
+            teacherOnboarding={{
+              newUserName,
+              newUserEmail,
+              newUserRole,
+              newUserPhone,
+              newUserNationalId,
+              newUserJobTitle,
+              newUserWeeklyHours,
+              createUserMessage: message,
+              allowedRoles: ['teacher'],
+              onNewUserNameChange,
+              onNewUserEmailChange,
+              onNewUserRoleChange,
+              onNewUserPhoneChange,
+              onNewUserNationalIdChange,
+              onNewUserJobTitleChange,
+              onNewUserWeeklyHoursChange,
+              onCreateUser,
+            }}
           />
         </DashboardSectionPanel>
 

@@ -185,16 +185,19 @@
 .mc-layout {
   display: grid;
   gap: 1.5rem;
+  min-width: 0;
+  max-width: 100%;
 }
 
 .mc-sidebar {
   display: grid;
   gap: 1.25rem;
+  min-width: 0;
 }
 
 @media (min-width: 1100px) {
   .mc-layout {
-    grid-template-columns: minmax(0, 1.7fr) minmax(280px, 0.9fr);
+    grid-template-columns: minmax(0, 1.7fr) minmax(min(280px, 100%), 0.9fr);
     align-items: start;
   }
 }
@@ -203,6 +206,8 @@
 .mc-pending-panels {
   display: grid;
   gap: 1rem;
+  min-width: 0;
+  max-width: 100%;
 }
 
 .mc-calendar-board__toolbar {
@@ -430,11 +435,20 @@
 }
 
 @media (max-width: 900px) {
+  .mc-month,
+  .mc-week {
+    max-width: 100%;
+    min-width: 0;
+    overflow-x: auto;
+    overscroll-behavior-x: contain;
+    -webkit-overflow-scrolling: touch;
+  }
+
   .mc-month__days,
   .mc-week__days,
   .mc-month__weekdays {
     grid-template-columns: repeat(7, minmax(4.5rem, 1fr));
-    overflow-x: auto;
+    min-width: calc(7 * 4.5rem + 6 * 0.35rem);
   }
 
   .mc-month__day,

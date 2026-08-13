@@ -1,9 +1,11 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import type { StaffDirectoryMember } from '../types/staffDirectory'
+import type { UserRole } from '../types/user'
 import { loadStaffDirectory } from '../services/staffDirectory'
 import { StaffDirectoryFilters } from '../components/staff/StaffDirectoryFilters'
 import { StaffDirectoryTable } from '../components/staff/StaffDirectoryTable'
 import { StaffMemberDetailsModal } from '../components/staff/StaffMemberDetailsModal'
+import { CreateUserForm } from '../components/manager/CreateUserForm'
 import { NavClipboardIcon } from '../components/dashboard/dashboardNav'
 import { DashboardSection } from '../components/dashboard/DashboardSection'
 import {
@@ -19,12 +21,37 @@ import {
 import '../components/staff/StaffDirectory.css'
 import './StaffDirectoryPage.css'
 
+export type StaffDirectoryTeacherOnboardingProps = {
+  newUserName: string
+  newUserEmail: string
+  newUserRole: UserRole
+  newUserPhone: string
+  newUserNationalId: string
+  newUserJobTitle: string
+  newUserWeeklyHours: string
+  createUserMessage: string
+  allowedRoles: readonly UserRole[]
+  onNewUserNameChange: (value: string) => void
+  onNewUserEmailChange: (value: string) => void
+  onNewUserRoleChange: (value: UserRole) => void
+  onNewUserPhoneChange: (value: string) => void
+  onNewUserNationalIdChange: (value: string) => void
+  onNewUserJobTitleChange: (value: string) => void
+  onNewUserWeeklyHoursChange: (value: string) => void
+  onCreateUser: () => void
+}
+
 type StaffDirectoryPageProps = {
   canEdit: boolean
   institutionName: string
+  teacherOnboarding?: StaffDirectoryTeacherOnboardingProps
 }
 
-export function StaffDirectoryPage({ canEdit, institutionName }: StaffDirectoryPageProps) {
+export function StaffDirectoryPage({
+  canEdit,
+  institutionName,
+  teacherOnboarding,
+}: StaffDirectoryPageProps) {
   const [members, setMembers] = useState<StaffDirectoryMember[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [errorMessage, setErrorMessage] = useState('')
@@ -142,6 +169,28 @@ export function StaffDirectoryPage({ canEdit, institutionName }: StaffDirectoryP
             sortDirection={sortDirection}
             onSortChange={handleSortChange}
             onMemberSelect={handleMemberSelect}
+          />
+        ) : null}
+
+        {teacherOnboarding ? (
+          <CreateUserForm
+            newUserName={teacherOnboarding.newUserName}
+            newUserEmail={teacherOnboarding.newUserEmail}
+            newUserRole={teacherOnboarding.newUserRole}
+            newUserPhone={teacherOnboarding.newUserPhone}
+            newUserNationalId={teacherOnboarding.newUserNationalId}
+            newUserJobTitle={teacherOnboarding.newUserJobTitle}
+            newUserWeeklyHours={teacherOnboarding.newUserWeeklyHours}
+            message={teacherOnboarding.createUserMessage}
+            allowedRoles={teacherOnboarding.allowedRoles}
+            onNewUserNameChange={teacherOnboarding.onNewUserNameChange}
+            onNewUserEmailChange={teacherOnboarding.onNewUserEmailChange}
+            onNewUserRoleChange={teacherOnboarding.onNewUserRoleChange}
+            onNewUserPhoneChange={teacherOnboarding.onNewUserPhoneChange}
+            onNewUserNationalIdChange={teacherOnboarding.onNewUserNationalIdChange}
+            onNewUserJobTitleChange={teacherOnboarding.onNewUserJobTitleChange}
+            onNewUserWeeklyHoursChange={teacherOnboarding.onNewUserWeeklyHoursChange}
+            onCreateUser={teacherOnboarding.onCreateUser}
           />
         ) : null}
       </DashboardSection>

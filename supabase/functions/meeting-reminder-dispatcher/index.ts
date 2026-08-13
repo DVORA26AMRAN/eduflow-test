@@ -1,9 +1,11 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.49.1'
+import { requireServiceRoleJwt } from '../_shared/requireServiceRole.ts'
 
 /**
  * Phase 5 backend reminder dispatcher — authoritative production scheduler.
  * Invoked on a schedule (Supabase scheduled functions / external cron).
  * Never called from UI. Do not also run pg_cron against the same dispatch RPC.
+ * Requires service_role JWT (verify_jwt alone accepts anon/authenticated).
  * Calls meeting_calendar_dispatch_due_reminders with the service role.
  */
 Deno.serve(async (request) => {
@@ -19,6 +21,14 @@ Deno.serve(async (request) => {
         headers: { 'Content-Type': 'application/json' },
       },
     )
+  }
+
+  const auth = requireServiceRoleJwt(request.headers.get('Authorization'))
+  if (!auth.ok) {
+    return new Response(JSON.stringify({ ok: false, error: auth.error }), {
+      status: auth.status,
+      headers: { 'Content-Type': 'application/json' },
+    })
   }
 
   const supabaseUrl = Deno.env.get('SUPABASE_URL')

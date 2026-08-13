@@ -1,0 +1,177 @@
+.platform-admin-schools {
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+}
+
+.platform-admin-schools__header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+}
+
+.platform-admin-schools__title {
+  margin: 0;
+  font-size: 1.25rem;
+  min-width: 0;
+}
+
+.platform-admin-schools__list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 0.75rem;
+}
+
+@media (min-width: 720px) {
+  .platform-admin-schools__list {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+.platform-admin-schools__card {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  text-align: start;
+  padding: 0.85rem;
+  border: 1px solid var(--ds-border, #d7dde5);
+  border-radius: 12px;
+  background: var(--ds-surface, #fff);
+  cursor: pointer;
+  box-sizing: border-box;
+}
+
+.platform-admin-schools__card-body {
+  min-width: 0;
+  flex: 1 1 auto;
+}
+
+.platform-admin-schools__card-name,
+.platform-admin-schools__card-meta {
+  margin: 0;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
+.platform-admin-schools__card-name {
+  font-weight: 650;
+  margin-bottom: 0.35rem;
+}
+
+.platform-admin-schools__card-meta {
+  color: var(--ds-muted, #5b6573);
+  font-size: 0.92rem;
+}
+
+.platform-admin-schools__details {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 1.25rem;
+  min-width: 0;
+}
+
+.platform-admin-institution-form,
+.platform-admin-schools__logo-panel {
+  min-width: 0;
+  max-width: 100%;
+}
+
+.platform-admin-institution-form__title,
+.platform-admin-schools__logo-title {
+  margin: 0 0 0.75rem;
+  font-size: 1.05rem;
+}
+
+.platform-admin-institution-form__actions,
+.platform-admin-schools__logo-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+}
+
+.platform-admin-schools__upload {
+  position: relative;
+  overflow: hidden;
+}
+
+.platform-admin-schools__file-input {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  cursor: pointer;
+}
+
+.platform-admin-schools__id-note {
+  margin: 0.75rem 0 0;
+  font-size: 0.85rem;
+  color: var(--ds-muted, #5b6573);
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
+.platform-admin-schools__manager-panel {
+  min-width: 0;
+  padding: 1rem;
+  border: 1px solid var(--ds-border, #d7dde5);
+  border-radius: 12px;
+  background: var(--ds-surface, #fff);
+  box-sizing: border-box;
+}
+
+.platform-admin-schools__manager-title {
+  margin: 0 0 0.75rem;
+  font-size: 1.05rem;
+}
+
+.platform-admin-schools__manager-status {
+  margin: 0 0 0.35rem;
+  font-weight: 650;
+}
+
+.platform-admin-schools__manager-detail {
+  margin: 0 0 0.25rem;
+  color: var(--ds-muted, #5b6573);
+  overflow-wrap: anywhere;
+}
+
+.platform-admin-schools__manager-invite {
+  margin-top: 0.85rem;
+  display: grid;
+  gap: 0.65rem;
+  min-width: 0;
+}
+
+.platform-admin-schools__manager-invite-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+@media (max-width: 390px) {
+  .platform-admin-schools__header {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .platform-admin-schools__header .ds-btn {
+    width: 100%;
+  }
+
+  .platform-admin-schools__manager-invite-actions {
+    flex-direction: column;
+  }
+
+  .platform-admin-schools__manager-invite-actions .ds-btn {
+    width: 100%;
+  }
+}

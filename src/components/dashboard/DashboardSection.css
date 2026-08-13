@@ -1,6 +1,8 @@
 .dashboard-section {
   --ds-section-header-height: 64px;
   width: 100%;
+  max-width: 100%;
+  min-width: 0;
   box-sizing: border-box;
   border: 1px solid var(--ds-color-border);
   border-radius: var(--ds-radius-xl);
@@ -62,6 +64,8 @@
 
 .dashboard-section__body {
   border-top: 1px solid var(--ds-color-border);
+  min-width: 0;
+  max-width: 100%;
 }
 
 .dashboard-section__inner {
@@ -69,6 +73,8 @@
   flex-direction: column;
   gap: var(--ds-accordion-card-gap);
   padding-block: var(--ds-accordion-body-padding-block);
+  min-width: 0;
+  max-width: 100%;
 }
 
 .dashboard-section--flush-header .dashboard-section__header {
@@ -107,6 +113,8 @@
   align-items: flex-end;
 }
 
-.dashboard-section__inner .secretary-dashboard__filter-checkbox {
-  min-height: 44px;
+@media (max-width: 480px) {
+  .dashboard-section {
+    padding-inline: var(--ds-control-gap);
+  }
 }

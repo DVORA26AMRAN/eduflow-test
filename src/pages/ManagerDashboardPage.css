@@ -2,9 +2,11 @@
   width: 100%;
   max-width: 1100px;
   margin: 0 auto;
-  padding: var(--ds-page-padding);
+  padding-block: var(--ds-page-padding);
+  padding-inline: var(--ds-page-padding);
   text-align: right;
   box-sizing: border-box;
+  min-width: 0;
 }
 
 .manager-dashboard__shell-section {
@@ -232,6 +234,8 @@
 .manager-dashboard__table-wrapper {
   margin-top: var(--ds-control-gap);
   margin-bottom: var(--ds-label-gap);
+  min-width: 0;
+  max-width: 100%;
 }
 
 .manager-dashboard__create-user {
@@ -246,7 +250,8 @@
 
 @media (max-width: 768px) {
   .manager-dashboard {
-    padding: var(--ds-page-padding-compact);
+    padding-block: var(--ds-page-padding-compact);
+    padding-inline: var(--ds-page-padding-compact);
   }
 
   .manager-dashboard__header {
@@ -273,5 +278,11 @@
 
   .manager-dashboard__brand-logo {
     max-height: 72px;
+  }
+}
+
+@media (max-width: 480px) {
+  .manager-dashboard__stats {
+    grid-template-columns: minmax(0, 1fr);
   }
 }

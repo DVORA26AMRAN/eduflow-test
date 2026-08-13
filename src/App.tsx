@@ -16,8 +16,13 @@ import {
   hasCompletedPasswordSetup,
 } from './services/auth'
 import { loadCurrentUserProfile, logAuthState, logProfileDebug } from './services/profile'
+import { completeOwnUserOnboarding } from './services/onboarding'
 import { setTeacherExtendedProfile } from './services/userExtendedProfile'
-import { PENDING_PASSWORD_SETUP_KEY, supabase } from './services/supabase'
+import {
+  PENDING_PASSWORD_SETUP_KEY,
+  PENDING_RECOVERY_KEY,
+  supabase,
+} from './services/supabase'
 import {
   getInitialLoginFormState,
   handleRememberMeAfterLogin,
@@ -67,7 +72,11 @@ function App() {
   async function syncAuthenticatedSession(
     session: Session | null,
     source: string,
-    options?: { isAuthCallback?: boolean; isInviteFlow?: boolean },
+    options?: {
+      isAuthCallback?: boolean
+      isInviteFlow?: boolean
+      isRecoveryFlow?: boolean
+    },
   ) {
     const requestId = ++profileLoadRequestId.current
 
@@ -80,11 +89,19 @@ function App() {
       loadedProfileRole: loadedProfile.current?.role ?? null,
     })
 
+    const pendingSetup =
+      sessionStorage.getItem(PENDING_PASSWORD_SETUP_KEY) === 'true'
+    const recoveryPending =
+      options?.isRecoveryFlow === true ||
+      sessionStorage.getItem(PENDING_RECOVERY_KEY) === 'true'
+
     if (!session?.user) {
       loadedProfileUserId.current = null
       loadedProfile.current = null
       setCurrentProfile(null)
       setShowLoginSuccessTransition(false)
+      // sessionStorage pending flags are kept so a later PASSWORD_RECOVERY /
+      // SIGNED_IN can still open password setup.
       setNeedsPasswordSetup(false)
       setProfileLoadError('')
       setProfileLoadDebug(null)
@@ -92,18 +109,19 @@ function App() {
       return
     }
 
-    const pendingSetup =
-      sessionStorage.getItem(PENDING_PASSWORD_SETUP_KEY) === 'true'
     const setupComplete = hasCompletedPasswordSetup(session.user)
+    // Recovery always shows password setup, even if the user set a password before.
     const shouldSetupPassword =
-      !setupComplete &&
-      (pendingSetup ||
-        (options?.isAuthCallback === true && options?.isInviteFlow === true))
+      recoveryPending ||
+      (!setupComplete &&
+        (pendingSetup ||
+          (options?.isAuthCallback === true && options?.isInviteFlow === true)))
 
     if (shouldSetupPassword) {
       logProfileDebug('password setup required, skipping profile load', {
         source,
         pendingSetup,
+        recoveryPending,
         setupComplete,
       })
       setNeedsPasswordSetup(true)
@@ -236,19 +254,43 @@ function App() {
   }
 
   useEffect(() => {
-    const { isAuthCallback, isInviteFlow } = detectAuthCallback()
+    const callback = detectAuthCallback()
 
-    if (isAuthCallback && isInviteFlow) {
+    if (callback.isAuthCallback && callback.isInviteFlow) {
+      sessionStorage.setItem(PENDING_PASSWORD_SETUP_KEY, 'true')
+    }
+
+    if (callback.isRecoveryFlow) {
+      sessionStorage.setItem(PENDING_RECOVERY_KEY, 'true')
       sessionStorage.setItem(PENDING_PASSWORD_SETUP_KEY, 'true')
     }
 
     async function initAuth() {
-      const { data } = await supabase.auth.getSession()
+      let { data } = await supabase.auth.getSession()
+
+      // If initialize did not produce a session yet, try PKCE exchange explicitly.
+      if (!data.session && callback.code) {
+        const { data: exchanged, error: exchangeError } =
+          await supabase.auth.exchangeCodeForSession(callback.code)
+        if (exchangeError) {
+          if (import.meta.env.DEV) {
+            console.error('[auth] exchangeCodeForSession', exchangeError)
+          }
+        } else {
+          data = { session: exchanged.session }
+        }
+      }
+
       await syncAuthenticatedSession(data.session, 'initAuth', {
-        isAuthCallback,
-        isInviteFlow,
+        isAuthCallback: callback.isAuthCallback,
+        isInviteFlow: callback.isInviteFlow,
+        isRecoveryFlow: callback.isRecoveryFlow,
       })
-      clearAuthCallbackFromUrl()
+
+      if (data.session || !callback.isAuthCallback) {
+        clearAuthCallbackFromUrl()
+      }
+
       setAuthReady(true)
     }
 
@@ -261,6 +303,43 @@ function App() {
         event,
         sessionUserId: session?.user.id ?? null,
       })
+
+      if (event === 'PASSWORD_RECOVERY') {
+        sessionStorage.setItem(PENDING_RECOVERY_KEY, 'true')
+        sessionStorage.setItem(PENDING_PASSWORD_SETUP_KEY, 'true')
+        window.setTimeout(() => {
+          clearAuthCallbackFromUrl()
+          void syncAuthenticatedSession(
+            session,
+            'onAuthStateChange:PASSWORD_RECOVERY',
+            { isRecoveryFlow: true },
+          )
+        }, 0)
+        return
+      }
+
+      if (event === 'SIGNED_IN' || event === 'INITIAL_SESSION') {
+        const recoveryPending =
+          sessionStorage.getItem(PENDING_RECOVERY_KEY) === 'true'
+        const pendingSetup =
+          sessionStorage.getItem(PENDING_PASSWORD_SETUP_KEY) === 'true'
+
+        if (recoveryPending || pendingSetup) {
+          window.setTimeout(() => {
+            clearAuthCallbackFromUrl()
+            void syncAuthenticatedSession(
+              session,
+              `onAuthStateChange:${event}`,
+              {
+                isAuthCallback: true,
+                isInviteFlow: pendingSetup,
+                isRecoveryFlow: recoveryPending,
+              },
+            )
+          }, 0)
+        }
+        return
+      }
 
       if (event === 'SIGNED_OUT') {
         window.setTimeout(() => {
@@ -279,12 +358,25 @@ function App() {
     loadedProfileUserId.current = null
     loadedProfile.current = null
     setCurrentProfile(null)
+    // Clear leftover recovery/invite flags before sign-in so onAuthStateChange
+    // SIGNED_IN cannot reopen password setup during a normal login.
+    sessionStorage.removeItem(PENDING_PASSWORD_SETUP_KEY)
+    sessionStorage.removeItem(PENDING_RECOVERY_KEY)
 
     const { data, error } = await supabase.auth.signInWithPassword(
       buildSignInCredentials(email, password),
     )
 
     if (error) {
+      if (import.meta.env.DEV) {
+        console.error('[auth] signInWithPassword failed', {
+          message: error.message,
+          status: error.status,
+          code: error.code,
+          name: error.name,
+          error,
+        })
+      }
       setMessage('ההתחברות נכשלה. בדקי מייל וסיסמה.')
       return
     }
@@ -303,7 +395,6 @@ function App() {
       return
     }
 
-    sessionStorage.removeItem(PENDING_PASSWORD_SETUP_KEY)
     handleRememberMeAfterLogin(rememberMe, email)
     setMessage('התחברת בהצלחה.')
 
@@ -341,35 +432,63 @@ function App() {
       data: { password_setup_complete: true },
     })
 
-    setIsSavingPassword(false)
-
     if (error) {
+      setIsSavingPassword(false)
+      if (import.meta.env.DEV) {
+        console.error('[auth] updateUser password failed', {
+          message: error.message,
+          status: error.status,
+          code: error.code,
+          name: error.name,
+          error,
+        })
+      }
       setPasswordSetupMessage('שמירת הסיסמה נכשלה. נסי שוב.')
       return
     }
 
+    const onboardingResult = await completeOwnUserOnboarding()
+    setIsSavingPassword(false)
+
+    if (!onboardingResult.ok) {
+      setPasswordSetupMessage(onboardingResult.errorMessage)
+      return
+    }
+
     sessionStorage.removeItem(PENDING_PASSWORD_SETUP_KEY)
+    sessionStorage.removeItem(PENDING_RECOVERY_KEY)
     setNeedsPasswordSetup(false)
     setNewPassword('')
     setConfirmPassword('')
-    setMessage('הסיסמה נשמרה בהצלחה. אפשר להתחבר למערכת.')
+    setPasswordSetupMessage('')
     loadedProfileUserId.current = null
     loadedProfile.current = null
-    setCurrentProfile(null)
 
-    await supabase.auth.signOut()
+    const { data } = await supabase.auth.getSession()
+    await syncAuthenticatedSession(data.session, 'savePassword')
   }
 
   async function createUser() {
-    const validation = validateCreateUserForm({
-      fullName: newUserName,
-      email: newUserEmail,
-      role: newUserRole,
-      phone: newUserPhone,
-      nationalId: newUserNationalId,
-      jobTitle: newUserJobTitle,
-      weeklyHours: newUserWeeklyHours,
-    })
+    const allowedRoles =
+      currentProfile?.role === 'secretary'
+        ? (['teacher'] as const)
+        : (['teacher', 'secretary'] as const)
+
+    const requestedRole =
+      currentProfile?.role === 'secretary' ? 'teacher' : newUserRole
+
+    const validation = validateCreateUserForm(
+      {
+        fullName: newUserName,
+        email: newUserEmail,
+        role: requestedRole,
+        phone: newUserPhone,
+        nationalId: newUserNationalId,
+        jobTitle: newUserJobTitle,
+        weeklyHours: newUserWeeklyHours,
+      },
+      { allowedRoles },
+    )
 
     if (!validation.ok) {
       setMessage(validation.errorMessage)
@@ -475,6 +594,7 @@ function App() {
     setProfileLoadDebug(null)
     setIsProfileLoading(false)
     sessionStorage.removeItem(PENDING_PASSWORD_SETUP_KEY)
+    sessionStorage.removeItem(PENDING_RECOVERY_KEY)
   }
 
   if (!authReady) {
@@ -482,12 +602,15 @@ function App() {
   }
 
   if (needsPasswordSetup) {
+    const isRecovery =
+      sessionStorage.getItem(PENDING_RECOVERY_KEY) === 'true'
     return (
       <PasswordSetupPage
         newPassword={newPassword}
         confirmPassword={confirmPassword}
         passwordSetupMessage={passwordSetupMessage}
         isSavingPassword={isSavingPassword}
+        isRecovery={isRecovery}
         onNewPasswordChange={setNewPassword}
         onConfirmPasswordChange={setConfirmPassword}
         onSavePassword={savePassword}
@@ -544,7 +667,27 @@ function App() {
   if (currentProfile.role === 'secretary') {
     return (
       <>
-        <SecretaryDashboardPage profile={currentProfile} onLogout={logout} />
+        <SecretaryDashboardPage
+          profile={currentProfile}
+          newUserName={newUserName}
+          newUserEmail={newUserEmail}
+          newUserRole={newUserRole}
+          newUserPhone={newUserPhone}
+          newUserNationalId={newUserNationalId}
+          newUserJobTitle={newUserJobTitle}
+          newUserWeeklyHours={newUserWeeklyHours}
+          message={message}
+          usersListVersion={usersListVersion}
+          onNewUserNameChange={setNewUserName}
+          onNewUserEmailChange={setNewUserEmail}
+          onNewUserRoleChange={setNewUserRole}
+          onNewUserPhoneChange={setNewUserPhone}
+          onNewUserNationalIdChange={setNewUserNationalId}
+          onNewUserJobTitleChange={setNewUserJobTitle}
+          onNewUserWeeklyHoursChange={setNewUserWeeklyHours}
+          onCreateUser={createUser}
+          onLogout={logout}
+        />
         {loginSuccessTransition}
       </>
     )

@@ -17,7 +17,7 @@
 
 .printing-home__actions {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(min(220px, 100%), 1fr));
   gap: 0.75rem;
 }
 
@@ -35,7 +35,7 @@
 
 .printing-modal__deadline {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(min(160px, 100%), 1fr));
   gap: 0.75rem;
 }
 
@@ -255,7 +255,18 @@
     flex-direction: column;
   }
 
+  .printing-home__actions,
   .printing-modal__deadline {
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .printing-area__toolbar,
+  .printing-modal__add {
+    align-items: stretch;
+  }
+
+  .printing-area__toolbar .ds-btn,
+  .printing-modal__add .ds-btn {
+    width: 100%;
   }
 }

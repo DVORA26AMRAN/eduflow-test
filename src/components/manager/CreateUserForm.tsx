@@ -9,6 +9,8 @@ type CreateUserFormProps = {
   newUserJobTitle: string
   newUserWeeklyHours: string
   message: string
+  /** Defaults to teacher + secretary (manager). Secretary passes `['teacher']`. */
+  allowedRoles?: readonly UserRole[]
   onNewUserNameChange: (value: string) => void
   onNewUserEmailChange: (value: string) => void
   onNewUserRoleChange: (value: UserRole) => void
@@ -18,6 +20,8 @@ type CreateUserFormProps = {
   onNewUserWeeklyHoursChange: (value: string) => void
   onCreateUser: () => void
 }
+
+const DEFAULT_ALLOWED_ROLES: readonly UserRole[] = ['teacher', 'secretary']
 
 function getMessageClassName(message: string): string {
   if (!message) {
@@ -51,6 +55,7 @@ export function CreateUserForm({
   newUserJobTitle,
   newUserWeeklyHours,
   message,
+  allowedRoles = DEFAULT_ALLOWED_ROLES,
   onNewUserNameChange,
   onNewUserEmailChange,
   onNewUserRoleChange,
@@ -61,9 +66,10 @@ export function CreateUserForm({
   onCreateUser,
 }: CreateUserFormProps) {
   const isTeacher = newUserRole === 'teacher'
+  const canChooseRole = allowedRoles.length > 1
 
   return (
-    <div className="manager-dashboard__create-user">
+    <div className="manager-dashboard__create-user" data-testid="create-user-form">
       <h3 className="manager-dashboard__subsection-title">יצירת משתמש חדש</h3>
 
       <div className="ds-fieldset">
@@ -96,15 +102,29 @@ export function CreateUserForm({
 
         <label className="ds-field" htmlFor="create-user-role">
           <span className="ds-label">תפקיד במערכת</span>
-          <select
-            id="create-user-role"
-            className="ds-select"
-            value={newUserRole}
-            onChange={(e) => onNewUserRoleChange(e.target.value as UserRole)}
-          >
-            <option value="teacher">מורה</option>
-            <option value="secretary">מזכירה</option>
-          </select>
+          {canChooseRole ? (
+            <select
+              id="create-user-role"
+              className="ds-select"
+              value={newUserRole}
+              onChange={(e) => onNewUserRoleChange(e.target.value as UserRole)}
+            >
+              {allowedRoles.includes('teacher') ? (
+                <option value="teacher">מורה</option>
+              ) : null}
+              {allowedRoles.includes('secretary') ? (
+                <option value="secretary">מזכירה</option>
+              ) : null}
+            </select>
+          ) : (
+            <input
+              id="create-user-role"
+              className="ds-input"
+              value={newUserRole === 'teacher' ? 'מורה' : newUserRole}
+              readOnly
+              aria-readonly="true"
+            />
+          )}
         </label>
 
         {isTeacher ? (

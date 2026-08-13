@@ -8,23 +8,37 @@
 
 - name
 
-- created_at
+- institution_code (optional, unique when non-empty)
+
+- address, city, phone, email (optional contact fields)
+
+- logo_url, logo_updated_at (Platform Admin branding)
+
+- created_at, updated_at
 
 ### users
 
-- id (PK)
+- id (PK) — equals `auth.users.id`
 
-- institution_id (FK -> [institutions.id](http://institutions.id))
+- institution_id (FK -> institutions.id, **nullable**)
+
+  - `platform_admin` → MUST be NULL (global)
+
+  - `teacher` | `secretary` | `institution_manager` → MUST be NOT NULL
 
 - email
 
 - full_name
 
-- primary_role
+- primary_role (`public.user_role`: institution_manager | secretary | teacher | platform_admin)
 
 - status
 
+- onboarding_completed_at (NULL = awaiting join; timestamptz = completed)
+
 - created_at
+
+- Partial unique: at most one **active** `institution_manager` per `institution_id`
 
 ### requests
 

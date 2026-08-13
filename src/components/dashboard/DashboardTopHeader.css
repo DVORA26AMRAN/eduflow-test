@@ -19,8 +19,8 @@
   display: flex;
   align-items: center;
   gap: var(--ds-control-gap);
+  flex: 1 1 auto;
   min-width: 0;
-  flex-shrink: 0;
 }
 
 .dashboard-top-header__avatar {
@@ -100,6 +100,7 @@
   .dashboard-top-header {
     min-height: 52px;
     padding: var(--ds-label-gap) var(--ds-control-gap);
+    gap: var(--ds-label-gap);
   }
 
   .dashboard-top-header__leading {
@@ -118,5 +119,16 @@
 
   .dashboard-top-header__role {
     font-size: var(--ds-font-size-small);
+  }
+
+  .dashboard-top-header__actions .ds-btn {
+    min-width: auto;
+    padding-inline: var(--ds-control-gap);
+  }
+}
+
+@media (max-width: 480px) {
+  .dashboard-top-header__spacer {
+    display: none;
   }
 }
