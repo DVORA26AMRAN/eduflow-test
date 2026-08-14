@@ -8,7 +8,9 @@
     "build": "tsc -b && vite build",
     "lint": "eslint .",
     "test": "vitest run",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "storage:backup": "node scripts/storage-backup/backup.mjs",
+    "storage:restore": "node scripts/storage-backup/restore.mjs"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.108.1",
@@ -16,6 +18,7 @@
     "react-dom": "^19.2.6"
   },
   "devDependencies": {
+    "@aws-sdk/client-s3": "^3.1110.0",
     "@eslint/js": "^10.0.1",
     "@testing-library/jest-dom": "^6.9.1",
     "@testing-library/react": "^16.3.2",
