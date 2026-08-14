@@ -156,23 +156,34 @@ function extractObjectSize(metadata) {
 }
 
 /**
- * Enumerate all object names in a Supabase Storage bucket via storage.objects.
- * Pagination is mandatory — never assume a single page.
+ * Enumerate all object paths in a Supabase Storage bucket via the Storage API.
+ *
+ * Do not enumerate through the PostgREST Data API against the storage schema /
+ * objects relation — hosted projects do not expose that path and respond with
+ * PGRST125 ("Invalid path specified in request URL").
+ *
+ * Uses paginated storage.from(bucket).list(prefix) and recurses into folders
+ * so nested object keys remain the full original paths.
  */
 export async function enumerateBucketObjects(supabase, bucketId) {
+  return listStoragePrefix(supabase, bucketId, '')
+}
+
+/**
+ * List one prefix with offset pagination, recursing into folder entries.
+ * @returns {Promise<{ name: string, size: number | null }[]>}
+ */
+async function listStoragePrefix(supabase, bucketId, prefix) {
   /** @type {{ name: string, size: number | null }[]} */
   const objects = []
-  let from = 0
+  let offset = 0
 
   for (;;) {
-    const to = from + ENUMERATION_PAGE_SIZE - 1
-    const { data, error } = await supabase
-      .schema('storage')
-      .from('objects')
-      .select('name, metadata')
-      .eq('bucket_id', bucketId)
-      .order('name', { ascending: true })
-      .range(from, to)
+    const { data, error } = await supabase.storage.from(bucketId).list(prefix, {
+      limit: ENUMERATION_PAGE_SIZE,
+      offset,
+      sortBy: { column: 'name', order: 'asc' },
+    })
 
     if (error) {
       const safe = sanitizeErrorForLog(error)
@@ -190,18 +201,33 @@ export async function enumerateBucketObjects(supabase, bucketId) {
 
     const rows = Array.isArray(data) ? data : []
     for (const row of rows) {
-      if (typeof row?.name === 'string' && row.name.trim() !== '') {
-        objects.push({
-          name: row.name,
-          size: extractObjectSize(row.metadata),
-        })
+      if (typeof row?.name !== 'string' || row.name.trim() === '') {
+        continue
       }
+      // Skip placeholder current-dir entries if present.
+      if (row.name === '.emptyFolderPlaceholder') {
+        continue
+      }
+
+      const fullPath = prefix ? `${prefix}/${row.name}` : row.name
+
+      // Storage list marks folders with id === null; files have a UUID id.
+      if (row.id == null) {
+        const nested = await listStoragePrefix(supabase, bucketId, fullPath)
+        objects.push(...nested)
+        continue
+      }
+
+      objects.push({
+        name: fullPath,
+        size: extractObjectSize(row.metadata),
+      })
     }
 
     if (rows.length < ENUMERATION_PAGE_SIZE) {
       break
     }
-    from += ENUMERATION_PAGE_SIZE
+    offset += ENUMERATION_PAGE_SIZE
   }
 
   return objects

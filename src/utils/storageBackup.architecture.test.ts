@@ -30,6 +30,55 @@ function read(relativePath: string) {
   return readFileSync(resolve(root, relativePath), 'utf8')
 }
 
+type StorageListRow = {
+  id: string | null
+  name: string
+  metadata?: { size?: number; contentLength?: number } | null
+}
+
+/** Mock Supabase client that serves Storage list() pages by prefix. */
+function createStorageEnumMock(options: {
+  pagesByPrefix?: Record<string, StorageListRow[][]>
+  listError?: { message: string; code?: string; status?: number }
+  download?: () => Promise<{ data: unknown; error: unknown }>
+}) {
+  const pagesByPrefix = options.pagesByPrefix ?? { '': [[]] }
+  const offsets: Record<string, number> = {}
+
+  return {
+    schema() {
+      throw new Error('enumeration must not use PostgREST .schema()')
+    },
+    storage: {
+      from(bucketId: string) {
+        return {
+          async list(prefix = '', listOptions?: { limit?: number; offset?: number }) {
+            if (options.listError) {
+              return { data: null, error: options.listError }
+            }
+            const key = prefix || ''
+            const pages = pagesByPrefix[key] ?? [[]]
+            const pageIndex = offsets[key] ?? 0
+            offsets[key] = pageIndex + 1
+            const page = pages[pageIndex] ?? []
+            // Honor offset semantics used by production code (page advance via offset bump).
+            void listOptions
+            void bucketId
+            return { data: page, error: null }
+          },
+          async download(path: string) {
+            void path
+            if (options.download) {
+              return options.download()
+            }
+            return { data: null, error: { message: 'unexpected download' } }
+          },
+        }
+      },
+    },
+  }
+}
+
 describe('B2 storage backup — protected buckets & destination identity', () => {
   it('includes both required source buckets', () => {
     expect(PROTECTED_SOURCE_BUCKETS).toEqual([
@@ -69,45 +118,121 @@ describe('B2 storage backup — pagination & concurrency', () => {
     expect(ENUMERATION_PAGE_SIZE).toBeGreaterThan(0)
     expect(ENUMERATION_PAGE_SIZE).toBeLessThanOrEqual(1000)
     const core = read('scripts/storage-backup/backup-core.mjs')
-    expect(core).toContain('.range(from, to)')
     expect(core).toContain('ENUMERATION_PAGE_SIZE')
+    expect(core).toContain('.list(prefix')
+    expect(core).toContain('offset')
     expect(core).toMatch(/rows\.length < ENUMERATION_PAGE_SIZE/)
+    // Regression: PostgREST storage-schema enumeration causes PGRST125 in production.
+    expect(core).not.toMatch(/supabase\s*\.\s*schema\(/)
+    expect(core).not.toMatch(/\.from\(\s*['"]objects['"]\s*\)/)
   })
 
-  it('paginates until a short page', async () => {
-    const pages: { name: string }[][] = [
-      Array.from({ length: ENUMERATION_PAGE_SIZE }, (_, i) => ({
-        name: `page0/obj-${i}`,
-      })),
-      Array.from({ length: 3 }, (_, i) => ({ name: `page1/obj-${i}` })),
-    ]
-    let calls = 0
+  it('enumerates via Storage list API and fails closed on PGRST125-style PostgREST path', async () => {
+    const core = read('scripts/storage-backup/backup-core.mjs')
+    expect(core).toContain('supabase.storage.from(bucketId).list')
+    expect(core).not.toMatch(/supabase\s*\.\s*schema\(/)
+
+    let listCalls = 0
+    let schemaCalls = 0
     const supabase = {
-      schema() {
-        return this
+      schema(name: string) {
+        schemaCalls += 1
+        void name
+        return {
+          from() {
+            return this
+          },
+          select() {
+            return this
+          },
+          eq() {
+            return this
+          },
+          order() {
+            return this
+          },
+          async range() {
+            return {
+              data: null,
+              error: {
+                code: 'PGRST125',
+                message: 'Invalid path specified in request URL',
+              },
+            }
+          },
+        }
       },
-      from() {
-        return this
-      },
-      select() {
-        return this
-      },
-      eq() {
-        return this
-      },
-      order() {
-        return this
-      },
-      async range() {
-        const page = pages[calls] ?? []
-        calls += 1
-        return { data: page, error: null }
+      storage: {
+        from(bucketId: string) {
+          expect(bucketId).toBe('request-attachments')
+          return {
+            async list(prefix: string, opts: { limit: number; offset: number }) {
+              listCalls += 1
+              expect(prefix).toBe('')
+              expect(opts.limit).toBe(ENUMERATION_PAGE_SIZE)
+              expect(opts.offset).toBe(0)
+              return {
+                data: [
+                  {
+                    id: 'obj-1',
+                    name: 'inst/req/file.pdf',
+                    metadata: { size: 12 },
+                  },
+                ],
+                error: null,
+              }
+            },
+          }
+        },
       },
     }
 
     const objects = await enumerateBucketObjects(supabase, 'request-attachments')
-    expect(calls).toBe(2)
+    expect(schemaCalls).toBe(0)
+    expect(listCalls).toBe(1)
+    expect(objects).toEqual([{ name: 'inst/req/file.pdf', size: 12 }])
+  })
+
+  it('paginates until a short page', async () => {
+    const page0 = Array.from({ length: ENUMERATION_PAGE_SIZE }, (_, i) => ({
+      id: `id-${i}`,
+      name: `obj-${i}`,
+      metadata: { size: i },
+    }))
+    const page1 = Array.from({ length: 3 }, (_, i) => ({
+      id: `id-b-${i}`,
+      name: `obj-b-${i}`,
+      metadata: { size: i },
+    }))
+    const supabase = createStorageEnumMock({
+      pagesByPrefix: {
+        '': [page0, page1],
+      },
+    })
+
+    const objects = await enumerateBucketObjects(supabase, 'request-attachments')
     expect(objects).toHaveLength(ENUMERATION_PAGE_SIZE + 3)
+    expect(objects[0]?.name).toBe('obj-0')
+  })
+
+  it('recurses into folder entries to preserve full object paths', async () => {
+    const supabase = createStorageEnumMock({
+      pagesByPrefix: {
+        '': [[{ id: null, name: 'inst', metadata: null }]],
+        inst: [
+          [
+            {
+              id: 'file-1',
+              name: 'doc.pdf',
+              metadata: { size: 44 },
+            },
+          ],
+        ],
+      },
+    })
+
+    const objects = await enumerateBucketObjects(supabase, 'printing-files')
+    expect(objects).toEqual([{ name: 'inst/doc.pdf', size: 44 }])
   })
 
   it('bounds concurrent object workers', async () => {
@@ -150,38 +275,22 @@ describe('B2 storage backup — non-destructive model', () => {
     const body = Buffer.from('hello-backup')
     const r2Key = buildR2ObjectKey('request-attachments', objectPath)
 
-    const supabase = {
-      schema() {
-        return this
-      },
-      from() {
-        return this
-      },
-      select() {
-        return this
-      },
-      eq() {
-        return this
-      },
-      order() {
-        return this
-      },
-      async range() {
-        return {
-          data: [{ name: objectPath, metadata: { size: body.length } }],
-          error: null,
-        }
-      },
-      storage: {
-        from() {
-          return {
-            async download() {
-              throw new Error('download should not run when sizes match')
+    const supabase = createStorageEnumMock({
+      pagesByPrefix: {
+        '': [
+          [
+            {
+              id: 'obj-1',
+              name: objectPath,
+              metadata: { size: body.length },
             },
-          }
-        },
+          ],
+        ],
       },
-    }
+      download: async () => {
+        throw new Error('download should not run when sizes match')
+      },
+    })
 
     const sent: string[] = []
     const r2 = {
@@ -214,26 +323,9 @@ describe('B2 storage backup — non-destructive model', () => {
   })
 
   it('does not request destination deletion when source enumeration is empty', async () => {
-    const supabase = {
-      schema() {
-        return this
-      },
-      from() {
-        return this
-      },
-      select() {
-        return this
-      },
-      eq() {
-        return this
-      },
-      order() {
-        return this
-      },
-      async range() {
-        return { data: [], error: null }
-      },
-    }
+    const supabase = createStorageEnumMock({
+      pagesByPrefix: { '': [[]] },
+    })
     const sent: string[] = []
     const r2 = {
       async send(command: { constructor: { name: string } }) {
@@ -250,38 +342,20 @@ describe('B2 storage backup — non-destructive model', () => {
   })
 
   it('fails the run when an object backup fails', async () => {
-    const supabase = {
-      schema() {
-        return this
-      },
-      from() {
-        return this
-      },
-      select() {
-        return this
-      },
-      eq() {
-        return this
-      },
-      order() {
-        return this
-      },
-      async range() {
-        return {
-          data: [{ name: 'a/b/c.bin', metadata: { size: 10 } }],
-          error: null,
-        }
-      },
-      storage: {
-        from() {
-          return {
-            async download() {
-              return { data: null, error: { message: 'download boom' } }
+    const supabase = createStorageEnumMock({
+      pagesByPrefix: {
+        '': [
+          [
+            {
+              id: 'obj-1',
+              name: 'a/b/c.bin',
+              metadata: { size: 10 },
             },
-          }
-        },
+          ],
+        ],
       },
-    }
+      download: async () => ({ data: null, error: { message: 'download boom' } }),
+    })
     const r2 = {
       async send(command: { constructor: { name: string } }) {
         if (command.constructor.name === 'HeadObjectCommand') {
@@ -305,33 +379,13 @@ describe('B2 storage backup — non-destructive model', () => {
   })
 
   it('records safe enumeration failure diagnostics with bucket/phase/message', async () => {
-    const supabase = {
-      schema() {
-        return this
+    const supabase = createStorageEnumMock({
+      listError: {
+        message: 'permission denied for schema storage',
+        code: '42501',
+        status: 401,
       },
-      from() {
-        return this
-      },
-      select() {
-        return this
-      },
-      eq() {
-        return this
-      },
-      order() {
-        return this
-      },
-      async range() {
-        return {
-          data: null,
-          error: {
-            message: 'permission denied for schema storage',
-            code: '42501',
-            status: 401,
-          },
-        }
-      },
-    }
+    })
     const r2 = { async send() { return {} } }
 
     const report = await backupProtectedBuckets(supabase, r2, [
