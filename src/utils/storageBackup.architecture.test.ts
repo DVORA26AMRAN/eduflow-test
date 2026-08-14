@@ -19,6 +19,9 @@ import {
   enumerateBucketObjects,
   mapPool,
   backupProtectedBuckets,
+  redactSecrets,
+  sanitizeErrorForLog,
+  formatFailureDiagnostic,
 } from '../../scripts/storage-backup/backup-core.mjs'
 
 const root = process.cwd()
@@ -299,6 +302,90 @@ describe('B2 storage backup — non-destructive model', () => {
     ])
     expect(report.ok).toBe(false)
     expect(report.failed).toBeGreaterThan(0)
+  })
+
+  it('records safe enumeration failure diagnostics with bucket/phase/message', async () => {
+    const supabase = {
+      schema() {
+        return this
+      },
+      from() {
+        return this
+      },
+      select() {
+        return this
+      },
+      eq() {
+        return this
+      },
+      order() {
+        return this
+      },
+      async range() {
+        return {
+          data: null,
+          error: {
+            message: 'permission denied for schema storage',
+            code: '42501',
+            status: 401,
+          },
+        }
+      },
+    }
+    const r2 = { async send() { return {} } }
+
+    const report = await backupProtectedBuckets(supabase, r2, [
+      'request-attachments',
+    ])
+    expect(report.ok).toBe(false)
+    expect(report.failed).toBe(1)
+    expect(report.discovered).toBe(0)
+    expect(report.buckets[0]?.failures).toHaveLength(1)
+    const failure = report.buckets[0].failures[0]
+    expect(failure.bucket).toBe('request-attachments')
+    expect(failure.phase).toBe('enumeration')
+    expect(failure.message).toContain('permission denied for schema storage')
+    expect(failure.code).toBe('42501')
+    expect(failure.status).toBe(401)
+  })
+})
+
+describe('B2 storage backup — safe failure diagnostics', () => {
+  it('redacts bearer tokens and JWTs from diagnostic text', () => {
+    const dirty =
+      'Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.aaa.bbb failed apikey=supersecret'
+    expect(redactSecrets(dirty)).not.toContain('eyJhbGci')
+    expect(redactSecrets(dirty)).not.toContain('supersecret')
+    expect(redactSecrets(dirty)).toContain('[REDACTED]')
+
+    const safe = sanitizeErrorForLog({
+      message: dirty,
+      code: 'PGRST301',
+      status: 403,
+    })
+    expect(safe.message).not.toContain('eyJhbGci')
+    expect(safe.code).toBe('PGRST301')
+    expect(safe.status).toBe(403)
+
+    const diagnostic = formatFailureDiagnostic(
+      'printing-files',
+      'enumeration',
+      { message: dirty, code: '42501', status: 401 },
+    )
+    expect(diagnostic.bucket).toBe('printing-files')
+    expect(diagnostic.phase).toBe('enumeration')
+    expect(diagnostic.code).toBe('42501')
+    expect(diagnostic.status).toBe(401)
+    expect(diagnostic.message).not.toContain('eyJhbGci')
+    expect(diagnostic.message).toContain('[REDACTED')
+  })
+
+  it('summary logging includes failure message not only phases', () => {
+    const backupCli = read('scripts/storage-backup/backup.mjs')
+    expect(backupCli).toContain('failures: b.failures.map')
+    expect(backupCli).toContain('message: f.message')
+    expect(backupCli).not.toContain('failurePhases:')
+    expect(backupCli).toContain('JSON.stringify')
   })
 })
 

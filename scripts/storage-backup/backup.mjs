@@ -27,25 +27,34 @@ async function main() {
 
   const report = await backupProtectedBuckets(supabase, r2)
 
-  console.info('[storage-backup] summary', {
-    ok: report.ok,
-    startedAt: report.startedAt,
-    finishedAt: report.finishedAt,
-    discovered: report.discovered,
-    uploaded: report.uploaded,
-    skippedExisting: report.skippedExisting,
-    failed: report.failed,
-    bytesProcessed: report.bytesProcessed,
-    buckets: report.buckets.map((b) => ({
-      bucket: b.bucket,
-      discovered: b.discovered,
-      uploaded: b.uploaded,
-      skippedExisting: b.skippedExisting,
-      failed: b.failed,
-      bytesProcessed: b.bytesProcessed,
-      failurePhases: b.failures.map((f) => f.phase),
-    })),
-  })
+  // JSON line so Actions shows failure message/code/status (not nested "[Array]").
+  console.info(
+    `[storage-backup] summary ${JSON.stringify({
+      ok: report.ok,
+      startedAt: report.startedAt,
+      finishedAt: report.finishedAt,
+      discovered: report.discovered,
+      uploaded: report.uploaded,
+      skippedExisting: report.skippedExisting,
+      failed: report.failed,
+      bytesProcessed: report.bytesProcessed,
+      buckets: report.buckets.map((b) => ({
+        bucket: b.bucket,
+        discovered: b.discovered,
+        uploaded: b.uploaded,
+        skippedExisting: b.skippedExisting,
+        failed: b.failed,
+        bytesProcessed: b.bytesProcessed,
+        failures: b.failures.map((f) => ({
+          phase: f.phase,
+          message: f.message,
+          ...(f.code ? { code: f.code } : {}),
+          ...(f.status != null ? { status: f.status } : {}),
+          ...(f.pathHash ? { pathHash: f.pathHash } : {}),
+        })),
+      })),
+    })}`,
+  )
 
   if (!report.ok) {
     process.exitCode = 1

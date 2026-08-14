@@ -42,12 +42,106 @@ export async function withBoundedRetry(label, fn, attempts = MAX_ATTEMPTS) {
   throw lastError
 }
 
-export function errorMessage(error) {
-  if (!error) return 'unknown_error'
-  if (typeof error.message === 'string' && error.message.trim()) {
-    return error.message.trim().slice(0, 200)
+/**
+ * Strip credentials / tokens from diagnostic text. Never log raw secrets.
+ */
+export function redactSecrets(text) {
+  if (typeof text !== 'string' || text === '') {
+    return ''
   }
-  return String(error).slice(0, 200)
+  return text
+    .replace(/Bearer\s+\S+/gi, 'Bearer [REDACTED]')
+    .replace(
+      /eyJ[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]*/g,
+      '[REDACTED_JWT]',
+    )
+    .replace(
+      /(authorization|apikey|api[_-]?key|secret|password|token)\s*[:=]\s*\S+/gi,
+      '$1:[REDACTED]',
+    )
+    .replace(/sb_secret_[A-Za-z0-9]+/gi, '[REDACTED_SB_SECRET]')
+}
+
+function pickErrorCode(error) {
+  if (!error || typeof error !== 'object') return null
+  const candidates = [error.code, error.error_code, error.error?.code]
+  for (const value of candidates) {
+    if (typeof value === 'string' && value.trim()) {
+      return redactSecrets(value.trim()).slice(0, 64)
+    }
+    if (typeof value === 'number' && Number.isFinite(value)) {
+      return String(value)
+    }
+  }
+  return null
+}
+
+function pickErrorStatus(error) {
+  if (!error || typeof error !== 'object') return null
+  const candidates = [
+    error.status,
+    error.statusCode,
+    error.$metadata?.httpStatusCode,
+    error.error?.status,
+  ]
+  for (const value of candidates) {
+    if (typeof value === 'number' && Number.isFinite(value)) {
+      return value
+    }
+    if (typeof value === 'string' && /^\d{3}$/.test(value.trim())) {
+      return Number(value.trim())
+    }
+  }
+  return null
+}
+
+/**
+ * Safe, structured error fields for logs/summaries (no secrets).
+ * @returns {{ message: string, code: string | null, status: number | null }}
+ */
+export function sanitizeErrorForLog(error) {
+  let raw = 'unknown_error'
+  if (error && typeof error.message === 'string' && error.message.trim()) {
+    raw = error.message.trim()
+  } else if (error != null) {
+    raw = String(error)
+  }
+  return {
+    message: redactSecrets(raw).slice(0, 200),
+    code: pickErrorCode(error),
+    status: pickErrorStatus(error),
+  }
+}
+
+export function errorMessage(error) {
+  return sanitizeErrorForLog(error).message
+}
+
+/**
+ * Flat diagnostic object safe for console / Actions logs.
+ */
+export function formatFailureDiagnostic(bucket, phase, error, extra = {}) {
+  const safe = sanitizeErrorForLog(error)
+  const diagnostic = {
+    bucket,
+    phase,
+    message: safe.message,
+  }
+  if (safe.code) {
+    diagnostic.code = safe.code
+  }
+  if (safe.status != null) {
+    diagnostic.status = safe.status
+  }
+  if (typeof extra.pathHash === 'string' && extra.pathHash) {
+    diagnostic.pathHash = extra.pathHash
+  }
+  return diagnostic
+}
+
+/** Print one failure as a single JSON line (avoids Node inspect collapsing arrays). */
+export function logFailureDiagnostic(diagnostic) {
+  console.error(`[storage-backup] failure ${JSON.stringify(diagnostic)}`)
 }
 
 function extractObjectSize(metadata) {
@@ -81,7 +175,17 @@ export async function enumerateBucketObjects(supabase, bucketId) {
       .range(from, to)
 
     if (error) {
-      throw new Error(`enumerate failed for bucket=${bucketId}: ${errorMessage(error)}`)
+      const safe = sanitizeErrorForLog(error)
+      const wrapped = new Error(
+        `enumerate failed for bucket=${bucketId}: ${safe.message}`,
+      )
+      if (safe.code) {
+        wrapped.code = safe.code
+      }
+      if (safe.status != null) {
+        wrapped.status = safe.status
+      }
+      throw wrapped
     }
 
     const rows = Array.isArray(data) ? data : []
@@ -285,10 +389,9 @@ export async function backupProtectedBuckets(supabase, r2, buckets = PROTECTED_S
       objects = await enumerateBucketObjects(supabase, bucketId)
     } catch (error) {
       summary.failed = 1
-      summary.failures.push({
-        phase: 'enumeration',
-        message: errorMessage(error),
-      })
+      const diagnostic = formatFailureDiagnostic(bucketId, 'enumeration', error)
+      summary.failures.push(diagnostic)
+      logFailureDiagnostic(diagnostic)
       summaries.push(summary)
       continue
     }
@@ -313,12 +416,12 @@ export async function backupProtectedBuckets(supabase, r2, buckets = PROTECTED_S
         }
       } catch (error) {
         summary.failed += 1
-        summary.failures.push({
-          phase: 'object',
+        const diagnostic = formatFailureDiagnostic(bucketId, 'object', error, {
           // Avoid logging full object paths (may contain sensitive filenames).
           pathHash: hashPathHint(entry.name),
-          message: errorMessage(error),
         })
+        summary.failures.push(diagnostic)
+        logFailureDiagnostic(diagnostic)
       }
     })
 
