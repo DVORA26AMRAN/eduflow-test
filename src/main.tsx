@@ -2,9 +2,17 @@ import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import './index.css'
 import App from './App.tsx'
+import { SchoolRegistrationPage } from './pages/SchoolRegistrationPage'
+import { isSchoolRegistrationPath } from './utils/schoolRegistrationForm'
 
-createRoot(document.getElementById('root')!).render(
+const rootEl = document.getElementById('root')!
+
+createRoot(rootEl).render(
   <StrictMode>
-    <App />
+    {isSchoolRegistrationPath(window.location.pathname) ? (
+      <SchoolRegistrationPage />
+    ) : (
+      <App />
+    )}
   </StrictMode>,
 )

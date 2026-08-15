@@ -425,6 +425,11 @@ verify_jwt = true
 [functions.clever-processor]
 verify_jwt = true
 
+# Public school registration intake (Phase 1) — constrained field insert only.
+# JWT not required; handler never creates institutions/users.
+[functions.school-registration-intake]
+verify_jwt = false
+
 # Meeting reminder worker — service_role Authorization required (app gate).
 [functions.meeting-reminder-dispatcher]
 verify_jwt = true

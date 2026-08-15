@@ -1,0 +1,143 @@
+.platform-admin-registrations {
+  display: grid;
+  gap: 1.5rem;
+  width: 100%;
+  max-width: 100%;
+  overflow-x: hidden;
+  box-sizing: border-box;
+}
+
+.platform-admin-registrations__link-card,
+.platform-admin-registrations__list-header {
+  display: grid;
+  gap: 0.65rem;
+}
+
+.platform-admin-registrations__list-header {
+  grid-template-columns: 1fr auto;
+  align-items: center;
+}
+
+.platform-admin-registrations__heading {
+  margin: 0;
+  font-size: 1.15rem;
+}
+
+.platform-admin-registrations__hint,
+.platform-admin-registrations__path-note,
+.platform-admin-registrations__empty,
+.platform-admin-registrations__copy-msg {
+  margin: 0;
+}
+
+.platform-admin-registrations__url {
+  display: block;
+  width: 100%;
+  max-width: 100%;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+  padding: 0.65rem 0.75rem;
+  border-radius: 0.5rem;
+  background: rgba(15, 42, 54, 0.06);
+  font-size: 0.9rem;
+  box-sizing: border-box;
+}
+
+.platform-admin-registrations__link-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.platform-admin-registrations__table-wrap {
+  width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.platform-admin-registrations__table {
+  width: 100%;
+  min-width: 52rem;
+  border-collapse: collapse;
+  font-size: 0.9rem;
+}
+
+.platform-admin-registrations__table th,
+.platform-admin-registrations__table td {
+  padding: 0.55rem 0.45rem;
+  text-align: start;
+  border-bottom: 1px solid rgba(15, 42, 54, 0.1);
+  vertical-align: top;
+}
+
+.platform-admin-registrations__row-link {
+  appearance: none;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-decoration: underline;
+  cursor: pointer;
+  padding: 0;
+}
+
+.platform-admin-registrations__modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  padding: 1rem;
+  background: rgba(8, 20, 28, 0.45);
+  box-sizing: border-box;
+}
+
+.platform-admin-registrations__modal {
+  width: min(100%, 32rem);
+  max-height: min(88dvh, 40rem);
+  overflow: auto;
+  background: #fff;
+  border-radius: 0.85rem;
+  padding: 1rem 1rem 1.25rem;
+  box-sizing: border-box;
+}
+
+.platform-admin-registrations__modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin-bottom: 0.85rem;
+}
+
+.platform-admin-registrations__modal-header h3 {
+  margin: 0;
+  font-size: 1.1rem;
+}
+
+.platform-admin-registrations__details {
+  display: grid;
+  gap: 0.75rem;
+  margin: 0;
+}
+
+.platform-admin-registrations__details dt {
+  font-size: 0.8rem;
+  opacity: 0.75;
+  margin: 0 0 0.15rem;
+}
+
+.platform-admin-registrations__details dd {
+  margin: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+  align-items: center;
+}
+
+@media (min-width: 768px) {
+  .platform-admin-registrations__modal-backdrop {
+    align-items: center;
+  }
+}

@@ -1,0 +1,73 @@
+.school-registration-page {
+  min-height: 100dvh;
+  width: 100%;
+  max-width: 100%;
+  overflow-x: hidden;
+  box-sizing: border-box;
+  display: flex;
+  align-items: stretch;
+  justify-content: center;
+  padding: 1.25rem 1rem 2rem;
+  background:
+    radial-gradient(ellipse at 20% 0%, rgba(20, 90, 120, 0.18), transparent 55%),
+    linear-gradient(165deg, #0f2a36 0%, #163a48 45%, #0d222c 100%);
+}
+
+.school-registration-page__shell {
+  width: 100%;
+  max-width: 28rem;
+  margin-inline: auto;
+}
+
+.school-registration-page__card {
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
+  padding: 1.25rem 1.1rem 1.5rem;
+}
+
+.school-registration-page__header {
+  margin-bottom: 1rem;
+}
+
+.school-registration-page__brand {
+  margin: 0;
+  text-align: center;
+}
+
+.school-registration-page__brand-logo {
+  display: block;
+  width: min(148px, 48vw);
+  height: auto;
+  margin-inline: auto;
+}
+
+.school-registration-page__intro {
+  margin: 0.85rem 0 0;
+  text-align: center;
+  line-height: 1.45;
+}
+
+.school-registration-page__form {
+  display: grid;
+  gap: 0.85rem;
+}
+
+.school-registration-page__message {
+  margin: 0.25rem 0 0;
+}
+
+.school-registration-page__submit {
+  width: 100%;
+  margin-top: 0.35rem;
+}
+
+@media (min-width: 768px) {
+  .school-registration-page {
+    padding: 2.5rem 1.5rem;
+  }
+
+  .school-registration-page__card {
+    padding: 1.75rem 1.5rem 2rem;
+  }
+}
