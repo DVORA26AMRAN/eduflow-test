@@ -3,58 +3,87 @@ import userEvent from '@testing-library/user-event'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { PlatformAdminRegistrationsSection } from './PlatformAdminRegistrationsSection'
 
-const { listMock, getMock } = vi.hoisted(() => ({
+const {
+  listMock,
+  getMock,
+  notesMock,
+  activityMock,
+  statusMock,
+  noteAddMock,
+  followUpMock,
+} = vi.hoisted(() => ({
   listMock: vi.fn(),
   getMock: vi.fn(),
+  notesMock: vi.fn(),
+  activityMock: vi.fn(),
+  statusMock: vi.fn(),
+  noteAddMock: vi.fn(),
+  followUpMock: vi.fn(),
 }))
 
 vi.mock('../../services/schoolRegistration', () => ({
   loadSchoolRegistrationsForPlatformAdmin: listMock,
   loadSchoolRegistrationForPlatformAdmin: getMock,
+  loadSchoolRegistrationNotesForPlatformAdmin: notesMock,
+  loadSchoolRegistrationActivityForPlatformAdmin: activityMock,
+  updateSchoolRegistrationStatusForPlatformAdmin: statusMock,
+  addSchoolRegistrationNoteForPlatformAdmin: noteAddMock,
+  setSchoolRegistrationFollowUpForPlatformAdmin: followUpMock,
 }))
+
+const baseRegistration = {
+  id: 'reg-1',
+  schoolName: 'בית ספר אלון',
+  institutionSymbol: '112233',
+  city: 'חיפה',
+  applicantRole: 'principal' as const,
+  contactFullName: 'נועה כהן',
+  email: 'noea@example.com',
+  phone: '04-1111111',
+  status: 'new' as const,
+  followUpAt: null,
+  createdAt: '2026-08-16T10:00:00.000Z',
+  updatedAt: '2026-08-16T10:00:00.000Z',
+}
 
 describe('PlatformAdminRegistrationsSection', () => {
   beforeEach(() => {
     listMock.mockResolvedValue({
       ok: true,
-      registrations: [
-        {
-          id: 'reg-1',
-          schoolName: 'בית ספר אלון',
-          institutionSymbol: '112233',
-          city: 'חיפה',
-          applicantRole: 'principal',
-          contactFullName: 'נועה כהן',
-          email: 'noea@example.com',
-          phone: '04-1111111',
-          status: 'new',
-          createdAt: '2026-08-16T10:00:00.000Z',
-          updatedAt: '2026-08-16T10:00:00.000Z',
-        },
-      ],
+      registrations: [baseRegistration],
     })
     getMock.mockResolvedValue({
       ok: true,
-      registration: {
-        id: 'reg-1',
-        schoolName: 'בית ספר אלון',
-        institutionSymbol: '112233',
-        city: 'חיפה',
-        applicantRole: 'principal',
-        contactFullName: 'נועה כהן',
-        email: 'noea@example.com',
-        phone: '04-1111111',
-        status: 'new',
-        createdAt: '2026-08-16T10:00:00.000Z',
-        updatedAt: '2026-08-16T10:00:00.000Z',
-      },
+      registration: baseRegistration,
     })
+    notesMock.mockResolvedValue({ ok: true, notes: [] })
+    activityMock.mockResolvedValue({
+      ok: true,
+      activities: [
+        {
+          id: 'act-1',
+          registrationId: 'reg-1',
+          eventType: 'registration_created',
+          actorUserId: null,
+          payload: {},
+          createdAt: '2026-08-16T10:00:00.000Z',
+        },
+      ],
+    })
+    statusMock.mockResolvedValue({ ok: true })
+    noteAddMock.mockResolvedValue({ ok: true })
+    followUpMock.mockResolvedValue({ ok: true })
   })
 
   afterEach(() => {
     cleanup()
     listMock.mockReset()
     getMock.mockReset()
+    notesMock.mockReset()
+    activityMock.mockReset()
+    statusMock.mockReset()
+    noteAddMock.mockReset()
+    followUpMock.mockReset()
   })
 
   it('shows registration list for Platform Admin and public link actions', async () => {
@@ -63,6 +92,7 @@ describe('PlatformAdminRegistrationsSection', () => {
 
     expect(await screen.findByText('בית ספר אלון')).toBeInTheDocument()
     expect(screen.getByText('112233')).toBeInTheDocument()
+    expect(screen.getByText('חדש')).toBeInTheDocument()
 
     const urlEl = document.querySelector('.platform-admin-registrations__url')
     expect(urlEl?.textContent?.endsWith('/register-school')).toBe(true)
@@ -73,12 +103,30 @@ describe('PlatformAdminRegistrationsSection', () => {
     await user.click(screen.getByRole('button', { name: 'העתקת קישור' }))
   })
 
-  it('opens registration details', async () => {
+  it('opens registration details with sales controls and timeline', async () => {
     const user = userEvent.setup()
     render(<PlatformAdminRegistrationsSection />)
     await user.click(await screen.findByRole('button', { name: 'בית ספר אלון' }))
     expect(await screen.findByRole('dialog')).toBeInTheDocument()
     expect(screen.getByText('פרטי הרשמה')).toBeInTheDocument()
+    expect(screen.getByRole('link', { name: /חייג/ })).toHaveAttribute(
+      'href',
+      'tel:04-1111111',
+    )
+    expect(screen.getByText('ציר פעילות')).toBeInTheDocument()
+    expect(screen.getByText('ההרשמה נוצרה')).toBeInTheDocument()
     expect(getMock).toHaveBeenCalledWith('reg-1')
+    expect(notesMock).toHaveBeenCalledWith('reg-1')
+    expect(activityMock).toHaveBeenCalledWith('reg-1')
+  })
+
+  it('allows Platform Admin to add a note from details', async () => {
+    const user = userEvent.setup()
+    render(<PlatformAdminRegistrationsSection />)
+    await user.click(await screen.findByRole('button', { name: 'בית ספר אלון' }))
+    await screen.findByRole('dialog')
+    await user.type(screen.getByPlaceholderText('הוספת הערה פנימית…'), 'שיחה ראשונה')
+    await user.click(screen.getByRole('button', { name: 'הוספת הערה' }))
+    expect(noteAddMock).toHaveBeenCalledWith('reg-1', 'שיחה ראשונה')
   })
 })

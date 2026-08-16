@@ -6,7 +6,7 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.49.1'
  * - No JWT required (verify_jwt = false).
  * - Accepts only expected intake fields.
  * - Never creates institutions/users or accepts admin/internal fields.
- * - Inserts via service_role into school_registrations only.
+ * - Persists via atomic SECURITY DEFINER RPC (registration + registration_created).
  * - Body size ceiling, email/symbol/IP rate limits (Phase 1A).
  *
  * Trusted client IP assumption (Supabase Edge / Deno Deploy):
@@ -247,19 +247,26 @@ Deno.serve(async (req) => {
       return jsonResponse({ ok: false, error: 'rate_limited' }, 429)
     }
 
-    const { error: insertError } = await admin.from('school_registrations').insert({
-      school_name: schoolName,
-      institution_symbol: institutionSymbolText,
-      city,
-      applicant_role: applicantRoleRaw,
-      contact_full_name: contactFullName,
-      email,
-      phone,
-      status: 'new',
-    })
+    const { data: intakeResult, error: intakeError } = await admin.rpc(
+      'school_registration_intake_create',
+      {
+        p_school_name: schoolName,
+        p_institution_symbol: institutionSymbolText,
+        p_city: city,
+        p_applicant_role: applicantRoleRaw,
+        p_contact_full_name: contactFullName,
+        p_email: email,
+        p_phone: phone,
+      },
+    )
 
-    if (insertError) {
-      console.error('[school-registration-intake] insert failed')
+    if (
+      intakeError ||
+      !intakeResult ||
+      typeof intakeResult !== 'object' ||
+      (intakeResult as { ok?: boolean }).ok !== true
+    ) {
+      console.error('[school-registration-intake] atomic intake failed')
       return jsonResponse({ ok: false, error: 'submit_failed' }, 500)
     }
 

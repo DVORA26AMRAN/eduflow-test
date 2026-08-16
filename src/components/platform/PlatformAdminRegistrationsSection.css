@@ -57,7 +57,7 @@
 
 .platform-admin-registrations__table {
   width: 100%;
-  min-width: 52rem;
+  min-width: 48rem;
   border-collapse: collapse;
   font-size: 0.9rem;
 }
@@ -70,6 +70,18 @@
   vertical-align: top;
 }
 
+.platform-admin-registrations__row--new {
+  background: rgba(255, 244, 214, 0.45);
+}
+
+.platform-admin-registrations__row--due-today {
+  background: rgba(230, 246, 238, 0.55);
+}
+
+.platform-admin-registrations__row--overdue {
+  background: rgba(253, 234, 234, 0.7);
+}
+
 .platform-admin-registrations__row-link {
   appearance: none;
   border: 0;
@@ -79,6 +91,62 @@
   text-decoration: underline;
   cursor: pointer;
   padding: 0;
+}
+
+.platform-admin-registrations__status {
+  display: inline-block;
+  padding: 0.15rem 0.45rem;
+  border-radius: 0.35rem;
+  font-size: 0.82rem;
+  background: #eef1f6;
+  color: #5e6472;
+}
+
+.platform-admin-registrations__status--new {
+  color: #83550a;
+  background: #fff4d6;
+}
+
+.platform-admin-registrations__status--contacted,
+.platform-admin-registrations__status--awaiting_response {
+  color: #1f4f7a;
+  background: #e8f1fa;
+}
+
+.platform-admin-registrations__status--interested {
+  color: #166746;
+  background: #e6f6ee;
+}
+
+.platform-admin-registrations__status--closed,
+.platform-admin-registrations__status--not_relevant {
+  color: #5e6472;
+  background: #eef1f6;
+}
+
+.platform-admin-registrations__follow-up {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  align-items: center;
+}
+
+.platform-admin-registrations__follow-up-tag {
+  font-size: 0.75rem;
+  padding: 0.1rem 0.35rem;
+  border-radius: 0.3rem;
+  background: rgba(15, 42, 54, 0.08);
+}
+
+.platform-admin-registrations__follow-up--due_today .platform-admin-registrations__follow-up-tag,
+.platform-admin-registrations__follow-up--due_today {
+  color: #166746;
+}
+
+.platform-admin-registrations__follow-up--overdue .platform-admin-registrations__follow-up-tag,
+.platform-admin-registrations__follow-up--overdue {
+  color: #8f2f2f;
+  font-weight: 600;
 }
 
 .platform-admin-registrations__modal-backdrop {
@@ -94,13 +162,15 @@
 }
 
 .platform-admin-registrations__modal {
-  width: min(100%, 32rem);
-  max-height: min(88dvh, 40rem);
+  width: min(100%, 40rem);
+  max-height: min(90dvh, 52rem);
   overflow: auto;
   background: #fff;
   border-radius: 0.85rem;
   padding: 1rem 1rem 1.25rem;
   box-sizing: border-box;
+  display: grid;
+  gap: 1rem;
 }
 
 .platform-admin-registrations__modal-header {
@@ -108,7 +178,6 @@
   align-items: center;
   justify-content: space-between;
   gap: 0.75rem;
-  margin-bottom: 0.85rem;
 }
 
 .platform-admin-registrations__modal-header h3 {
@@ -134,6 +203,93 @@
   flex-wrap: wrap;
   gap: 0.45rem;
   align-items: center;
+}
+
+.platform-admin-registrations__tel-action {
+  font-weight: 600;
+}
+
+.platform-admin-registrations__panel {
+  display: grid;
+  gap: 0.55rem;
+  padding-top: 0.35rem;
+  border-top: 1px solid rgba(15, 42, 54, 0.1);
+}
+
+.platform-admin-registrations__panel h4 {
+  margin: 0;
+  font-size: 0.95rem;
+}
+
+.platform-admin-registrations__inline-form {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.platform-admin-registrations__field {
+  display: grid;
+  gap: 0.35rem;
+  flex: 1 1 12rem;
+}
+
+.platform-admin-registrations__field select,
+.platform-admin-registrations__field input,
+.platform-admin-registrations__field textarea {
+  width: 100%;
+  box-sizing: border-box;
+  font: inherit;
+  padding: 0.45rem 0.55rem;
+  border: 1px solid rgba(15, 42, 54, 0.18);
+  border-radius: 0.45rem;
+  background: #fff;
+}
+
+.platform-admin-registrations__notes,
+.platform-admin-registrations__timeline {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 0.65rem;
+}
+
+.platform-admin-registrations__notes li,
+.platform-admin-registrations__timeline li {
+  display: grid;
+  gap: 0.2rem;
+  padding: 0.55rem 0.65rem;
+  border-radius: 0.45rem;
+  background: rgba(15, 42, 54, 0.04);
+}
+
+.platform-admin-registrations__notes time,
+.platform-admin-registrations__timeline time {
+  font-size: 0.78rem;
+  opacity: 0.7;
+}
+
+.platform-admin-registrations__notes p {
+  margin: 0;
+  white-space: pre-wrap;
+}
+
+.platform-admin-registrations__timeline span {
+  font-size: 0.88rem;
+  opacity: 0.9;
+}
+
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
 }
 
 @media (min-width: 768px) {

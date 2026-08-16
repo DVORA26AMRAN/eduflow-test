@@ -129,12 +129,12 @@ describe('school registration Phase 1 — public boundary & admin access', () =>
   )
 
   it('public caller cannot create institutions or users via intake edge function', () => {
-    expect(edge).toContain('school_registrations')
+    expect(edge).toContain('school_registration_intake_create')
     expect(edge).not.toMatch(/\.from\(\s*['"]institutions['"]\s*\)/)
     expect(edge).not.toMatch(/\.from\(\s*['"]users['"]\s*\)/)
     expect(edge).not.toContain('inviteUserByEmail')
     expect(edge).not.toContain('auth.admin')
-    expect(edge).toContain("status: 'new'")
+    expect(edge).not.toMatch(/\.from\(\s*['"]school_registrations['"]\s*\)\s*\.insert/)
   })
 
   it('rejects internal/admin fields from public body', () => {
@@ -261,7 +261,7 @@ describe('school registration Phase 1A — pre-deploy hardening', () => {
   it('keeps internal-field rejection and forced status new', () => {
     expect(edge).toContain('invalid_fields')
     expect(edge).toContain("'converted_institution_id'")
-    expect(edge).toContain("status: 'new'")
+    expect(edge).toContain('school_registration_intake_create')
   })
 
   it('keeps Platform Admin RPC access and tenant isolation', () => {
