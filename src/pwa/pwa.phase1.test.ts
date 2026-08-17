@@ -73,6 +73,10 @@ describe('MPEX PWA Phase P1 — installable application guards', () => {
     expect(INSTALL_LABEL).toBe('התקנת MPEX')
     expect(login).toContain("from '../pwa/InstallMpexButton'")
     expect(login).toContain('<InstallMpexButton variant="login" />')
+    expect(login).toMatch(
+      /<main[\s\S]*<InstallMpexButton variant="login" \/>[\s\S]*login-page__shell/,
+    )
+    expect(login).not.toMatch(/login-page__submit[\s\S]*InstallMpexButton/)
     expect(header).toContain("from '../../pwa/InstallMpexButton'")
     expect(header).toContain('<InstallMpexButton variant="header" />')
     expect(installBtn).toContain('useMpexInstall')

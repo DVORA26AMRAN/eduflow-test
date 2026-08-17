@@ -384,6 +384,11 @@
 }
 
 @media (max-width: 980px) {
+  .login-page {
+    /* Keep top-left install chip clear of the centered login card */
+    padding-top: calc(var(--ds-page-padding-compact) + 2.5rem);
+  }
+
   .login-page__shell {
     grid-template-columns: minmax(0, 440px);
     width: 100%;

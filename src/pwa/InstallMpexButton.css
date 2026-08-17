@@ -1,10 +1,38 @@
 .install-mpex--login {
-  margin-top: var(--ds-control-gap);
-  width: 100%;
+  /* Physical top-left of the login viewport (not RTL inline-start). */
+  position: absolute;
+  top: max(12px, env(safe-area-inset-top, 0px));
+  left: max(12px, env(safe-area-inset-left, 0px));
+  z-index: 3;
+  width: auto;
+  margin: 0;
+  pointer-events: auto;
 }
 
 .install-mpex__button--login {
-  width: 100%;
+  width: auto;
+  min-width: 0;
+  min-height: 2rem;
+  padding: 0.35rem 0.7rem;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  line-height: 1.2;
+  border-radius: 8px;
+  box-shadow: 0 1px 2px rgba(26, 21, 35, 0.08);
+  background: rgba(255, 255, 255, 0.92);
+}
+
+@media (max-width: 640px) {
+  .install-mpex--login {
+    top: max(10px, env(safe-area-inset-top, 0px));
+    left: max(10px, env(safe-area-inset-left, 0px));
+  }
+
+  .install-mpex__button--login {
+    min-height: 1.85rem;
+    padding: 0.3rem 0.6rem;
+    font-size: 0.75rem;
+  }
 }
 
 .install-mpex--header {

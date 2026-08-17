@@ -47,6 +47,8 @@ export function LoginPage({
 
   return (
     <main dir="rtl" className="login-page">
+      <InstallMpexButton variant="login" />
+
       <section className="login-page__shell" aria-label="מסך התחברות">
         {/* Login card first: desktop RTL = RIGHT; mobile stack = form first */}
         <div className="ds-card ds-card--flat login-page__card">
@@ -109,8 +111,6 @@ export function LoginPage({
             <button type="submit" className="ds-btn ds-btn--primary login-page__submit">
               התחברות
             </button>
-
-            <InstallMpexButton variant="login" />
 
             {message && <p className={getMessageClassName(message)}>{message}</p>}
           </form>
