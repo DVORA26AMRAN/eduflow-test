@@ -29,6 +29,10 @@ import {
 } from './utils/rememberedEmail'
 import { validateCreateUserForm } from './utils/createUserForm'
 import { buildSignInCredentials } from './services/authCredentials'
+import {
+  consumeInstalledAppLoginEntry,
+  shouldHoldInstalledAppLoginEntry,
+} from './pwa/installedAppEntry'
 import type {
   AuthenticatedUserProfile,
   ProfileLoadDebugInfo,
@@ -68,6 +72,8 @@ function App() {
   const profileLoadRequestId = useRef(0)
   const loadedProfileUserId = useRef<string | null>(null)
   const loadedProfile = useRef<AuthenticatedUserProfile | null>(null)
+  /** Installed `/app` entry: prefer login UI without clearing Supabase session. */
+  const holdInstalledLoginEntryRef = useRef(shouldHoldInstalledAppLoginEntry())
 
   async function syncAuthenticatedSession(
     session: Session | null,
@@ -125,6 +131,22 @@ function App() {
         setupComplete,
       })
       setNeedsPasswordSetup(true)
+      setCurrentProfile(null)
+      setShowLoginSuccessTransition(false)
+      setProfileLoadError('')
+      setProfileLoadDebug(null)
+      setIsProfileLoading(false)
+      return
+    }
+
+    // Installed-app `/app` entry: keep session in storage, surface login UI.
+    // Cleared only after an explicit login() on this visit — never via signOut here.
+    if (holdInstalledLoginEntryRef.current) {
+      logProfileDebug('installed app entry holds login UI; session preserved', {
+        source,
+        userId: session.user.id,
+      })
+      setNeedsPasswordSetup(false)
       setCurrentProfile(null)
       setShowLoginSuccessTransition(false)
       setProfileLoadError('')
@@ -379,6 +401,12 @@ function App() {
       }
       setMessage('ההתחברות נכשלה. בדקי מייל וסיסמה.')
       return
+    }
+
+    // Explicit login from installed entry: release login-hold without signOut.
+    if (holdInstalledLoginEntryRef.current) {
+      holdInstalledLoginEntryRef.current = false
+      consumeInstalledAppLoginEntry()
     }
 
     if (!data.session) {

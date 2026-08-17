@@ -1,6 +1,7 @@
 import type { FormEvent } from 'react'
 import './LoginPage.css'
 import organizationLogo from '../assets/images/logo.png.png'
+import { InstallMpexButton } from '../pwa/InstallMpexButton'
 
 type LoginPageProps = {
   email: string
@@ -108,6 +109,8 @@ export function LoginPage({
             <button type="submit" className="ds-btn ds-btn--primary login-page__submit">
               התחברות
             </button>
+
+            <InstallMpexButton variant="login" />
 
             {message && <p className={getMessageClassName(message)}>{message}</p>}
           </form>

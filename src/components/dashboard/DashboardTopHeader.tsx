@@ -1,6 +1,7 @@
 import type { PrimaryRole } from '../../types/user'
 import type { School } from '../../types/school'
 import { getDisplayInitial } from '../../utils/displayInitial'
+import { InstallMpexButton } from '../../pwa/InstallMpexButton'
 import { SchoolLogo } from '../SchoolLogo'
 import './DashboardTopHeader.css'
 
@@ -59,6 +60,7 @@ export function DashboardTopHeader({
       <div className="dashboard-top-header__spacer" aria-hidden="true" />
 
       <div className="dashboard-top-header__actions">
+        <InstallMpexButton variant="header" />
         <button type="button" className="ds-btn ds-btn--secondary" onClick={onLogout}>
           התנתקות
         </button>

@@ -94,6 +94,7 @@
   align-items: center;
   justify-content: flex-start;
   flex-shrink: 0;
+  gap: var(--ds-label-gap);
 }
 
 @media (max-width: 768px) {

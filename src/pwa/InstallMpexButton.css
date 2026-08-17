@@ -1,0 +1,62 @@
+.install-mpex--login {
+  margin-top: var(--ds-control-gap);
+  width: 100%;
+}
+
+.install-mpex__button--login {
+  width: 100%;
+}
+
+.install-mpex--header {
+  display: inline-flex;
+  align-items: center;
+}
+
+.install-mpex__ios {
+  position: fixed;
+  inset: 0;
+  z-index: 80;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--ds-page-padding-compact, 16px);
+  background: rgba(26, 21, 35, 0.45);
+  box-sizing: border-box;
+}
+
+.install-mpex__ios-card {
+  width: min(100%, 360px);
+  padding: 1.25rem 1.35rem;
+  border-radius: var(--ds-radius-xl, 16px);
+  background: var(--ds-color-surface, #fff);
+  color: var(--ds-color-text-primary, #1a1523);
+  box-shadow: var(--ds-shadow-card, 0 12px 40px rgba(26, 21, 35, 0.18));
+  text-align: right;
+}
+
+.install-mpex__ios-title {
+  margin: 0 0 0.75rem;
+  font-size: 1.1rem;
+  font-weight: 600;
+}
+
+.install-mpex__ios-steps {
+  margin: 0 0 1rem;
+  padding-inline-start: 1.25rem;
+  line-height: 1.55;
+  color: var(--ds-color-text-secondary, #6b6375);
+}
+
+.install-mpex__ios-steps li + li {
+  margin-top: 0.4rem;
+}
+
+.install-mpex__ios-close {
+  width: 100%;
+}
+
+.install-mpex__hint-text {
+  margin: 0 0 1rem;
+  line-height: 1.55;
+  color: var(--ds-color-text-secondary, #6b6375);
+}
