@@ -1,0 +1,38 @@
+.teacher-inactivity-warning {
+  position: fixed;
+  inset: 0;
+  z-index: 90;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  background: rgba(26, 21, 35, 0.48);
+  box-sizing: border-box;
+}
+
+.teacher-inactivity-warning__panel {
+  width: min(100%, 380px);
+  padding: 1.35rem 1.4rem;
+  border-radius: 16px;
+  background: #fff;
+  color: #1a1523;
+  box-shadow: 0 16px 48px rgba(26, 21, 35, 0.22);
+  text-align: right;
+}
+
+.teacher-inactivity-warning__title {
+  margin: 0 0 0.75rem;
+  font-size: 1.05rem;
+  font-weight: 600;
+  line-height: 1.45;
+}
+
+.teacher-inactivity-warning__countdown {
+  margin: 0 0 1.1rem;
+  color: #6b6375;
+  font-size: 0.95rem;
+}
+
+.teacher-inactivity-warning__continue {
+  width: 100%;
+}

@@ -33,6 +33,9 @@ import {
   consumeInstalledAppLoginEntry,
   shouldHoldInstalledAppLoginEntry,
 } from './pwa/installedAppEntry'
+import { TeacherInactivityWarningDialog } from './components/security/TeacherInactivityWarningDialog'
+import { useTeacherInactivityLogout } from './hooks/useTeacherInactivityLogout'
+import { isTeacherInactivityRole } from './security/teacherInactivityPolicy'
 import type {
   AuthenticatedUserProfile,
   ProfileLoadDebugInfo,
@@ -625,6 +628,20 @@ function App() {
     sessionStorage.removeItem(PENDING_RECOVERY_KEY)
   }
 
+  async function logoutFromTeacherInactivity() {
+    setPassword('')
+    setMessage('')
+    setNewPassword('')
+    setConfirmPassword('')
+    setPasswordSetupMessage('')
+    await logout()
+  }
+
+  const teacherInactivity = useTeacherInactivityLogout({
+    enabled: isTeacherInactivityRole(currentProfile?.role),
+    onLogout: logoutFromTeacherInactivity,
+  })
+
   if (!authReady) {
     return <LoadingPage message="טוען..." />
   }
@@ -726,6 +743,11 @@ function App() {
       <>
         <TeacherDashboardPage profile={currentProfile} onLogout={logout} />
         {loginSuccessTransition}
+        <TeacherInactivityWarningDialog
+          isOpen={teacherInactivity.warningVisible}
+          remainingMs={teacherInactivity.remainingMs}
+          onContinueWorking={teacherInactivity.continueWorking}
+        />
       </>
     )
   }
