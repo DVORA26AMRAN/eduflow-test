@@ -10,6 +10,7 @@ import {
   formatWeeklyHours,
   translateStaffMemberStatus,
 } from '../../utils/staffDirectoryDisplay'
+import { translateRole } from '../../utils/roles'
 import { Modal } from '../ui/Modal'
 import { StaffMemberEditForm } from './StaffMemberEditForm'
 
@@ -17,6 +18,7 @@ type StaffMemberDetailsModalProps = {
   isOpen: boolean
   memberId: string | null
   canEdit: boolean
+  canEditNationalId?: boolean
   institutionName: string
   onUpdated: () => Promise<void>
   onClose: () => void
@@ -25,6 +27,7 @@ type StaffMemberDetailsModalProps = {
 function StaffMemberDetailsContent({
   memberId,
   canEdit,
+  canEditNationalId = true,
   institutionName,
   onUpdated,
 }: Omit<StaffMemberDetailsModalProps, 'isOpen' | 'memberId' | 'onClose'> & {
@@ -121,6 +124,7 @@ function StaffMemberDetailsContent({
             member={member}
             institutionName={institutionName}
             isSaving={isSaving}
+            canEditNationalId={canEditNationalId}
             onCancel={() => {
               setIsEditing(false)
               setErrorMessage('')
@@ -167,9 +171,9 @@ function StaffMemberDetailsContent({
             </div>
             <div className="staff-directory__details-row">
               <dt>תפקיד במערכת</dt>
-              <dd>מורה</dd>
+              <dd>{translateRole(member.primaryRole)}</dd>
             </div>
-            {member.nationalId !== null ? (
+            {canEditNationalId && member.nationalId !== null ? (
               <div className="staff-directory__details-row">
                 <dt>תעודת זהות</dt>
                 <dd>{member.nationalId}</dd>
@@ -202,6 +206,7 @@ export function StaffMemberDetailsModal({
   isOpen,
   memberId,
   canEdit,
+  canEditNationalId = true,
   institutionName,
   onUpdated,
   onClose,
@@ -213,6 +218,7 @@ export function StaffMemberDetailsModal({
           key={memberId}
           memberId={memberId}
           canEdit={canEdit}
+          canEditNationalId={canEditNationalId}
           institutionName={institutionName}
           onUpdated={onUpdated}
         />

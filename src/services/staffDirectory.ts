@@ -6,6 +6,7 @@ import type {
   UpdateStaffMemberInput,
   UpdateStaffMemberResult,
 } from '../types/staffDirectory'
+import type { PrimaryRole } from '../types/user'
 import { supabase } from './supabase'
 
 function parseOptionalText(value: unknown): string | null | undefined {
@@ -34,6 +35,19 @@ function parseWeeklyHours(value: unknown): number | null | undefined {
   return undefined
 }
 
+function parsePrimaryRole(value: unknown): PrimaryRole | null {
+  if (
+    value === 'teacher' ||
+    value === 'secretary' ||
+    value === 'institution_manager' ||
+    value === 'deputy' ||
+    value === 'platform_admin'
+  ) {
+    return value
+  }
+  return null
+}
+
 function parseStaffDirectoryMember(row: Record<string, unknown>): StaffDirectoryMember | null {
   if (
     typeof row.id !== 'string' ||
@@ -48,6 +62,7 @@ function parseStaffDirectoryMember(row: Record<string, unknown>): StaffDirectory
   const phone = parseOptionalText(row.phone)
   const jobTitle = parseOptionalText(row.job_title)
   const weeklyHours = parseWeeklyHours(row.weekly_hours)
+  const primaryRole = parsePrimaryRole(row.primary_role) ?? 'teacher'
 
   if (
     email === undefined ||
@@ -67,6 +82,7 @@ function parseStaffDirectoryMember(row: Record<string, unknown>): StaffDirectory
     weeklyHours,
     status: row.status,
     createdAt: row.created_at,
+    primaryRole,
   }
 }
 
@@ -76,7 +92,8 @@ function parseStaffMemberDetails(row: Record<string, unknown>): StaffMemberDetai
     return null
   }
 
-  const nationalId = parseOptionalText(row.national_id)
+  const nationalId =
+    row.national_id === undefined ? null : parseOptionalText(row.national_id)
   if (nationalId === undefined) {
     return null
   }

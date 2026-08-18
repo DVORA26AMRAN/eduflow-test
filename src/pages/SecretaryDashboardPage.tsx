@@ -364,6 +364,7 @@ export function SecretaryDashboardPage({
           <StaffDirectoryPage
             key={usersListVersion}
             canEdit
+            actorRole="secretary"
             institutionName={profile.school?.name ?? ''}
             teacherOnboarding={{
               newUserName,

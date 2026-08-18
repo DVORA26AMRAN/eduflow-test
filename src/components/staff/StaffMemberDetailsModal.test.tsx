@@ -22,9 +22,10 @@ const member: StaffMemberDetails = {
   jobTitle: 'מחנכת',
   weeklyHours: 24,
   status: 'active',
-  createdAt: '2026-01-01T00:00:00.000Z',
-  nationalId: '123456789',
-}
+    createdAt: '2026-01-01T00:00:00.000Z',
+    nationalId: '123456789',
+    primaryRole: 'teacher',
+  }
 
 describe('StaffMemberDetailsModal', () => {
   afterEach(() => {

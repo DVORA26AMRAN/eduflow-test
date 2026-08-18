@@ -9,6 +9,7 @@ export type StaffDirectoryMember = {
   weeklyHours: number | null
   status: StaffMemberStatus
   createdAt: string
+  primaryRole: 'teacher' | 'secretary' | 'institution_manager' | 'deputy' | 'platform_admin'
 }
 
 export type StaffMemberDetails = StaffDirectoryMember & {

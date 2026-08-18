@@ -424,7 +424,8 @@ export function ManagerDashboardPage({
           className="manager-dashboard__shell-section"
         >
           <StaffDirectoryPage
-            canEdit={canEditOperationalUser(profile.role)}
+            canEdit={canEditOperationalUser(profile.role, 'teacher')}
+            actorRole={profile.role}
             institutionName={profile.school?.name ?? ''}
           />
         </DashboardSectionPanel>

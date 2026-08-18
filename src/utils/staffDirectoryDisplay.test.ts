@@ -16,6 +16,7 @@ const members: StaffDirectoryMember[] = [
     weeklyHours: 30,
     status: 'active',
     createdAt: '2026-01-01T00:00:00.000Z',
+    primaryRole: 'teacher',
   },
   {
     id: '2',
@@ -26,6 +27,7 @@ const members: StaffDirectoryMember[] = [
     weeklyHours: 22,
     status: 'inactive',
     createdAt: '2026-02-01T00:00:00.000Z',
+    primaryRole: 'teacher',
   },
 ]
 

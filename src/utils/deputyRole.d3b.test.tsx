@@ -350,17 +350,17 @@ describe('Deputy D3B — create Teacher and Secretary', () => {
     expect(edge).not.toMatch(/from\('users'\)\s*\.update/)
   })
 
-  it('hard-denies Deputy edit, disable, delete, and Deputy/Manager administration in D3B', () => {
+  it('does not grant Deputy disable/delete or Deputy/Manager administration in D3B', () => {
     expect(canEditOperationalUser('deputy')).toBe(false)
     expect(canEditOperationalUser('institution_manager')).toBe(true)
     expect(canManageDeputies('deputy')).toBe(false)
     expect(canManageDeputies('institution_manager')).toBe(true)
     expect(canManageTeamUsers('deputy')).toBe(false)
-    expect(managerPage).toContain('canEditOperationalUser(profile.role)')
+    expect(managerPage).toContain("canEditOperationalUser(profile.role, 'teacher')")
 
     render(<ManagerDashboardPage profile={profileFor('deputy')} {...dashboardProps} />)
     fireEvent.click(screen.getByRole('button', { name: 'פרטי צוות' }))
-    expect(screen.getByTestId('staff-directory')).toHaveAttribute('data-can-edit', 'false')
+    expect(screen.getByTestId('staff-directory')).toHaveAttribute('data-can-edit', 'true')
     cleanup()
     render(<ManagerDashboardPage profile={profileFor('institution_manager')} {...dashboardProps} />)
     fireEvent.click(screen.getByRole('button', { name: 'פרטי צוות' }))

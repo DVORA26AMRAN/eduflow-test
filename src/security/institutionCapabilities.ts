@@ -47,9 +47,31 @@ export function canCreateOperationalUser(role: PrimaryRole | null | undefined): 
   return role === 'institution_manager' || role === 'deputy'
 }
 
-/** D3C: edit existing operational users. D3B: Manager only. Secretary uses her own dashboard. */
-export function canEditOperationalUser(role: PrimaryRole | null | undefined): boolean {
-  return role === 'institution_manager'
+/** D3C: target-role-aware operational edit. Secretary remains teacher-only. */
+export function canEditOperationalUser(
+  actorRole: PrimaryRole | null | undefined,
+  targetRole?: PrimaryRole | null,
+): boolean {
+  if (actorRole === 'institution_manager') {
+    if (targetRole == null) {
+      return true
+    }
+    return targetRole === 'teacher'
+  }
+
+  if (actorRole === 'secretary') {
+    return targetRole === 'teacher'
+  }
+
+  if (actorRole === 'deputy') {
+    return targetRole === 'teacher' || targetRole === 'secretary'
+  }
+
+  return false
+}
+
+export function canEditStaffNationalId(role: PrimaryRole | null | undefined): boolean {
+  return role === 'institution_manager' || role === 'secretary'
 }
 
 /** Invite or administer Deputies. Manager only. */

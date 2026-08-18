@@ -3,6 +3,7 @@ import type { PrimaryRole } from '../types/user'
 import {
   canCreateOperationalUser,
   canEditOperationalUser,
+  canEditStaffNationalId,
   canManageCalendar,
   canManageDeputies,
   canManageInstitutionSettings,
@@ -44,6 +45,11 @@ describe('D2 institution capability helpers', () => {
     expect(canViewTeamManagement('deputy')).toBe(true)
     expect(canCreateOperationalUser('deputy')).toBe(true)
     expect(canEditOperationalUser('deputy')).toBe(false)
+    expect(canEditOperationalUser('deputy', 'teacher')).toBe(true)
+    expect(canEditOperationalUser('deputy', 'secretary')).toBe(true)
+    expect(canEditOperationalUser('deputy', 'institution_manager')).toBe(false)
+    expect(canEditOperationalUser('deputy', 'deputy')).toBe(false)
+    expect(canEditStaffNationalId('deputy')).toBe(false)
     expect(canManageDeputies('deputy')).toBe(false)
   })
 
@@ -57,6 +63,12 @@ describe('D2 institution capability helpers', () => {
     expect(canViewTeamManagement('institution_manager')).toBe(true)
     expect(canCreateOperationalUser('institution_manager')).toBe(true)
     expect(canEditOperationalUser('institution_manager')).toBe(true)
+    expect(canEditOperationalUser('institution_manager', 'teacher')).toBe(true)
+    expect(canEditOperationalUser('institution_manager', 'secretary')).toBe(false)
+    expect(canEditOperationalUser('secretary', 'teacher')).toBe(true)
+    expect(canEditOperationalUser('secretary', 'secretary')).toBe(false)
+    expect(canEditStaffNationalId('institution_manager')).toBe(true)
+    expect(canEditStaffNationalId('secretary')).toBe(true)
     expect(canManageDeputies('institution_manager')).toBe(true)
     expect(canUsePersonalGoogleIntegration('institution_manager')).toBe(true)
   })

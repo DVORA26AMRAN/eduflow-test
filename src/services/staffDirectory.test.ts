@@ -10,7 +10,7 @@ vi.mock('./supabase', () => ({
   },
 }))
 
-import { loadStaffDirectory, loadStaffMemberDetails } from './staffDirectory'
+import { loadStaffDirectory, loadStaffMemberDetails, updateStaffMember } from './staffDirectory'
 
 const validRow = {
   id: 'teacher-1',
@@ -52,6 +52,7 @@ describe('loadStaffDirectory', () => {
           weeklyHours: 30,
           status: 'active',
           createdAt: '2026-01-01T00:00:00.000Z',
+          primaryRole: 'teacher',
         },
       ],
     })
@@ -149,7 +150,53 @@ describe('loadStaffMemberDetails', () => {
         id: 'teacher-1',
         email: null,
         nationalId: null,
+        primaryRole: 'teacher',
       }),
+    })
+  })
+
+  it('parses omitted national_id as null so Deputy details do not require it', async () => {
+    rpcMock.mockResolvedValue({
+      data: [{ ...validRow, primary_role: 'secretary' }],
+      error: null,
+    })
+
+    await expect(loadStaffMemberDetails('teacher-1')).resolves.toEqual({
+      ok: true,
+      member: expect.objectContaining({
+        primaryRole: 'secretary',
+        nationalId: null,
+      }),
+    })
+  })
+})
+
+describe('updateStaffMember', () => {
+  beforeEach(() => {
+    rpcMock.mockReset()
+  })
+
+  it('calls update_staff_member with the approved profile fields only', async () => {
+    rpcMock.mockResolvedValue({ data: { ok: true, user_id: 'teacher-1' }, error: null })
+
+    await expect(
+      updateStaffMember({
+        userId: 'teacher-1',
+        fullName: 'יעל עודכנה',
+        phone: '050-1111111',
+        jobTitle: 'מחנכת',
+        weeklyHours: 22,
+        nationalId: null,
+      }),
+    ).resolves.toEqual({ ok: true })
+
+    expect(rpcMock).toHaveBeenCalledWith('update_staff_member', {
+      p_user_id: 'teacher-1',
+      p_full_name: 'יעל עודכנה',
+      p_phone: '050-1111111',
+      p_job_title: 'מחנכת',
+      p_weekly_hours: 22,
+      p_national_id: null,
     })
   })
 })

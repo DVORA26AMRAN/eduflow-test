@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import type { StaffDirectoryMember } from '../types/staffDirectory'
-import type { UserRole } from '../types/user'
+import type { PrimaryRole, UserRole } from '../types/user'
 import { loadStaffDirectory } from '../services/staffDirectory'
 import { StaffDirectoryFilters } from '../components/staff/StaffDirectoryFilters'
 import { StaffDirectoryTable } from '../components/staff/StaffDirectoryTable'
@@ -8,6 +8,10 @@ import { StaffMemberDetailsModal } from '../components/staff/StaffMemberDetailsM
 import { CreateUserForm } from '../components/manager/CreateUserForm'
 import { NavClipboardIcon } from '../components/dashboard/dashboardNav'
 import { DashboardSection } from '../components/dashboard/DashboardSection'
+import {
+  canEditOperationalUser,
+  canEditStaffNationalId,
+} from '../security/institutionCapabilities'
 import {
   STAFF_DIRECTORY_EMPTY_MESSAGE,
   STAFF_DIRECTORY_ERROR_MESSAGE,
@@ -43,12 +47,14 @@ export type StaffDirectoryTeacherOnboardingProps = {
 
 type StaffDirectoryPageProps = {
   canEdit: boolean
+  actorRole?: PrimaryRole
   institutionName: string
   teacherOnboarding?: StaffDirectoryTeacherOnboardingProps
 }
 
 export function StaffDirectoryPage({
   canEdit,
+  actorRole,
   institutionName,
   teacherOnboarding,
 }: StaffDirectoryPageProps) {
@@ -133,6 +139,19 @@ export function StaffDirectoryPage({
     setSortDirection('asc')
   }
 
+  const selectedMember = useMemo(
+    () => members.find((member) => member.id === selectedMemberId) ?? null,
+    [members, selectedMemberId],
+  )
+
+  const canEditSelectedMember =
+    canEdit &&
+    (actorRole
+      ? canEditOperationalUser(actorRole, selectedMember?.primaryRole)
+      : true)
+
+  const canEditSelectedNationalId = actorRole ? canEditStaffNationalId(actorRole) : canEdit
+
   function handleMemberSelect(memberId: string) {
     setSelectedMemberId(memberId)
     setIsDetailsOpen(true)
@@ -198,7 +217,8 @@ export function StaffDirectoryPage({
       <StaffMemberDetailsModal
         isOpen={isDetailsOpen}
         memberId={selectedMemberId}
-        canEdit={canEdit}
+        canEdit={canEditSelectedMember}
+        canEditNationalId={canEditSelectedNationalId}
         institutionName={institutionName}
         onUpdated={refreshDirectory}
         onClose={handleDetailsClose}

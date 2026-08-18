@@ -354,7 +354,7 @@ describe('Deputy D2 operational dashboard', () => {
     expect(canManageInstitutionSettings('deputy')).toBe(false)
     expect(canManageInstitutionSettings('institution_manager')).toBe(true)
     expect(managerPage).toContain('canViewTeamManagement(profile.role)')
-    expect(managerPage).toContain('canEditOperationalUser(profile.role)')
+    expect(managerPage).toContain("canEditOperationalUser(profile.role, 'teacher')")
     expect(app).toContain('canCallerInviteRole')
     expect(app).toContain('getAllowedTenantInviteRoles')
   })

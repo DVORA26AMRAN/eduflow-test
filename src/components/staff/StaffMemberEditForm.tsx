@@ -1,12 +1,14 @@
 import { useState, type FormEvent } from 'react'
 import type { StaffMemberDetails, UpdateStaffMemberInput } from '../../types/staffDirectory'
 import { formatStaffEmail, formatStaffJoinDate } from '../../utils/staffDirectoryDisplay'
+import { translateRole } from '../../utils/roles'
 import { validateStaffMemberEdit } from '../../utils/staffMemberEdit'
 
 type StaffMemberEditFormProps = {
   member: StaffMemberDetails
   institutionName: string
   isSaving: boolean
+  canEditNationalId?: boolean
   onCancel: () => void
   onSave: (input: UpdateStaffMemberInput) => Promise<void>
 }
@@ -15,6 +17,7 @@ export function StaffMemberEditForm({
   member,
   institutionName,
   isSaving,
+  canEditNationalId = true,
   onCancel,
   onSave,
 }: StaffMemberEditFormProps) {
@@ -36,7 +39,7 @@ export function StaffMemberEditForm({
       phone,
       jobTitle,
       weeklyHours,
-      nationalId,
+      nationalId: canEditNationalId ? nationalId : '',
     })
 
     if (!validation.ok) {
@@ -98,15 +101,17 @@ export function StaffMemberEditForm({
         />
       </label>
 
-      <label className="ds-field" htmlFor="staff-edit-national-id">
-        <span className="ds-label">תעודת זהות</span>
-        <input
-          id="staff-edit-national-id"
-          className="ds-input"
-          value={nationalId}
-          onChange={(event) => setNationalId(event.target.value)}
-        />
-      </label>
+      {canEditNationalId ? (
+        <label className="ds-field" htmlFor="staff-edit-national-id">
+          <span className="ds-label">תעודת זהות</span>
+          <input
+            id="staff-edit-national-id"
+            className="ds-input"
+            value={nationalId}
+            onChange={(event) => setNationalId(event.target.value)}
+          />
+        </label>
+      ) : null}
 
       <dl className="staff-directory__readonly-list">
         <div className="staff-directory__details-row">
@@ -123,7 +128,7 @@ export function StaffMemberEditForm({
         </div>
         <div className="staff-directory__details-row">
           <dt>תפקיד במערכת</dt>
-          <dd>מורה</dd>
+          <dd>{translateRole(member.primaryRole)}</dd>
         </div>
       </dl>
 

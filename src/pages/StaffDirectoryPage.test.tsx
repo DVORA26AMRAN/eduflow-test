@@ -4,13 +4,14 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { StaffDirectoryMember } from '../types/staffDirectory'
 import { StaffDirectoryPage } from './StaffDirectoryPage'
 
-const { loadDirectoryMock } = vi.hoisted(() => ({
+const { loadDirectoryMock, loadDetailsMock } = vi.hoisted(() => ({
   loadDirectoryMock: vi.fn(),
+  loadDetailsMock: vi.fn(),
 }))
 
 vi.mock('../services/staffDirectory', () => ({
   loadStaffDirectory: loadDirectoryMock,
-  loadStaffMemberDetails: vi.fn(),
+  loadStaffMemberDetails: loadDetailsMock,
   updateStaffMember: vi.fn(),
 }))
 
@@ -24,6 +25,7 @@ const members: StaffDirectoryMember[] = [
     weeklyHours: 30,
     status: 'active',
     createdAt: '2026-01-01T00:00:00.000Z',
+    primaryRole: 'teacher',
   },
   {
     id: 't2',
@@ -34,6 +36,7 @@ const members: StaffDirectoryMember[] = [
     weeklyHours: 22,
     status: 'active',
     createdAt: '2026-02-01T00:00:00.000Z',
+    primaryRole: 'teacher',
   },
 ]
 
@@ -44,7 +47,12 @@ describe('StaffDirectoryPage loading', () => {
 
   beforeEach(() => {
     loadDirectoryMock.mockReset()
+    loadDetailsMock.mockReset()
     loadDirectoryMock.mockResolvedValue({ ok: true, members })
+    loadDetailsMock.mockResolvedValue({
+      ok: true,
+      member: { ...members[0], nationalId: '123456789' },
+    })
   })
 
   it('mounts and calls loadStaffDirectory from its loading effect', async () => {
@@ -121,5 +129,66 @@ describe('StaffDirectoryPage loading', () => {
 
     expect(screen.getByText('יעל לוי')).toBeInTheDocument()
     expect(screen.queryByText('דני כהן')).not.toBeInTheDocument()
+  })
+
+  it('lets a Deputy open edit for Teacher and Secretary without national_id', async () => {
+    const user = userEvent.setup({ delay: null })
+    const secretary: StaffDirectoryMember = {
+      id: 's1',
+      fullName: 'רותי מזכירה',
+      email: 'ruth@school.com',
+      phone: '053-3333333',
+      jobTitle: 'מזכירות',
+      weeklyHours: 40,
+      status: 'active',
+      createdAt: '2026-03-01T00:00:00.000Z',
+      primaryRole: 'secretary',
+    }
+    loadDirectoryMock.mockResolvedValue({ ok: true, members: [...members, secretary] })
+    loadDetailsMock.mockResolvedValue({
+      ok: true,
+      member: { ...members[0], nationalId: null },
+    })
+
+    render(<StaffDirectoryPage canEdit actorRole="deputy" institutionName="בית ספר" />)
+
+    await user.click(await screen.findByRole('button', { name: 'דני כהן' }))
+    expect(await screen.findByRole('button', { name: 'עריכת פרטים' })).toBeInTheDocument()
+    expect(screen.queryByText('תעודת זהות')).not.toBeInTheDocument()
+
+    await user.click(screen.getByRole('button', { name: 'סגירת חלון' }))
+    loadDetailsMock.mockResolvedValue({
+      ok: true,
+      member: { ...secretary, nationalId: null },
+    })
+    await user.click(screen.getByRole('button', { name: 'רותי מזכירה' }))
+    expect(await screen.findByRole('button', { name: 'עריכת פרטים' })).toBeInTheDocument()
+    expect(screen.queryByText('תעודת זהות')).not.toBeInTheDocument()
+  })
+
+  it('does not show Deputy edit for Manager or Deputy directory rows', async () => {
+    const user = userEvent.setup({ delay: null })
+    const manager: StaffDirectoryMember = {
+      id: 'm1',
+      fullName: 'נועה מנהלת',
+      email: 'noa@school.com',
+      phone: null,
+      jobTitle: null,
+      weeklyHours: null,
+      status: 'active',
+      createdAt: '2026-01-01T00:00:00.000Z',
+      primaryRole: 'institution_manager',
+    }
+    loadDirectoryMock.mockResolvedValue({ ok: true, members: [manager] })
+    loadDetailsMock.mockResolvedValue({
+      ok: true,
+      member: { ...manager, nationalId: null },
+    })
+
+    render(<StaffDirectoryPage canEdit actorRole="deputy" institutionName="בית ספר" />)
+
+    await user.click(await screen.findByRole('button', { name: 'נועה מנהלת' }))
+    expect(await screen.findByText('מנהלת')).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'עריכת פרטים' })).not.toBeInTheDocument()
   })
 })
