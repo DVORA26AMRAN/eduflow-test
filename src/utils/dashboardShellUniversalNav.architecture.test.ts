@@ -133,8 +133,10 @@ describe('dashboard content containment contracts', () => {
     // Phone widths 320–414 are covered by the 480px + 1024px shell breakpoints.
     expect(shell).toContain('@media (max-width: 1024px)')
     expect(shell).toContain('@media (max-width: 480px)')
+    expect(shell).toContain('@media (min-width: 1025px)')
     // Desktop 1366/1440 keep the 272px navigation column.
     expect(shell).toContain('grid-template-columns: 272px minmax(0, 1fr)')
     expect(shell).toContain('.dashboard-shell--mobile-nav .dashboard-shell__layout')
+    expect(shell).toContain('#root:has(.dashboard-shell)')
   })
 })

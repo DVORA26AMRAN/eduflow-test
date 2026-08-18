@@ -328,6 +328,44 @@
   grid-template-columns: minmax(0, 1fr);
 }
 
+/*
+ * Desktop-only full-width workspace.
+ * Mobile/tablet (<=1024px) keep the existing centered #root + shell max-width.
+ * Do not restyle mobile cards or navigation here.
+ */
+@media (min-width: 1025px) {
+  #root:has(.dashboard-shell) {
+    width: 100%;
+    max-width: none;
+    margin: 0;
+    border-inline: none;
+  }
+
+  .dashboard-shell {
+    max-width: none;
+    width: 100%;
+    margin: 0;
+  }
+
+  .dashboard-shell__layout {
+    width: 100%;
+    flex: 1 1 auto;
+  }
+
+  .dashboard-shell__content {
+    width: 100%;
+  }
+
+  .dashboard-shell__content > .teacher-dashboard,
+  .dashboard-shell__content > .secretary-dashboard,
+  .dashboard-shell__content > .manager-dashboard,
+  .dashboard-shell__content > .platform-admin-dashboard {
+    max-width: none;
+    margin-inline: 0;
+    width: 100%;
+  }
+}
+
 @media (max-width: 480px) {
   .dashboard-shell {
     padding: var(--ds-control-gap);
