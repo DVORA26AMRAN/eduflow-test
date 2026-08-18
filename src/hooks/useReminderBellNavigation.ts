@@ -8,7 +8,7 @@ import {
 import { buildReminderNavigationAnnouncement } from '../utils/requestRowNavigation'
 
 type UseReminderBellNavigationOptions = {
-  role: 'secretary' | 'institution_manager'
+  role: 'secretary' | 'institution_manager' | 'deputy'
   scrollToSection: (sectionId: string) => void
   resolveLocation: (requestId: string) => Promise<ReminderRequestLocation>
   getNewestUnreadReminder: () => AppNotification | null

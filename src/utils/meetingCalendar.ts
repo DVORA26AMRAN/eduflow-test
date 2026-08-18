@@ -14,6 +14,7 @@ const MEETING_CALENDAR_ROLES: MeetingCalendarRole[] = [
   'teacher',
   'secretary',
   'institution_manager',
+  'deputy',
 ]
 
 export const MEETING_STATE_TRANSITIONS: Readonly<Record<MeetingState, readonly MeetingState[]>> = {
@@ -28,14 +29,21 @@ export const MEETING_STATE_TRANSITIONS: Readonly<Record<MeetingState, readonly M
 
 export const MEETING_CREATION_MATRIX = [
   { initiator: 'teacher', recipient: 'institution_manager', allowed: true },
+  { initiator: 'teacher', recipient: 'deputy', allowed: true },
   { initiator: 'teacher', recipient: 'secretary', allowed: true },
   { initiator: 'secretary', recipient: 'teacher', allowed: true },
   { initiator: 'secretary', recipient: 'institution_manager', allowed: true },
+  { initiator: 'secretary', recipient: 'deputy', allowed: true },
   { initiator: 'institution_manager', recipient: 'teacher', allowed: true },
   { initiator: 'institution_manager', recipient: 'secretary', allowed: true },
+  { initiator: 'deputy', recipient: 'teacher', allowed: true },
+  { initiator: 'deputy', recipient: 'secretary', allowed: true },
   { initiator: 'teacher', recipient: 'teacher', allowed: false },
   { initiator: 'secretary', recipient: 'secretary', allowed: false },
   { initiator: 'institution_manager', recipient: 'institution_manager', allowed: false },
+  { initiator: 'deputy', recipient: 'deputy', allowed: false },
+  { initiator: 'institution_manager', recipient: 'deputy', allowed: false },
+  { initiator: 'deputy', recipient: 'institution_manager', allowed: false },
 ] as const
 
 export const MEETING_SLOT_PROPOSAL_MATRIX = [
@@ -87,11 +95,23 @@ export function isAllowedMeetingRolePair(
   }
 
   if (requesterRole === 'teacher') {
-    return recipientRole === 'secretary' || recipientRole === 'institution_manager'
+    return (
+      recipientRole === 'secretary' ||
+      recipientRole === 'institution_manager' ||
+      recipientRole === 'deputy'
+    )
   }
 
   if (requesterRole === 'secretary') {
-    return recipientRole === 'teacher' || recipientRole === 'institution_manager'
+    return (
+      recipientRole === 'teacher' ||
+      recipientRole === 'institution_manager' ||
+      recipientRole === 'deputy'
+    )
+  }
+
+  if (requesterRole === 'deputy') {
+    return recipientRole === 'teacher' || recipientRole === 'secretary'
   }
 
   return recipientRole === 'teacher' || recipientRole === 'secretary'
@@ -105,9 +125,13 @@ export function resolveCalendarOwnerUserId(input: {
 }): string {
   if (
     input.requesterRole === 'institution_manager' ||
-    input.recipientRole === 'institution_manager'
+    input.recipientRole === 'institution_manager' ||
+    input.requesterRole === 'deputy' ||
+    input.recipientRole === 'deputy'
   ) {
-    return input.requesterRole === 'institution_manager' ? input.requesterId : input.recipientId
+    return input.requesterRole === 'institution_manager' || input.requesterRole === 'deputy'
+      ? input.requesterId
+      : input.recipientId
   }
 
   if (input.requesterRole === 'secretary' || input.recipientRole === 'secretary') {
@@ -223,7 +247,10 @@ export function pairKeyForRoles(
 ): 'manager_teacher' | 'secretary_teacher' | 'manager_secretary' | null {
   const roles = new Set([roleA, roleB])
 
-  if (roles.has('institution_manager') && roles.has('teacher')) {
+  if (
+    (roles.has('institution_manager') || roles.has('deputy')) &&
+    roles.has('teacher')
+  ) {
     return 'manager_teacher'
   }
 
@@ -231,7 +258,10 @@ export function pairKeyForRoles(
     return 'secretary_teacher'
   }
 
-  if (roles.has('institution_manager') && roles.has('secretary')) {
+  if (
+    (roles.has('institution_manager') || roles.has('deputy')) &&
+    roles.has('secretary')
+  ) {
     return 'manager_secretary'
   }
 

@@ -1,3 +1,4 @@
+import { isInstitutionOperatorRole } from '../security/institutionCapabilities'
 import type {
   ArchivedTeacherRequest,
   CreateRequestInput,
@@ -9,6 +10,7 @@ import type {
   SecretaryInboxRequest,
   TeacherRequest,
 } from '../types/request'
+import type { PrimaryRole } from '../types/user'
 import { isGeneralRequestRecipientRole } from '../utils/generalRequestDisplay'
 import { isRequestStatus, isRequestType } from '../utils/requests'
 import { supabase } from './supabase'
@@ -357,21 +359,92 @@ export async function loadSecretaryArchivedRequests(
   return { ok: true, requests, totalCount: count ?? 0 }
 }
 
+function parseCallerPrimaryRole(value: unknown): PrimaryRole | null {
+  if (
+    value === 'institution_manager' ||
+    value === 'deputy' ||
+    value === 'secretary' ||
+    value === 'teacher' ||
+    value === 'platform_admin'
+  ) {
+    return value
+  }
+
+  return null
+}
+
 export async function updateRequestStatus(
   requestId: string,
   status: RequestStatus,
 ): Promise<UpdateRequestStatusResult> {
-  const { error } = await supabase.from('requests').update({ status }).eq('id', requestId)
-
-  if (error) {
-    console.error('[requests] failed to update request status', error)
+  if (!isRequestStatus(status)) {
     return {
       ok: false,
       errorMessage: 'עדכון סטטוס הבקשה נכשל.',
     }
   }
 
-  return { ok: true }
+  const { data: sessionData, error: sessionError } = await supabase.auth.getSession()
+
+  if (sessionError || !sessionData.session?.user) {
+    console.error('[requests] no authenticated session for status update', sessionError)
+    return {
+      ok: false,
+      errorMessage: 'עדכון סטטוס הבקשה נכשל.',
+    }
+  }
+
+  const { data: caller, error: callerError } = await supabase
+    .from('users')
+    .select('primary_role')
+    .eq('id', sessionData.session.user.id)
+    .single()
+
+  const callerRole = parseCallerPrimaryRole(caller?.primary_role)
+
+  if (callerError || callerRole === null) {
+    console.error('[requests] failed to load caller role for status update', callerError)
+    return {
+      ok: false,
+      errorMessage: 'עדכון סטטוס הבקשה נכשל.',
+    }
+  }
+
+  if (isInstitutionOperatorRole(callerRole)) {
+    const { error } = await supabase.rpc('update_request_status', {
+      p_request_id: requestId,
+      p_status: status,
+    })
+
+    if (error) {
+      console.error('[requests] failed to update request status via operator RPC', error)
+      return {
+        ok: false,
+        errorMessage: 'עדכון סטטוס הבקשה נכשל.',
+      }
+    }
+
+    return { ok: true }
+  }
+
+  if (callerRole === 'secretary') {
+    const { error } = await supabase.from('requests').update({ status }).eq('id', requestId)
+
+    if (error) {
+      console.error('[requests] failed to update request status', error)
+      return {
+        ok: false,
+        errorMessage: 'עדכון סטטוס הבקשה נכשל.',
+      }
+    }
+
+    return { ok: true }
+  }
+
+  return {
+    ok: false,
+    errorMessage: 'עדכון סטטוס הבקשה נכשל.',
+  }
 }
 
 export async function archiveRequest(requestId: string): Promise<ArchiveRequestResult> {

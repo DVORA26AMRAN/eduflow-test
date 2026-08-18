@@ -7,7 +7,6 @@ import { LoginSuccessTransition } from './components/transitions/LoginSuccessTra
 import { LoginPage } from './pages/LoginPage'
 import { ManagerDashboardPage } from './pages/ManagerDashboardPage'
 import { PasswordSetupPage } from './pages/PasswordSetupPage'
-import { DeputyDashboardPlaceholderPage } from './pages/DeputyDashboardPlaceholderPage'
 import { PlatformAdminDashboardPage } from './pages/PlatformAdminDashboardPage'
 import { SecretaryDashboardPage } from './pages/SecretaryDashboardPage'
 import { TeacherDashboardPage } from './pages/TeacherDashboardPage'
@@ -501,13 +500,21 @@ function App() {
   }
 
   async function createUser() {
+    if (
+      !currentProfile ||
+      (currentProfile.role !== 'institution_manager' && currentProfile.role !== 'secretary')
+    ) {
+      setMessage('אין הרשאה ליצירת משתמש.')
+      return
+    }
+
     const allowedRoles =
-      currentProfile?.role === 'secretary'
+      currentProfile.role === 'secretary'
         ? (['teacher'] as const)
         : (['teacher', 'secretary'] as const)
 
     const requestedRole =
-      currentProfile?.role === 'secretary' ? 'teacher' : newUserRole
+      currentProfile.role === 'secretary' ? 'teacher' : newUserRole
 
     const validation = validateCreateUserForm(
       {
@@ -742,7 +749,27 @@ function App() {
   if (currentProfile.role === 'deputy') {
     return (
       <>
-        <DeputyDashboardPlaceholderPage profile={currentProfile} onLogout={logout} />
+        <ManagerDashboardPage
+          profile={currentProfile}
+          newUserName={newUserName}
+          newUserEmail={newUserEmail}
+          newUserRole={newUserRole}
+          newUserPhone={newUserPhone}
+          newUserNationalId={newUserNationalId}
+          newUserJobTitle={newUserJobTitle}
+          newUserWeeklyHours={newUserWeeklyHours}
+          message={message}
+          usersListVersion={usersListVersion}
+          onNewUserNameChange={setNewUserName}
+          onNewUserEmailChange={setNewUserEmail}
+          onNewUserRoleChange={setNewUserRole}
+          onNewUserPhoneChange={setNewUserPhone}
+          onNewUserNationalIdChange={setNewUserNationalId}
+          onNewUserJobTitleChange={setNewUserJobTitle}
+          onNewUserWeeklyHoursChange={setNewUserWeeklyHours}
+          onCreateUser={createUser}
+          onLogout={logout}
+        />
         {loginSuccessTransition}
       </>
     )

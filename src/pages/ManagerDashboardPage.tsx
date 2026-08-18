@@ -25,6 +25,13 @@ import {
   PRINTING_WORKSPACE_SECTION_ID,
 } from '../utils/secretaryPrinting'
 import { UserSettingsSection } from '../components/settings/UserSettingsSection'
+import {
+  canManageCalendar,
+  canManageRequests,
+  canManageTeamUsers,
+  canUseOperationalPrinting,
+  canViewInstitutionArchive,
+} from '../security/institutionCapabilities'
 import { StaffDirectoryPage } from './StaffDirectoryPage'
 import { useAdminReminderNotifications } from '../hooks/useAdminReminderNotifications'
 import { useUnreadRequestMessageNotifications } from '../hooks/useUnreadRequestMessageNotifications'
@@ -160,7 +167,7 @@ export function ManagerDashboardPage({
     handleReminderBellClick,
     handleReminderNavigationComplete,
   } = useReminderBellNavigation({
-    role: 'institution_manager',
+    role: profile.role === 'deputy' ? 'deputy' : 'institution_manager',
     scrollToSection: showSection,
     resolveLocation: resolveManagerReminderRequestLocation,
     getNewestUnreadReminder,
@@ -188,31 +195,51 @@ export function ManagerDashboardPage({
     }
 
     items.push(
-      {
-        id: MANAGER_TEACHER_REQUESTS_SECTION_ID,
-        label: 'בקשות מורים',
-        icon: <NavInboxIcon />,
-      },
+      ...(canManageRequests(profile.role)
+        ? [
+            {
+              id: MANAGER_TEACHER_REQUESTS_SECTION_ID,
+              label: 'בקשות מורים',
+              icon: <NavInboxIcon />,
+            },
+          ]
+        : []),
       {
         id: 'adminNotifications',
         label: 'התראות',
         icon: <NavBellIcon />,
         badgeCount: adminNotificationsUnreadCount > 0 ? adminNotificationsUnreadCount : undefined,
       },
-      {
-        id: PRINTING_WORKSPACE_SECTION_ID,
-        label: PRINTING_WORKSPACE_NAV_LABEL,
-        icon: <NavPrintIcon />,
-      },
-      { id: MEETING_CALENDAR_SECTION_ID, label: MEETING_CALENDAR_NAV_LABEL, icon: <NavCalendarIcon /> },
+      ...(canUseOperationalPrinting(profile.role)
+        ? [
+            {
+              id: PRINTING_WORKSPACE_SECTION_ID,
+              label: PRINTING_WORKSPACE_NAV_LABEL,
+              icon: <NavPrintIcon />,
+            },
+          ]
+        : []),
+      ...(canManageCalendar(profile.role)
+        ? [
+            {
+              id: MEETING_CALENDAR_SECTION_ID,
+              label: MEETING_CALENDAR_NAV_LABEL,
+              icon: <NavCalendarIcon />,
+            },
+          ]
+        : []),
       { id: STAFF_DIRECTORY_SECTION_ID, label: STAFF_DIRECTORY_NAV_LABEL, icon: <NavClipboardIcon /> },
-      { id: MANAGER_ARCHIVE_SECTION_ID, label: 'הארכיון שלי', icon: <NavArchiveIcon /> },
-      { id: TEAM_MANAGEMENT_SECTION_ID, label: 'ניהול משתמשים', icon: <NavUsersIcon /> },
+      ...(canViewInstitutionArchive(profile.role)
+        ? [{ id: MANAGER_ARCHIVE_SECTION_ID, label: 'הארכיון שלי', icon: <NavArchiveIcon /> }]
+        : []),
+      ...(canManageTeamUsers(profile.role)
+        ? [{ id: TEAM_MANAGEMENT_SECTION_ID, label: 'ניהול משתמשים', icon: <NavUsersIcon /> }]
+        : []),
       { id: USER_SETTINGS_SECTION_ID, label: USER_SETTINGS_NAV_LABEL, icon: <NavSettingsIcon /> },
     )
 
     return items
-  }, [adminNotificationsUnreadCount, handleReminderBellClick, unreadCount])
+  }, [adminNotificationsUnreadCount, handleReminderBellClick, profile.role, unreadCount])
 
   function handleNavigateToTeacherRequests(intent: DashboardRequestNavigationIntent) {
     void intent
@@ -223,6 +250,13 @@ export function ManagerDashboardPage({
     let isCancelled = false
 
     async function fetchUsers() {
+      if (!canManageTeamUsers(profile.role)) {
+        setUsers([])
+        setUsersError('')
+        setIsUsersLoading(false)
+        return
+      }
+
       setIsUsersLoading(true)
       setUsersError('')
 
@@ -247,7 +281,7 @@ export function ManagerDashboardPage({
     return () => {
       isCancelled = true
     }
-  }, [usersListVersion])
+  }, [profile.role, usersListVersion])
 
   useEffect(() => {
     let isCancelled = false
@@ -291,7 +325,7 @@ export function ManagerDashboardPage({
 
   return (
     <DashboardShell
-      roleLabel="אזור מנהלת"
+      roleLabel={profile.role === 'deputy' ? 'אזור סגנית' : 'אזור מנהלת'}
       subtitle="ברוכה הבאה ל־EduFlow."
       profile={profile}
       navItems={managerNavItems}
@@ -327,6 +361,7 @@ export function ManagerDashboardPage({
             refreshToken={archiveRefreshToken}
             onArchived={handleRequestArchived}
             institutionId={profile.school?.id ?? null}
+            canChangeStatus={canManageRequests(profile.role)}
             unreadReminderRequestIds={unreadReminderRequestIds}
             unreadMessageRequestIds={unreadMessageRequestIds}
             requestIdsWithMessages={requestIdsWithMessages}
@@ -375,7 +410,7 @@ export function ManagerDashboardPage({
         >
           <MeetingCalendarSection
             actorUserId={profile.id}
-            actorRole="institution_manager"
+            actorRole={profile.role === 'deputy' ? 'deputy' : 'institution_manager'}
             institutionTimezone={profile.school!.timeZone}
           />
         </DashboardSectionPanel>
@@ -387,7 +422,7 @@ export function ManagerDashboardPage({
           className="manager-dashboard__shell-section"
         >
           <StaffDirectoryPage
-            canEdit
+            canEdit={canManageTeamUsers(profile.role)}
             institutionName={profile.school?.name ?? ''}
           />
         </DashboardSectionPanel>
@@ -408,6 +443,7 @@ export function ManagerDashboardPage({
           />
         </DashboardSectionPanel>
 
+        {canManageTeamUsers(profile.role) ? (
         <DashboardSectionPanel
           id="manager-team"
           sectionId={TEAM_MANAGEMENT_SECTION_ID}
@@ -436,6 +472,7 @@ export function ManagerDashboardPage({
             onCreateUser={onCreateUser}
           />
         </DashboardSectionPanel>
+        ) : null}
 
         <DashboardSectionPanel
           id="manager-user-settings"

@@ -29,7 +29,6 @@ describe('Deputy D1 role foundation', () => {
   const alignment = read(ALIGNMENT_MIGRATION)
   const managerUnique = read(MANAGER_UNIQUE_MIGRATION)
   const app = read('src/App.tsx')
-  const placeholder = read('src/pages/DeputyDashboardPlaceholderPage.tsx')
   const userTypes = read('src/types/user.ts')
 
   it('10000 adds the deputy enum value only and does not use it in dependent SQL', () => {
@@ -117,36 +116,12 @@ describe('Deputy D1 role foundation', () => {
     expect(translateRole('institution_manager')).toBe('מנהלת')
   })
 
-  it('routes Deputy explicitly to the D1 placeholder, not Manager dashboard', () => {
-    expect(app).toContain("currentProfile.role === 'platform_admin'")
-    expect(app).toContain("currentProfile.role === 'institution_manager'")
-    expect(app).toContain("currentProfile.role === 'deputy'")
-    expect(app).toContain("currentProfile.role === 'secretary'")
-    expect(app).toContain("currentProfile.role === 'teacher'")
-    expect(app).toContain('DeputyDashboardPlaceholderPage')
-    expect(placeholder).toContain('דשבורד סגנית בהכנה')
-    expect(placeholder).toContain('data-testid="deputy-d1-placeholder"')
-    expect(placeholder).not.toContain('ManagerDashboardPage')
-    expect(placeholder).not.toContain('DashboardShell')
-
-    const deputyBranch = app.slice(app.indexOf("currentProfile.role === 'deputy'"))
-    const deputyReturn = deputyBranch.slice(0, deputyBranch.indexOf("currentProfile.role === 'secretary'"))
-    expect(deputyReturn).toContain('DeputyDashboardPlaceholderPage')
-    expect(deputyReturn).not.toContain('ManagerDashboardPage')
-
-    expect(app).toMatch(
-      /currentProfile\.role === 'institution_manager'[\s\S]*ManagerDashboardPage/,
-    )
-    expect(app).toContain('לא ניתן לטעון את הפרופיל.')
-  })
-
-  it('does not enable D2 operational Deputy capabilities', () => {
+  it('does not enable D2 operational Deputy capabilities in D1 SQL', () => {
     expect(app).not.toContain("enabled: isTeacherInactivityRole('deputy')")
     expect(d1Enum).not.toContain('clever-processor')
     expect(d1Operator).not.toContain('clever-processor')
-    expect(placeholder).not.toContain('TeamManagementSection')
-    expect(placeholder).not.toContain('updateRequestStatus')
-    expect(placeholder).not.toContain('MeetingCalendarSection')
+    expect(d1Operator).not.toContain('ON public.requests')
+    expect(d1Operator).not.toContain('CREATE POLICY')
   })
 
   it('does not apply Teacher inactivity logout to Deputy', () => {

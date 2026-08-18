@@ -304,6 +304,24 @@ describe('printing authorization isolation', () => {
         requestInstitutionId: 'inst-b',
       }),
     ).toBe(false)
+    expect(
+      canReadPrintingRequest({
+        actorRole: 'deputy',
+        actorUserId: 'deputy-a',
+        actorInstitutionId: 'inst-a',
+        teacherUserId: 'teacher-1',
+        requestInstitutionId: 'inst-b',
+      }),
+    ).toBe(false)
+    expect(
+      canReadPrintingRequest({
+        actorRole: 'deputy',
+        actorUserId: 'deputy-a',
+        actorInstitutionId: 'inst-1',
+        teacherUserId: 'teacher-1',
+        requestInstitutionId: 'inst-1',
+      }),
+    ).toBe(true)
   })
 })
 

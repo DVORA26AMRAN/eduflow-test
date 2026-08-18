@@ -31,6 +31,7 @@
 }
 
 .dashboard-shell--institution_manager::before,
+.dashboard-shell--deputy::before,
 .dashboard-shell--secretary::before,
 .dashboard-shell--teacher::before {
   background-color: #f5f7fb;
@@ -49,6 +50,7 @@
 }
 
 .dashboard-shell--institution_manager::after,
+.dashboard-shell--deputy::after,
 .dashboard-shell--secretary::after,
 .dashboard-shell--teacher::after {
   background: rgba(248, 250, 252, 0.18);

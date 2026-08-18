@@ -281,6 +281,13 @@
   }
 }
 
+.manager-dashboard__status-select {
+  min-width: 150px;
+  margin-top: var(--ds-label-gap);
+  margin-bottom: 0;
+  background: var(--ds-color-surface);
+}
+
 @media (max-width: 480px) {
   .manager-dashboard__stats {
     grid-template-columns: minmax(0, 1fr);

@@ -191,7 +191,7 @@ export function canStartGoogleOAuth(args: {
   if (!args.institutionId) {
     return false
   }
-  return args.role === 'institution_manager' || args.role === 'secretary'
+  return args.role === 'institution_manager' || args.role === 'secretary' || args.role === 'deputy'
 }
 
 export function resolveGoogleConnectionUiStatus(args: {

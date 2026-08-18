@@ -1,8 +1,10 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import type { ManagerRecentRequest } from '../../types/analytics'
+import type { RequestStatus } from '../../types/request'
 import type { ReminderNavigationIntent } from '../../types/reminderNavigation'
 import { loadRecentRequests } from '../../services/analytics'
 import { archiveRequestForManager } from '../../services/managerPersonalArchive'
+import { updateRequestStatus } from '../../services/requests'
 import { loadInstitutionRequestReminderSummaries, subscribeToInstitutionRequestReminders, unsubscribeFromInstitutionRequestReminders, upsertReminderSummary } from '../../services/requestReminders'
 import type { RequestReminderSummary } from '../../types/requestReminder'
 import { useRequestReminderNavigationEffect } from '../../hooks/useRequestReminderNavigationEffect'
@@ -18,6 +20,7 @@ type ManagerRecentRequestsSectionProps = {
   refreshToken: number
   onArchived: () => void
   institutionId?: string | null
+  canChangeStatus?: boolean
   unreadReminderRequestIds?: ReadonlySet<string>
   unreadMessageRequestIds?: ReadonlySet<string>
   requestIdsWithMessages?: ReadonlySet<string>
@@ -31,6 +34,7 @@ export function ManagerRecentRequestsSection({
   refreshToken,
   onArchived,
   institutionId,
+  canChangeStatus = true,
   unreadReminderRequestIds = new Set(),
   unreadMessageRequestIds = new Set(),
   requestIdsWithMessages = new Set(),
@@ -45,6 +49,7 @@ export function ManagerRecentRequestsSection({
   const [statusMessage, setStatusMessage] = useState('')
   const [statusMessageIsError, setStatusMessageIsError] = useState(false)
   const [archivingRequestId, setArchivingRequestId] = useState<string | null>(null)
+  const [updatingRequestId, setUpdatingRequestId] = useState<string | null>(null)
   const [archiveDialogRequest, setArchiveDialogRequest] = useState<ManagerRecentRequest | null>(
     null,
   )
@@ -149,6 +154,41 @@ export function ManagerRecentRequestsSection({
     setDetailsRequest({ ...request, role: 'manager' })
   }
 
+  async function handleStatusChange(requestId: string, status: RequestStatus) {
+    if (!canChangeStatus) {
+      return
+    }
+
+    const currentRequest = requests.find((request) => request.id === requestId)
+    if (!currentRequest || currentRequest.status === status) {
+      return
+    }
+
+    setStatusMessage('')
+    setUpdatingRequestId(requestId)
+
+    const result = await updateRequestStatus(requestId, status)
+
+    setUpdatingRequestId(null)
+
+    if (!result.ok) {
+      setStatusMessage(result.errorMessage)
+      setStatusMessageIsError(true)
+      return
+    }
+
+    setRequests((currentRequests) =>
+      currentRequests.map((request) =>
+        request.id === requestId ? { ...request, status } : request,
+      ),
+    )
+    setDetailsRequest((current) =>
+      current?.id === requestId ? { ...current, status } : current,
+    )
+    setStatusMessage('סטטוס הבקשה עודכן בהצלחה.')
+    setStatusMessageIsError(false)
+  }
+
   function handleCloseDetails() {
     setDetailsRequest(null)
   }
@@ -226,6 +266,8 @@ export function ManagerRecentRequestsSection({
           <ManagerRecentRequestsTable
             requests={requests}
             archivingRequestId={archivingRequestId}
+            updatingRequestId={updatingRequestId}
+            canChangeStatus={canChangeStatus}
             unreadReminderRequestIds={unreadReminderRequestIds}
             unreadMessageRequestIds={unreadMessageRequestIds}
             requestIdsWithMessages={requestIdsWithMessages}
@@ -233,6 +275,7 @@ export function ManagerRecentRequestsSection({
             highlightedRequestId={highlightedRequestId}
             onArchive={handleOpenArchiveDialog}
             onOpenDetails={handleOpenDetails}
+            onStatusChange={canChangeStatus ? handleStatusChange : undefined}
           />
         )}
       </DashboardSection>

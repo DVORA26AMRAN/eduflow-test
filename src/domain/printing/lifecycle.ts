@@ -135,7 +135,7 @@ export function canTransferToSecretary(params: {
   return { ok: true }
 }
 
-export type PrintingAccessRole = 'teacher' | 'secretary' | 'institution_manager' | 'other'
+export type PrintingAccessRole = 'teacher' | 'secretary' | 'institution_manager' | 'deputy' | 'other'
 
 export function canReadPrintingRequest(params: {
   actorRole: PrintingAccessRole
@@ -148,7 +148,11 @@ export function canReadPrintingRequest(params: {
   if (params.actorRole === 'teacher') {
     return params.actorUserId === params.teacherUserId
   }
-  return params.actorRole === 'secretary' || params.actorRole === 'institution_manager'
+  return (
+    params.actorRole === 'secretary' ||
+    params.actorRole === 'institution_manager' ||
+    params.actorRole === 'deputy'
+  )
 }
 
 export function canAccessPrintingFile(params: {

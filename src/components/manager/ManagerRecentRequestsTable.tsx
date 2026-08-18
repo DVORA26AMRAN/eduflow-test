@@ -1,8 +1,10 @@
 import type { ManagerRecentRequest } from '../../types/analytics'
+import type { RequestStatus } from '../../types/request'
 import type { RequestReminderSummary } from '../../types/requestReminder'
 import { handleRequestRowActivate } from '../../utils/requestTableRowInteraction'
 import {
   formatRequestDate,
+  REQUEST_STATUS_OPTIONS,
   translateRequestStatus,
   translateRequestType,
 } from '../../utils/requests'
@@ -15,6 +17,8 @@ import { RequestArchiveTrashButton } from '../requests/RequestArchiveTrashButton
 type ManagerRecentRequestsTableProps = {
   requests: ManagerRecentRequest[]
   archivingRequestId: string | null
+  updatingRequestId?: string | null
+  canChangeStatus?: boolean
   unreadReminderRequestIds: ReadonlySet<string>
   unreadMessageRequestIds: ReadonlySet<string>
   requestIdsWithMessages: ReadonlySet<string>
@@ -22,11 +26,14 @@ type ManagerRecentRequestsTableProps = {
   highlightedRequestId?: string | null
   onArchive: (request: ManagerRecentRequest) => void
   onOpenDetails: (request: ManagerRecentRequest, rowElement: HTMLTableRowElement) => void
+  onStatusChange?: (requestId: string, status: RequestStatus) => void
 }
 
 export function ManagerRecentRequestsTable({
   requests,
   archivingRequestId,
+  updatingRequestId = null,
+  canChangeStatus = true,
   unreadReminderRequestIds,
   unreadMessageRequestIds = new Set(),
   requestIdsWithMessages = new Set(),
@@ -34,6 +41,7 @@ export function ManagerRecentRequestsTable({
   highlightedRequestId = null,
   onArchive,
   onOpenDetails,
+  onStatusChange,
 }: ManagerRecentRequestsTableProps) {
   return (
     <div className="ds-table-wrapper manager-dashboard__table-wrapper">
@@ -105,6 +113,24 @@ export function ManagerRecentRequestsTable({
                   <span className={`ds-table__status ds-table__status--${request.status}`}>
                     {translateRequestStatus(request.status)}
                   </span>
+                  {canChangeStatus && onStatusChange ? (
+                    <select
+                      className="manager-dashboard__status-select"
+                      value={request.status}
+                      onClick={(event) => event.stopPropagation()}
+                      onChange={(event) =>
+                        onStatusChange(request.id, event.target.value as RequestStatus)
+                      }
+                      disabled={updatingRequestId === request.id || archivingRequestId !== null}
+                      aria-label={`סטטוס בקשה של ${request.teacher_full_name}`}
+                    >
+                      {REQUEST_STATUS_OPTIONS.map((option) => (
+                        <option key={option.value} value={option.value}>
+                          {option.label}
+                        </option>
+                      ))}
+                    </select>
+                  ) : null}
                 </div>
               </td>
               <td>{formatRequestDate(request.created_at)}</td>

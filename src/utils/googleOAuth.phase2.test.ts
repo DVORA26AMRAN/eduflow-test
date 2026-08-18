@@ -100,7 +100,7 @@ describe('Google OAuth Phase 2 migration — auth + state + token rules', () => 
 })
 
 describe('Google OAuth authorization policy (client mirror)', () => {
-  it('allows active manager and secretary only', () => {
+  it('allows active manager, secretary, and deputy personal integration', () => {
     expect(
       canStartGoogleOAuth({
         role: 'institution_manager',
@@ -111,6 +111,13 @@ describe('Google OAuth authorization policy (client mirror)', () => {
     expect(
       canStartGoogleOAuth({
         role: 'secretary',
+        status: 'active',
+        institutionId: 'inst-1',
+      }),
+    ).toBe(true)
+    expect(
+      canStartGoogleOAuth({
+        role: 'deputy',
         status: 'active',
         institutionId: 'inst-1',
       }),
@@ -130,6 +137,20 @@ describe('Google OAuth authorization policy (client mirror)', () => {
         role: 'institution_manager',
         status: 'inactive',
         institutionId: 'inst-1',
+      }),
+    ).toBe(false)
+    expect(
+      canStartGoogleOAuth({
+        role: 'deputy',
+        status: 'inactive',
+        institutionId: 'inst-1',
+      }),
+    ).toBe(false)
+    expect(
+      canStartGoogleOAuth({
+        role: 'platform_admin',
+        status: 'active',
+        institutionId: null,
       }),
     ).toBe(false)
     expect(

@@ -67,7 +67,7 @@ export function getReminderNotifications(
 
 export function getReminderSectionIdForLocation(
   location: { kind: string },
-  role: 'secretary' | 'institution_manager',
+  role: 'secretary' | 'institution_manager' | 'deputy',
 ): string {
   if (location.kind === 'secretary_inbox') {
     return 'requestsInbox'
@@ -81,7 +81,7 @@ export function getReminderSectionIdForLocation(
     return 'archive'
   }
 
-  if (role === 'institution_manager') {
+  if (role === 'institution_manager' || role === 'deputy') {
     return 'teacherRequests'
   }
 
