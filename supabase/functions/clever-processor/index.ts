@@ -5,8 +5,8 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.49.1'
  *
  * Authorization (server-side):
  * - institution_manager may invite role=teacher|secretary|deputy for their own institution.
+ * - deputy may invite role=teacher|secretary for their own institution (D3B).
  * - secretary may invite role=teacher only for their own institution.
- * - deputy may not invite anyone (D3A).
  * - For tenant callers, institution is taken from the caller row — never from the body.
  * - platform_admin (active, institution_id NULL) may invite role=institution_manager
  *   for a verified body.institution_id when no active manager occupies the slot.
@@ -82,6 +82,9 @@ function canTenantInviteRole(callerRole: string, requestedRole: TenantInviteRole
       requestedRole === 'deputy'
     )
   }
+  if (callerRole === 'deputy') {
+    return requestedRole === 'teacher' || requestedRole === 'secretary'
+  }
   if (callerRole === 'secretary') {
     return requestedRole === 'teacher'
   }
@@ -100,8 +103,29 @@ function isActiveTenantInviter(caller: CallerRow): boolean {
   return (
     caller.status === 'active' &&
     !!caller.institution_id &&
-    (caller.primary_role === 'institution_manager' || caller.primary_role === 'secretary')
+    (caller.primary_role === 'institution_manager' ||
+      caller.primary_role === 'deputy' ||
+      caller.primary_role === 'secretary')
   )
+}
+
+function parseOptionalPositiveNumber(value: unknown): number | null | 'invalid' {
+  if (value === undefined || value === null || value === '') {
+    return null
+  }
+
+  const parsed =
+    typeof value === 'number'
+      ? value
+      : typeof value === 'string'
+        ? Number(value.trim().replace(',', '.'))
+        : Number.NaN
+
+  if (!Number.isFinite(parsed) || parsed <= 0) {
+    return 'invalid'
+  }
+
+  return parsed
 }
 
 /**
@@ -394,12 +418,8 @@ Deno.serve(async (request) => {
     }
 
     // -------------------------------------------------------------------------
-    // Tenant invites (Manager / Secretary). D3A: Deputy cannot invite.
+    // Tenant invites (Manager / Deputy / Secretary)
     // -------------------------------------------------------------------------
-    if (callerRow.primary_role === 'deputy') {
-      return jsonResponse({ ok: false, error: 'forbidden' }, 403)
-    }
-
     if (!isActiveTenantInviter(callerRow)) {
       return jsonResponse({ ok: false, error: 'forbidden' }, 403)
     }
@@ -419,6 +439,22 @@ Deno.serve(async (request) => {
 
     if (!canTenantInviteRole(callerRow.primary_role, role)) {
       return jsonResponse({ ok: false, error: 'forbidden' }, 403)
+    }
+
+    let teacherPhone: string | null = null
+    let teacherNationalId: string | null = null
+    let teacherJobTitle: string | null = null
+    let teacherWeeklyHours: number | null = null
+
+    if (role === 'teacher') {
+      const weeklyHours = parseOptionalPositiveNumber(body.weekly_hours)
+      if (weeklyHours === 'invalid') {
+        return jsonResponse({ ok: false, error: 'invalid_payload' }, 400)
+      }
+      teacherPhone = asNonEmptyString(body.phone)
+      teacherNationalId = asNonEmptyString(body.national_id)
+      teacherJobTitle = asNonEmptyString(body.job_title)
+      teacherWeeklyHours = weeklyHours
     }
 
     const { data: existingByEmail, error: emailLookupError } = await service
@@ -470,6 +506,14 @@ Deno.serve(async (request) => {
       status: 'active',
       institution_id: callerRow.institution_id,
       onboarding_completed_at: null,
+      ...(role === 'teacher'
+        ? {
+            phone: teacherPhone,
+            national_id: teacherNationalId,
+            job_title: teacherJobTitle,
+            weekly_hours: teacherWeeklyHours,
+          }
+        : {}),
     })
 
     if (insertError) {

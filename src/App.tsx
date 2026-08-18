@@ -27,7 +27,7 @@ import {
   getInitialLoginFormState,
   handleRememberMeAfterLogin,
 } from './utils/rememberedEmail'
-import { getAllowedTenantInviteRoles } from './security/tenantInviteRoles'
+import { canCallerInviteRole, getAllowedTenantInviteRoles } from './security/tenantInviteRoles'
 import { validateCreateUserForm } from './utils/createUserForm'
 import { buildSignInCredentials } from './services/authCredentials'
 import {
@@ -501,10 +501,7 @@ function App() {
   }
 
   async function createUser() {
-    if (
-      !currentProfile ||
-      (currentProfile.role !== 'institution_manager' && currentProfile.role !== 'secretary')
-    ) {
+    if (!currentProfile) {
       setMessage('אין הרשאה ליצירת משתמש.')
       return
     }
@@ -517,6 +514,11 @@ function App() {
 
     const requestedRole =
       currentProfile.role === 'secretary' ? 'teacher' : newUserRole
+
+    if (!canCallerInviteRole(currentProfile.role, requestedRole)) {
+      setMessage('אין הרשאה ליצירת משתמש.')
+      return
+    }
 
     const validation = validateCreateUserForm(
       {
@@ -580,18 +582,23 @@ function App() {
         validation.values.weeklyHours !== null
 
       if (validation.values.role === 'teacher' && hasExtendedFields) {
-        const extendedResult = await setTeacherExtendedProfile({
-          email: validation.values.email,
-          phone: validation.values.phone,
-          nationalId: validation.values.nationalId,
-          jobTitle: validation.values.jobTitle,
-          weeklyHours: validation.values.weeklyHours,
-        })
+        if (
+          currentProfile.role === 'institution_manager' ||
+          currentProfile.role === 'secretary'
+        ) {
+          const extendedResult = await setTeacherExtendedProfile({
+            email: validation.values.email,
+            phone: validation.values.phone,
+            nationalId: validation.values.nationalId,
+            jobTitle: validation.values.jobTitle,
+            weeklyHours: validation.values.weeklyHours,
+          })
 
-        if (!extendedResult.ok) {
-          setMessage(extendedResult.errorMessage)
-          setUsersListVersion((version) => version + 1)
-          return
+          if (!extendedResult.ok) {
+            setMessage(extendedResult.errorMessage)
+            setUsersListVersion((version) => version + 1)
+            return
+          }
         }
       }
 

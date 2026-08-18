@@ -10,7 +10,7 @@ type CreateUserFormProps = {
   newUserJobTitle: string
   newUserWeeklyHours: string
   message: string
-  /** Defaults to Manager D3A allow-list. Secretary passes `['teacher']`. */
+  /** Defaults to Manager invite allow-list. Deputy/Secretary pass a caller-specific list. */
   allowedRoles?: readonly UserRole[]
   onNewUserNameChange: (value: string) => void
   onNewUserEmailChange: (value: string) => void

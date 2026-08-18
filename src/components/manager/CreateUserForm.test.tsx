@@ -38,6 +38,16 @@ describe('CreateUserForm role allow-list', () => {
     expect(screen.queryByRole('option', { name: 'מנהל/ת מערכת' })).not.toBeInTheDocument()
   })
 
+  it('deputy mode keeps teacher and secretary only', () => {
+    render(<CreateUserForm {...baseProps} allowedRoles={['teacher', 'secretary']} />)
+
+    expect(screen.getByRole('combobox', { name: 'תפקיד במערכת' })).toBeInTheDocument()
+    expect(screen.getByRole('option', { name: 'מורה' })).toBeInTheDocument()
+    expect(screen.getByRole('option', { name: 'מזכירה' })).toBeInTheDocument()
+    expect(screen.queryByRole('option', { name: 'סגנית' })).not.toBeInTheDocument()
+    expect(screen.queryByRole('option', { name: 'מנהלת' })).not.toBeInTheDocument()
+  })
+
   it('secretary teacher-only mode locks role and keeps teacher profile fields', async () => {
     const user = userEvent.setup({ delay: null })
 

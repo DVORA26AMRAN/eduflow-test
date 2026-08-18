@@ -10,15 +10,22 @@ export const MANAGER_TENANT_INVITE_ROLES: readonly TenantInviteRole[] = [
 /** Secretary tenant invite allow-list. Unchanged: teacher only. */
 export const SECRETARY_TENANT_INVITE_ROLES: readonly TenantInviteRole[] = ['teacher']
 
+/** Deputy tenant invite allow-list (D3B). Teacher and secretary only. */
+export const DEPUTY_TENANT_INVITE_ROLES: readonly TenantInviteRole[] = ['teacher', 'secretary']
+
 /**
  * Caller-specific invite allow-list. Empty means the caller cannot invite anyone.
- * D3A: Deputy is denied. Platform Admin uses a separate manager-invite branch.
+ * Platform Admin uses a separate manager-invite branch.
  */
 export function getAllowedTenantInviteRoles(
   callerRole: PrimaryRole | null | undefined,
 ): readonly TenantInviteRole[] {
   if (callerRole === 'institution_manager') {
     return MANAGER_TENANT_INVITE_ROLES
+  }
+
+  if (callerRole === 'deputy') {
+    return DEPUTY_TENANT_INVITE_ROLES
   }
 
   if (callerRole === 'secretary') {

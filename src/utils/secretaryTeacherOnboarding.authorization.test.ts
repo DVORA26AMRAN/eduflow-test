@@ -68,6 +68,7 @@ describe('secretary teacher onboarding/edit authorization', () => {
     expect(edge).toContain('canTenantInviteRole')
     expect(edge).toContain("callerRole === 'institution_manager'")
     expect(edge).toContain("callerRole === 'secretary'")
+    expect(edge).toContain("callerRole === 'deputy'")
     expect(edge).toContain("return requestedRole === 'teacher'")
     expect(edge).toContain("requestedRole === 'deputy'")
     expect(edge).toContain('institution_id: callerRow.institution_id')

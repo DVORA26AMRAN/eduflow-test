@@ -26,9 +26,10 @@ import {
 } from '../utils/secretaryPrinting'
 import { UserSettingsSection } from '../components/settings/UserSettingsSection'
 import {
+  canEditOperationalUser,
   canManageCalendar,
   canManageRequests,
-  canManageTeamUsers,
+  canViewTeamManagement,
   canUseOperationalPrinting,
   canViewInstitutionArchive,
 } from '../security/institutionCapabilities'
@@ -233,7 +234,7 @@ export function ManagerDashboardPage({
       ...(canViewInstitutionArchive(profile.role)
         ? [{ id: MANAGER_ARCHIVE_SECTION_ID, label: 'הארכיון שלי', icon: <NavArchiveIcon /> }]
         : []),
-      ...(canManageTeamUsers(profile.role)
+      ...(canViewTeamManagement(profile.role)
         ? [{ id: TEAM_MANAGEMENT_SECTION_ID, label: 'ניהול משתמשים', icon: <NavUsersIcon /> }]
         : []),
       { id: USER_SETTINGS_SECTION_ID, label: USER_SETTINGS_NAV_LABEL, icon: <NavSettingsIcon /> },
@@ -251,7 +252,7 @@ export function ManagerDashboardPage({
     let isCancelled = false
 
     async function fetchUsers() {
-      if (!canManageTeamUsers(profile.role)) {
+      if (!canViewTeamManagement(profile.role)) {
         setUsers([])
         setUsersError('')
         setIsUsersLoading(false)
@@ -423,7 +424,7 @@ export function ManagerDashboardPage({
           className="manager-dashboard__shell-section"
         >
           <StaffDirectoryPage
-            canEdit={canManageTeamUsers(profile.role)}
+            canEdit={canEditOperationalUser(profile.role)}
             institutionName={profile.school?.name ?? ''}
           />
         </DashboardSectionPanel>
@@ -444,7 +445,7 @@ export function ManagerDashboardPage({
           />
         </DashboardSectionPanel>
 
-        {canManageTeamUsers(profile.role) ? (
+        {canViewTeamManagement(profile.role) ? (
         <DashboardSectionPanel
           id="manager-team"
           sectionId={TEAM_MANAGEMENT_SECTION_ID}

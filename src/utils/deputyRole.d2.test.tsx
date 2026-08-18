@@ -35,7 +35,6 @@ const PRINTING_SETTINGS =
   'supabase/migrations/20250804120100_printing_requests_phase1_commands.sql'
 const RECIPIENT_ROUTING =
   'supabase/migrations/20250712160000_general_request_recipient_routing.sql'
-const CLEVER_PROCESSOR = 'supabase/functions/clever-processor/index.ts'
 const STAFF_UPDATE = 'supabase/migrations/20250812160000_secretary_teacher_onboarding_edit.sql'
 
 const PHASE3_PATHS = [
@@ -207,7 +206,6 @@ describe('Deputy D2 operational dashboard', () => {
   const managerPage = read('src/pages/ManagerDashboardPage.tsx')
   const printingSettings = read(PRINTING_SETTINGS)
   const recipientRouting = read(RECIPIENT_ROUTING)
-  const clever = read(CLEVER_PROCESSOR)
   const staffUpdate = read(STAFF_UPDATE)
   const requestTypes = read('src/types/request.ts')
   const capabilities = read('src/security/institutionCapabilities.ts')
@@ -215,7 +213,7 @@ describe('Deputy D2 operational dashboard', () => {
   it('routes Deputy and Manager to the same ManagerDashboardPage without role fallthrough', () => {
     expect(app).toContain("currentProfile.role === 'institution_manager'")
     expect(app).toContain("currentProfile.role === 'deputy'")
-    expect(app).not.toContain("role === 'institution_manager' ||")
+    expect(app).not.toContain("role === 'institution_manager' || role === 'deputy'")
     expect(app).not.toContain('DeputyDashboardPlaceholderPage')
 
     const managerBranch = app.slice(app.indexOf("currentProfile.role === 'institution_manager'"))
@@ -243,13 +241,12 @@ describe('Deputy D2 operational dashboard', () => {
     )
   })
 
-  it('keeps Manager team management visible and hides it for Deputy', () => {
+  it('keeps Manager team management visible', () => {
     render(<ManagerDashboardPage profile={profileFor('institution_manager')} {...dashboardProps} />)
     expect(screen.getByRole('button', { name: 'ניהול משתמשים' })).toBeInTheDocument()
     cleanup()
 
     render(<ManagerDashboardPage profile={profileFor('deputy')} {...dashboardProps} />)
-    expect(screen.queryByRole('button', { name: 'ניהול משתמשים' })).not.toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'בקשות מורים' })).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'הארכיון שלי' })).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'יומן פגישות' })).toBeInTheDocument()
@@ -356,9 +353,10 @@ describe('Deputy D2 operational dashboard', () => {
     expect(d2).not.toContain('CREATE OR REPLACE FUNCTION public.printing_update_institution_settings')
     expect(canManageInstitutionSettings('deputy')).toBe(false)
     expect(canManageInstitutionSettings('institution_manager')).toBe(true)
-    expect(managerPage).toContain('canManageTeamUsers(profile.role)')
-    expect(app).toContain("currentProfile.role !== 'institution_manager'")
-    expect(app).toContain("currentProfile.role !== 'secretary'")
+    expect(managerPage).toContain('canViewTeamManagement(profile.role)')
+    expect(managerPage).toContain('canEditOperationalUser(profile.role)')
+    expect(app).toContain('canCallerInviteRole')
+    expect(app).toContain('getAllowedTenantInviteRoles')
   })
 
   it('does not add Deputy to GeneralRequestRecipientRole', () => {
@@ -371,12 +369,8 @@ describe('Deputy D2 operational dashboard', () => {
     expect(d2).not.toContain("ADD CONSTRAINT requests_recipient_role_valid")
   })
 
-  it('does not grant Deputy D3 user-management privileges', () => {
+  it('does not grant Deputy full D3 user-administration privileges', () => {
     expect(canManageTeamUsers('deputy')).toBe(false)
-    expect(clever).toContain(
-      "caller.primary_role === 'institution_manager' || caller.primary_role === 'secretary'",
-    )
-    expect(clever).toContain("if (callerRow.primary_role === 'deputy')")
     expect(staffUpdate).toContain("v_caller.primary_role NOT IN ('institution_manager', 'secretary')")
     expect(d2).not.toContain('CREATE OR REPLACE FUNCTION public.update_staff_member')
     expect(d2).not.toContain('CREATE OR REPLACE FUNCTION public.manager_set_user_extended_profile')

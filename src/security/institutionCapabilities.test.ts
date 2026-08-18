@@ -1,13 +1,17 @@
 import { describe, expect, it } from 'vitest'
 import type { PrimaryRole } from '../types/user'
 import {
+  canCreateOperationalUser,
+  canEditOperationalUser,
   canManageCalendar,
+  canManageDeputies,
   canManageInstitutionSettings,
   canManageRequests,
   canManageTeamUsers,
   canUseOperationalPrinting,
   canUsePersonalGoogleIntegration,
   canViewInstitutionArchive,
+  canViewTeamManagement,
   isInstitutionOperatorRole,
 } from './institutionCapabilities'
 
@@ -29,7 +33,7 @@ describe('D2 institution capability helpers', () => {
     expect(isInstitutionOperatorRole(null)).toBe(false)
   })
 
-  it('grants Deputy operational capabilities and denies institution settings and D3 user management', () => {
+  it('grants Deputy operational capabilities and denies institution settings and full user administration', () => {
     expect(canManageRequests('deputy')).toBe(true)
     expect(canManageCalendar('deputy')).toBe(true)
     expect(canUseOperationalPrinting('deputy')).toBe(true)
@@ -37,6 +41,10 @@ describe('D2 institution capability helpers', () => {
     expect(canUsePersonalGoogleIntegration('deputy')).toBe(true)
     expect(canManageInstitutionSettings('deputy')).toBe(false)
     expect(canManageTeamUsers('deputy')).toBe(false)
+    expect(canViewTeamManagement('deputy')).toBe(true)
+    expect(canCreateOperationalUser('deputy')).toBe(true)
+    expect(canEditOperationalUser('deputy')).toBe(false)
+    expect(canManageDeputies('deputy')).toBe(false)
   })
 
   it('keeps Manager capabilities complete', () => {
@@ -46,6 +54,10 @@ describe('D2 institution capability helpers', () => {
     expect(canViewInstitutionArchive('institution_manager')).toBe(true)
     expect(canManageInstitutionSettings('institution_manager')).toBe(true)
     expect(canManageTeamUsers('institution_manager')).toBe(true)
+    expect(canViewTeamManagement('institution_manager')).toBe(true)
+    expect(canCreateOperationalUser('institution_manager')).toBe(true)
+    expect(canEditOperationalUser('institution_manager')).toBe(true)
+    expect(canManageDeputies('institution_manager')).toBe(true)
     expect(canUsePersonalGoogleIntegration('institution_manager')).toBe(true)
   })
 
@@ -59,6 +71,10 @@ describe('D2 institution capability helpers', () => {
       expect(canViewInstitutionArchive(role)).toBe(false)
       expect(canManageInstitutionSettings(role)).toBe(false)
       expect(canManageTeamUsers(role)).toBe(false)
+      expect(canViewTeamManagement(role)).toBe(false)
+      expect(canCreateOperationalUser(role)).toBe(false)
+      expect(canEditOperationalUser(role)).toBe(false)
+      expect(canManageDeputies(role)).toBe(false)
     }
 
     expect(canUsePersonalGoogleIntegration('secretary')).toBe(true)

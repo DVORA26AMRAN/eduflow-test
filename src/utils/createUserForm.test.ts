@@ -151,6 +151,26 @@ describe('validateCreateUserForm', () => {
     }
   })
 
+  it('rejects deputy when Deputy allow-list is teacher and secretary', () => {
+    expect(
+      validateCreateUserForm(
+        {
+          fullName: 'יעל',
+          email: 'yael@school.com',
+          role: 'deputy',
+          phone: '',
+          nationalId: '',
+          jobTitle: '',
+          weeklyHours: '',
+        },
+        { allowedRoles: ['teacher', 'secretary'] },
+      ),
+    ).toEqual({
+      ok: false,
+      errorMessage: 'אין לך הרשאה ליצור תפקיד זה.',
+    })
+  })
+
   it('rejects deputy when secretary allow-list is teacher-only', () => {
     expect(
       validateCreateUserForm(

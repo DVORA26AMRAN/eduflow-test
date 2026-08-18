@@ -17,7 +17,7 @@ const ALL_PRIMARY_ROLES: PrimaryRole[] = [
 
 const ALL_INVITE_ROLES: TenantInviteRole[] = ['teacher', 'secretary', 'deputy']
 
-describe('D3A tenant invite role matrix', () => {
+describe('D3B tenant invite role matrix', () => {
   it('lets Manager invite teacher, secretary, and deputy only', () => {
     expect(getAllowedTenantInviteRoles('institution_manager')).toEqual([
       'teacher',
@@ -39,11 +39,11 @@ describe('D3A tenant invite role matrix', () => {
     expect(SECRETARY_TENANT_INVITE_ROLES).toEqual(['teacher'])
   })
 
-  it('denies Deputy inviting any tenant role', () => {
-    expect(getAllowedTenantInviteRoles('deputy')).toEqual([])
-    for (const role of ALL_INVITE_ROLES) {
-      expect(canCallerInviteRole('deputy', role)).toBe(false)
-    }
+  it('lets Deputy invite teacher and secretary only', () => {
+    expect(getAllowedTenantInviteRoles('deputy')).toEqual(['teacher', 'secretary'])
+    expect(canCallerInviteRole('deputy', 'teacher')).toBe(true)
+    expect(canCallerInviteRole('deputy', 'secretary')).toBe(true)
+    expect(canCallerInviteRole('deputy', 'deputy')).toBe(false)
   })
 
   it('denies Teacher and Platform Admin on the tenant invite matrix', () => {
@@ -52,7 +52,8 @@ describe('D3A tenant invite role matrix', () => {
     expect(getAllowedTenantInviteRoles(null)).toEqual([])
 
     for (const caller of ALL_PRIMARY_ROLES.filter(
-      (role) => role !== 'institution_manager' && role !== 'secretary',
+      (role) =>
+        role !== 'institution_manager' && role !== 'secretary' && role !== 'deputy',
     )) {
       for (const requested of ALL_INVITE_ROLES) {
         expect(canCallerInviteRole(caller, requested)).toBe(false)

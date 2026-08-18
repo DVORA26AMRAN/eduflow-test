@@ -65,14 +65,12 @@ describe('Deputy D3A — Manager can invite Deputy', () => {
     ])
   })
 
-  it('keeps Secretary teacher-only and hides user management from Deputy', () => {
+  it('keeps Secretary teacher-only; D3B Deputy create is tested separately', () => {
     expect(secretaryPage).toContain("allowedRoles: ['teacher']")
     expect(getAllowedTenantInviteRoles('secretary')).toEqual(['teacher'])
     expect(canManageTeamUsers('deputy')).toBe(false)
     expect(canManageTeamUsers('institution_manager')).toBe(true)
-    expect(app).toContain(
-      "currentProfile.role !== 'institution_manager' && currentProfile.role !== 'secretary'",
-    )
+    expect(app).toContain('canCallerInviteRole')
   })
 
   it('enforces the clever-processor caller→invitee matrix', () => {
@@ -82,16 +80,16 @@ describe('Deputy D3A — Manager can invite Deputy', () => {
     expect(canCallerInviteRole('secretary', 'teacher')).toBe(true)
     expect(canCallerInviteRole('secretary', 'secretary')).toBe(false)
     expect(canCallerInviteRole('secretary', 'deputy')).toBe(false)
-    expect(canCallerInviteRole('deputy', 'teacher')).toBe(false)
-    expect(canCallerInviteRole('deputy', 'secretary')).toBe(false)
+    expect(canCallerInviteRole('deputy', 'teacher')).toBe(true)
+    expect(canCallerInviteRole('deputy', 'secretary')).toBe(true)
     expect(canCallerInviteRole('deputy', 'deputy')).toBe(false)
 
     expect(edge).toContain("requestedRole === 'teacher' ||")
     expect(edge).toContain("requestedRole === 'secretary' ||")
     expect(edge).toContain("requestedRole === 'deputy'")
+    expect(edge).toContain("if (callerRole === 'deputy')")
     expect(edge).toContain("if (callerRole === 'secretary')")
     expect(edge).toContain("return requestedRole === 'teacher'")
-    expect(edge).toContain("if (callerRow.primary_role === 'deputy')")
     expect(edge).toContain("requestedRoleRaw === 'institution_manager'")
     expect(edge).toContain("requestedRoleRaw === 'platform_admin'")
     expect(edge).toContain("isActiveGlobalPlatformAdmin")
