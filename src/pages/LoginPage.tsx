@@ -1,7 +1,8 @@
-import type { FormEvent } from 'react'
+import { useState, type FormEvent } from 'react'
 import './LoginPage.css'
 import organizationLogo from '../assets/images/logo.png.png'
 import { InstallMpexButton } from '../pwa/InstallMpexButton'
+import { isStandaloneDisplayMode } from '../pwa/displayMode'
 
 type LoginPageProps = {
   email: string
@@ -13,6 +14,11 @@ type LoginPageProps = {
   onRememberMeChange: (value: boolean) => void
   onLogin: () => void
 }
+
+const INSTALLED_APP_WARNING_TITLE = 'שימוש במחשב משותף'
+const INSTALLED_APP_WARNING_BODY =
+  "אם מחשב זה משמש כמה אנשי צוות, אין לשמור את סיסמת MPEX בדפדפן.\n\nשמירת הסיסמה עלולה לאפשר למשתמשת אחרת במחשב להיכנס לחשבונך.\n\nאם הדפדפן מציע לשמור את הסיסמה, יש לבחור 'אף פעם' או 'לא עכשיו'."
+const INSTALLED_APP_WARNING_ACK = 'הבנתי'
 
 function getMessageClassName(message: string): string {
   if (!message) {
@@ -40,6 +46,10 @@ export function LoginPage({
   onRememberMeChange,
   onLogin,
 }: LoginPageProps) {
+  const [isInstalledWarningDismissed, setIsInstalledWarningDismissed] = useState(false)
+  const showInstalledWarning =
+    isStandaloneDisplayMode() && !isInstalledWarningDismissed
+
   function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
     onLogin()
@@ -48,6 +58,33 @@ export function LoginPage({
   return (
     <main dir="rtl" className="login-page">
       <InstallMpexButton variant="login" />
+
+      {showInstalledWarning ? (
+        <section
+          className="login-page__security-warning"
+          aria-labelledby="installed-app-security-warning-title"
+          data-testid="installed-app-security-warning"
+        >
+          <div className="login-page__security-warning-panel" role="dialog" aria-modal="true">
+            <h2
+              id="installed-app-security-warning-title"
+              className="login-page__security-warning-title"
+            >
+              {INSTALLED_APP_WARNING_TITLE}
+            </h2>
+            <p className="login-page__security-warning-body">
+              {INSTALLED_APP_WARNING_BODY}
+            </p>
+            <button
+              type="button"
+              className="ds-btn ds-btn--primary login-page__security-warning-action"
+              onClick={() => setIsInstalledWarningDismissed(true)}
+            >
+              {INSTALLED_APP_WARNING_ACK}
+            </button>
+          </div>
+        </section>
+      ) : null}
 
       <section className="login-page__shell" aria-label="מסך התחברות">
         {/* Login card first: desktop RTL = RIGHT; mobile stack = form first */}

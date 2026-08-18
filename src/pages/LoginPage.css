@@ -310,6 +310,49 @@
   color: var(--ds-color-text-secondary);
 }
 
+.login-page__security-warning {
+  position: fixed;
+  inset: 0;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  pointer-events: none;
+}
+
+.login-page__security-warning-panel {
+  width: min(100%, 430px);
+  padding: 1.35rem 1.4rem;
+  border: 1px solid rgba(214, 223, 235, 0.92);
+  border-radius: 22px;
+  background: rgba(255, 255, 255, 0.94);
+  box-shadow: 0 20px 44px rgba(26, 40, 72, 0.16);
+  color: #233042;
+  text-align: right;
+  pointer-events: auto;
+  -webkit-backdrop-filter: blur(12px);
+  backdrop-filter: blur(12px);
+}
+
+.login-page__security-warning-title {
+  margin: 0 0 0.75rem;
+  font-size: 1.08rem;
+  font-weight: 700;
+  color: #1f2c3d;
+}
+
+.login-page__security-warning-body {
+  margin: 0 0 1.1rem;
+  white-space: pre-line;
+  line-height: 1.7;
+  color: #44556a;
+}
+
+.login-page__security-warning-action {
+  min-width: 132px;
+}
+
 .login-page__form-title {
   margin: 0 0 var(--ds-card-gap);
   font-size: var(--ds-font-size-section-title);
