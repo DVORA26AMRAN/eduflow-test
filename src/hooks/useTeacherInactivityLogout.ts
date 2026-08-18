@@ -5,9 +5,11 @@ import {
   TEACHER_INACTIVITY_STORAGE_KEY,
   TEACHER_INACTIVITY_TICK_MS,
   TEACHER_INACTIVITY_WARNING_MS,
+  TEACHER_INACTIVITY_WARNING_ROOT_ATTR,
   mergeTeacherActivityTimestamp,
+  remainingWarningMs,
   shouldLogoutForTeacherInactivity,
-  shouldWarnForTeacherInactivity,
+  shouldOpenTeacherInactivityWarning,
 } from '../security/teacherInactivityPolicy'
 import {
   bootstrapTeacherInactivitySharedClock,
@@ -36,9 +38,20 @@ export type UseTeacherInactivityLogoutOptions = {
  */
 export const TEACHER_INACTIVITY_ACTIVITY_EVENTS = ['pointerdown', 'keydown'] as const
 
+/** Stable default — must not be recreated per render (would re-register the effect). */
+const defaultNow = () => Date.now()
+
+function isEventFromWarningDialog(event: Event): boolean {
+  const target = event.target
+  if (!(target instanceof Element)) return false
+  return target.closest(`[${TEACHER_INACTIVITY_WARNING_ROOT_ATTR}]`) != null
+}
+
 /**
  * Teacher-only inactivity warning (4m) and canonical logout (5m).
  * Cross-tab last-activity + force-logout via localStorage + BroadcastChannel.
+ *
+ * Warning is latched open until continue, qualifying outside activity, or logout.
  */
 export function useTeacherInactivityLogout({
   enabled,
@@ -47,7 +60,7 @@ export function useTeacherInactivityLogout({
   logoutMs = TEACHER_INACTIVITY_LOGOUT_MS,
   tickMs = TEACHER_INACTIVITY_TICK_MS,
   activityThrottleMs = TEACHER_INACTIVITY_ACTIVITY_THROTTLE_MS,
-  now = () => Date.now(),
+  now = defaultNow,
 }: UseTeacherInactivityLogoutOptions): {
   warningVisible: boolean
   remainingMs: number
@@ -61,14 +74,36 @@ export function useTeacherInactivityLogout({
   const logoutStartedRef = useRef(false)
   const lastPersistAtRef = useRef(0)
   const onLogoutRef = useRef(onLogout)
+  const nowRef = useRef(now)
+  const warningMsRef = useRef(warningMs)
+  const logoutMsRef = useRef(logoutMs)
+  const activityThrottleMsRef = useRef(activityThrottleMs)
 
   useEffect(() => {
     onLogoutRef.current = onLogout
   }, [onLogout])
 
+  useEffect(() => {
+    nowRef.current = now
+  }, [now])
+
+  useEffect(() => {
+    warningMsRef.current = warningMs
+    logoutMsRef.current = logoutMs
+    activityThrottleMsRef.current = activityThrottleMs
+  }, [activityThrottleMs, logoutMs, warningMs])
+
+  const dismissWarningAndReset = useCallback((at: number) => {
+    lastActivityAtRef.current = at
+    warningVisibleRef.current = false
+    setWarningVisible(false)
+    setRemainingMs(logoutMsRef.current - warningMsRef.current)
+    recordSharedTeacherActivity(at)
+  }, [])
+
   const continueWorking = useCallback(() => {
     if (logoutStartedRef.current) return
-    const at = now()
+    const at = nowRef.current()
     const shared = loadSharedTeacherInactivityState()
     lastActivityAtRef.current = mergeTeacherActivityTimestamp(
       lastActivityAtRef.current,
@@ -78,11 +113,10 @@ export function useTeacherInactivityLogout({
       shouldLogoutForTeacherInactivity({
         now: at,
         lastActivityAt: lastActivityAtRef.current,
-        logoutMs,
+        logoutMs: logoutMsRef.current,
         forceLogoutAt: shared?.forceLogoutAt ?? null,
       })
     ) {
-      // Expired: do not revive — canonical logout wins.
       logoutStartedRef.current = true
       warningVisibleRef.current = false
       setWarningVisible(false)
@@ -90,12 +124,8 @@ export function useTeacherInactivityLogout({
       void onLogoutRef.current()
       return
     }
-    lastActivityAtRef.current = at
-    warningVisibleRef.current = false
-    setWarningVisible(false)
-    setRemainingMs(logoutMs - warningMs)
-    recordSharedTeacherActivity(at)
-  }, [logoutMs, now, warningMs])
+    dismissWarningAndReset(at)
+  }, [dismissWarningAndReset])
 
   useEffect(() => {
     warningVisibleRef.current = warningVisible
@@ -110,17 +140,11 @@ export function useTeacherInactivityLogout({
       return
     }
 
-    const startedAt = now()
+    const startedAt = nowRef.current()
     lastActivityAtRef.current = bootstrapTeacherInactivitySharedClock(startedAt)
     logoutStartedRef.current = false
     lastPersistAtRef.current = 0
-    warningVisibleRef.current = false
-
-    // Defer UI reset so we do not sync-setState in the effect body.
-    const resetUiTimer = window.setTimeout(() => {
-      setWarningVisible(false)
-      setRemainingMs(logoutMs - warningMs)
-    }, 0)
+    // Do not clear a latched warning here — effect must not toggle open/closed on re-entry.
 
     const broadcast = createTeacherInactivityBroadcast()
 
@@ -134,7 +158,21 @@ export function useTeacherInactivityLogout({
       await onLogoutRef.current()
     }
 
-    /** Immediate idle/force evaluation — used by tick and resume; never counts as activity. */
+    const updateCountdown = (current: number, lastActivityAt: number) => {
+      const next = remainingWarningMs({
+        now: current,
+        lastActivityAt,
+        logoutMs: logoutMsRef.current,
+      })
+      setRemainingMs((prev) =>
+        Math.ceil(prev / 1000) === Math.ceil(next / 1000) ? prev : next,
+      )
+    }
+
+    /**
+     * Evaluate idle / force-logout.
+     * Warning is latched: once open, ticks only refresh countdown until dismiss or logout.
+     */
     const evaluateInactivity = (current: number) => {
       if (logoutStartedRef.current) return
       const shared = loadSharedTeacherInactivityState()
@@ -147,6 +185,8 @@ export function useTeacherInactivityLogout({
         shared,
       )
       const lastActivityAt = lastActivityAtRef.current
+      const logoutMs = logoutMsRef.current
+      const warningMs = warningMsRef.current
 
       if (
         shouldLogoutForTeacherInactivity({
@@ -160,22 +200,22 @@ export function useTeacherInactivityLogout({
         return
       }
 
-      const showWarning = shouldWarnForTeacherInactivity({
-        now: current,
-        lastActivityAt,
-        warningMs,
-        logoutMs,
-        warningVisible: warningVisibleRef.current,
-      })
-      if (showWarning) {
-        if (!warningVisibleRef.current) {
-          warningVisibleRef.current = true
-          setWarningVisible(true)
-        }
-        setRemainingMs(Math.max(0, lastActivityAt + logoutMs - current))
-      } else if (warningVisibleRef.current) {
-        warningVisibleRef.current = false
-        setWarningVisible(false)
+      if (warningVisibleRef.current) {
+        updateCountdown(current, lastActivityAt)
+        return
+      }
+
+      if (
+        shouldOpenTeacherInactivityWarning({
+          now: current,
+          lastActivityAt,
+          warningMs,
+          logoutMs,
+        })
+      ) {
+        warningVisibleRef.current = true
+        setWarningVisible(true)
+        updateCountdown(current, lastActivityAt)
       }
     }
 
@@ -193,7 +233,7 @@ export function useTeacherInactivityLogout({
           warningVisibleRef.current = false
           setWarningVisible(false)
         }
-        setRemainingMs(logoutMs - warningMs)
+        setRemainingMs(logoutMsRef.current - warningMsRef.current)
         return
       }
 
@@ -206,17 +246,20 @@ export function useTeacherInactivityLogout({
         warningVisibleRef.current = false
         setWarningVisible(false)
       }
-      setRemainingMs(logoutMs - warningMs)
+      setRemainingMs(logoutMsRef.current - warningMsRef.current)
 
-      if (at - lastPersistAtRef.current >= activityThrottleMs) {
+      if (at - lastPersistAtRef.current >= activityThrottleMsRef.current) {
         lastPersistAtRef.current = at
         recordSharedTeacherActivity(at)
         broadcast.post({ type: 'activity', at })
       }
     }
 
-    const onDomActivity = () => {
-      noteActivity(now(), false)
+    const onDomActivity = (event: Event) => {
+      // Dialog owns Continue — ignore capture-phase activity inside the warning UI
+      // so the button stays clickable and we do not close/reopen from dialog chrome.
+      if (isEventFromWarningDialog(event)) return
+      noteActivity(nowRef.current(), false)
     }
 
     for (const eventName of TEACHER_INACTIVITY_ACTIVITY_EVENTS) {
@@ -235,7 +278,24 @@ export function useTeacherInactivityLogout({
 
     const onStorage = (event: StorageEvent) => {
       if (event.key !== TEACHER_INACTIVITY_STORAGE_KEY) return
-      evaluateInactivity(now())
+      const shared = loadSharedTeacherInactivityState()
+      if (!shared) return
+      if (shared.forceLogoutAt != null) {
+        void beginLogout(shared.forceLogoutAt)
+        return
+      }
+      const previous = lastActivityAtRef.current
+      lastActivityAtRef.current = mergeTeacherActivityTimestamp(previous, shared)
+      // Remote activity via storage (BroadcastChannel may be unavailable): dismiss once, no reopen loop.
+      if (shared.lastActivityAt > previous) {
+        if (warningVisibleRef.current) {
+          warningVisibleRef.current = false
+          setWarningVisible(false)
+        }
+        setRemainingMs(logoutMsRef.current - warningMsRef.current)
+        return
+      }
+      evaluateInactivity(nowRef.current())
     }
     window.addEventListener('storage', onStorage)
 
@@ -244,7 +304,7 @@ export function useTeacherInactivityLogout({
       if (typeof document !== 'undefined' && document.visibilityState === 'hidden') {
         return
       }
-      evaluateInactivity(now())
+      evaluateInactivity(nowRef.current())
     }
     const onVisibilityChange = () => {
       if (document.visibilityState === 'visible') {
@@ -256,11 +316,10 @@ export function useTeacherInactivityLogout({
     window.addEventListener('pageshow', onResumeSurface)
 
     const tickId = window.setInterval(() => {
-      evaluateInactivity(now())
+      evaluateInactivity(nowRef.current())
     }, tickMs)
 
     return () => {
-      window.clearTimeout(resetUiTimer)
       window.clearInterval(tickId)
       for (const eventName of TEACHER_INACTIVITY_ACTIVITY_EVENTS) {
         window.removeEventListener(eventName, onDomActivity, true)
@@ -272,7 +331,8 @@ export function useTeacherInactivityLogout({
       unsubscribeBroadcast()
       broadcast.close()
     }
-  }, [activityThrottleMs, enabled, logoutMs, now, tickMs, warningMs])
+    // `now` intentionally omitted — read via nowRef so identity churn cannot re-latch/clear warning.
+  }, [activityThrottleMs, enabled, logoutMs, tickMs, warningMs])
 
   return {
     warningVisible: enabled ? warningVisible : false,

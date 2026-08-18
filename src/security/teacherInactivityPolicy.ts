@@ -15,6 +15,9 @@ export const TEACHER_INACTIVITY_TICK_MS = 1000
 export const TEACHER_INACTIVITY_STORAGE_KEY = 'mpex.teacher.inactivity.v1'
 export const TEACHER_INACTIVITY_BROADCAST_CHANNEL = 'mpex.teacher.inactivity'
 
+/** Marker on the warning root so capture-phase activity ignores dialog chrome. */
+export const TEACHER_INACTIVITY_WARNING_ROOT_ATTR = 'data-teacher-inactivity-warning'
+
 export const TEACHER_INACTIVITY_WARNING_TEXT =
   'המערכת תתנתק בעוד דקה עקב חוסר פעילות'
 
@@ -76,6 +79,22 @@ export function mergeTeacherActivityTimestamp(
   return Math.max(localLastActivityAt, shared.lastActivityAt)
 }
 
+/**
+ * Whether the warning should open for the first time.
+ * Does not encode latch/dismiss — once open, the hook keeps it latched until
+ * continue, qualifying activity, or logout (never toggled off by tick recompute).
+ */
+export function shouldOpenTeacherInactivityWarning(input: {
+  now: number
+  lastActivityAt: number
+  warningMs: number
+  logoutMs: number
+}): boolean {
+  const idle = input.now - input.lastActivityAt
+  return idle >= input.warningMs && idle < input.logoutMs
+}
+
+/** @deprecated Prefer shouldOpen + explicit latch in the hook. Kept for clarity in tests. */
 export function shouldWarnForTeacherInactivity(input: {
   now: number
   lastActivityAt: number
@@ -84,8 +103,7 @@ export function shouldWarnForTeacherInactivity(input: {
   warningVisible: boolean
 }): boolean {
   if (input.warningVisible) return true
-  const idle = input.now - input.lastActivityAt
-  return idle >= input.warningMs && idle < input.logoutMs
+  return shouldOpenTeacherInactivityWarning(input)
 }
 
 export function shouldLogoutForTeacherInactivity(input: {

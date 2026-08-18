@@ -8,6 +8,7 @@ import {
   mergeTeacherActivityTimestamp,
   remainingWarningMs,
   shouldLogoutForTeacherInactivity,
+  shouldOpenTeacherInactivityWarning,
   shouldWarnForTeacherInactivity,
 } from './teacherInactivityPolicy'
 
@@ -33,12 +34,11 @@ describe('teacherInactivityPolicy', () => {
   it('keeps teacher logged in before 4 minutes', () => {
     const lastActivityAt = 1_000_000
     expect(
-      shouldWarnForTeacherInactivity({
+      shouldOpenTeacherInactivityWarning({
         now: lastActivityAt + TEACHER_INACTIVITY_WARNING_MS - 1,
         lastActivityAt,
         warningMs: TEACHER_INACTIVITY_WARNING_MS,
         logoutMs: TEACHER_INACTIVITY_LOGOUT_MS,
-        warningVisible: false,
       }),
     ).toBe(false)
     expect(
@@ -51,15 +51,14 @@ describe('teacherInactivityPolicy', () => {
     ).toBe(false)
   })
 
-  it('shows warning after 4 minutes and before 5 minutes', () => {
+  it('opens warning after 4 minutes and before 5 minutes', () => {
     const lastActivityAt = 1_000_000
     expect(
-      shouldWarnForTeacherInactivity({
+      shouldOpenTeacherInactivityWarning({
         now: lastActivityAt + TEACHER_INACTIVITY_WARNING_MS,
         lastActivityAt,
         warningMs: TEACHER_INACTIVITY_WARNING_MS,
         logoutMs: TEACHER_INACTIVITY_LOGOUT_MS,
-        warningVisible: false,
       }),
     ).toBe(true)
     expect(
@@ -70,6 +69,18 @@ describe('teacherInactivityPolicy', () => {
         forceLogoutAt: null,
       }),
     ).toBe(false)
+  })
+
+  it('latched warning stays logically open even if idle briefly recomputed', () => {
+    expect(
+      shouldWarnForTeacherInactivity({
+        now: 0,
+        lastActivityAt: 0,
+        warningMs: 100,
+        logoutMs: 200,
+        warningVisible: true,
+      }),
+    ).toBe(true)
   })
 
   it('logs out after 5 minutes or when force logout is shared', () => {

@@ -336,6 +336,207 @@ describe('useTeacherInactivityLogout', () => {
 
     expect(onLogout).toHaveBeenCalledTimes(1)
   })
+
+  it('warning opens once and does not flicker across subsequent ticks', async () => {
+    vi.useFakeTimers()
+    clock = 80_000
+    const onLogout = vi.fn()
+    const now = () => clock
+    const { rerender } = render(
+      <Harness
+        enabled
+        onLogout={onLogout}
+        warningMs={400}
+        logoutMs={500}
+        tickMs={25}
+        now={now}
+      />,
+    )
+
+    await act(async () => {
+      clock = 80_000 + 410
+      await vi.advanceTimersByTimeAsync(30)
+    })
+    expect(screen.getByTestId('teacher-inactivity-warning')).toBeInTheDocument()
+    expect(screen.getByTestId('warning-flag')).toHaveTextContent('true')
+
+    for (let i = 0; i < 8; i += 1) {
+      await act(async () => {
+        clock = 80_000 + 420 + i * 10
+        // Recreate default now identity the way App does when parent re-renders.
+        rerender(
+          <Harness
+            enabled
+            onLogout={onLogout}
+            warningMs={400}
+            logoutMs={500}
+            tickMs={25}
+            now={now}
+          />,
+        )
+        await vi.advanceTimersByTimeAsync(25)
+      })
+      expect(screen.getByTestId('warning-flag')).toHaveTextContent('true')
+      expect(screen.getByTestId('teacher-inactivity-warning')).toBeInTheDocument()
+    }
+    expect(onLogout).not.toHaveBeenCalled()
+  })
+
+  it('Continue stays actionable despite pointerdown on the dialog (no capture dismiss)', async () => {
+    vi.useFakeTimers()
+    clock = 90_000
+    const onLogout = vi.fn()
+    const now = () => clock
+
+    render(
+      <Harness
+        enabled
+        onLogout={onLogout}
+        warningMs={400}
+        logoutMs={500}
+        tickMs={25}
+        now={now}
+      />,
+    )
+
+    await act(async () => {
+      clock = 90_000 + 410
+      await vi.advanceTimersByTimeAsync(30)
+    })
+    const button = screen.getByRole('button', { name: TEACHER_INACTIVITY_CONTINUE_LABEL })
+
+    await act(async () => {
+      clock = 90_000 + 420
+      fireEvent.pointerDown(button)
+    })
+    // Dialog must remain open so Continue can receive the click.
+    expect(screen.getByTestId('teacher-inactivity-warning')).toBeInTheDocument()
+
+    await act(async () => {
+      clock = 90_000 + 430
+      fireEvent.click(button)
+    })
+    expect(screen.queryByTestId('teacher-inactivity-warning')).not.toBeInTheDocument()
+    expect(onLogout).not.toHaveBeenCalled()
+  })
+
+  it('Continue resets inactivity and does not reopen immediately', async () => {
+    vi.useFakeTimers()
+    clock = 100_000
+    const onLogout = vi.fn()
+    const now = () => clock
+
+    render(
+      <Harness
+        enabled
+        onLogout={onLogout}
+        warningMs={400}
+        logoutMs={500}
+        tickMs={25}
+        now={now}
+      />,
+    )
+
+    await act(async () => {
+      clock = 100_000 + 410
+      await vi.advanceTimersByTimeAsync(30)
+    })
+    expect(screen.getByTestId('teacher-inactivity-warning')).toBeInTheDocument()
+
+    await act(async () => {
+      clock = 100_000 + 420
+      fireEvent.click(screen.getByRole('button', { name: TEACHER_INACTIVITY_CONTINUE_LABEL }))
+    })
+    expect(screen.queryByTestId('teacher-inactivity-warning')).not.toBeInTheDocument()
+
+    await act(async () => {
+      // Well under warningMs after continue timestamp 100_420
+      clock = 100_000 + 700
+      await vi.advanceTimersByTimeAsync(100)
+    })
+    expect(screen.queryByTestId('teacher-inactivity-warning')).not.toBeInTheDocument()
+    expect(onLogout).not.toHaveBeenCalled()
+  })
+
+  it('ignored warning still logs out at logoutMs', async () => {
+    vi.useFakeTimers()
+    clock = 110_000
+    const onLogout = vi.fn()
+    const now = () => clock
+
+    render(
+      <Harness
+        enabled
+        onLogout={onLogout}
+        warningMs={400}
+        logoutMs={500}
+        tickMs={25}
+        now={now}
+      />,
+    )
+
+    await act(async () => {
+      clock = 110_000 + 410
+      await vi.advanceTimersByTimeAsync(30)
+    })
+    expect(screen.getByTestId('teacher-inactivity-warning')).toBeInTheDocument()
+
+    await act(async () => {
+      clock = 110_000 + 520
+      await vi.advanceTimersByTimeAsync(50)
+    })
+    expect(onLogout).toHaveBeenCalledTimes(1)
+  })
+
+  it('multi-tab storage activity dismisses warning once without oscillation', async () => {
+    vi.useFakeTimers()
+    clock = 120_000
+    const onLogout = vi.fn()
+    const now = () => clock
+
+    render(
+      <Harness
+        enabled
+        onLogout={onLogout}
+        warningMs={400}
+        logoutMs={500}
+        tickMs={25}
+        now={now}
+      />,
+    )
+
+    await act(async () => {
+      clock = 120_000 + 410
+      await vi.advanceTimersByTimeAsync(30)
+    })
+    expect(screen.getByTestId('teacher-inactivity-warning')).toBeInTheDocument()
+
+    await act(async () => {
+      clock = 120_000 + 430
+      localStorage.setItem(
+        TEACHER_INACTIVITY_STORAGE_KEY,
+        JSON.stringify({ lastActivityAt: 120_000 + 430, forceLogoutAt: null }),
+      )
+      window.dispatchEvent(
+        new StorageEvent('storage', { key: TEACHER_INACTIVITY_STORAGE_KEY }),
+      )
+    })
+    expect(screen.queryByTestId('teacher-inactivity-warning')).not.toBeInTheDocument()
+
+    await act(async () => {
+      clock = 120_000 + 450
+      localStorage.setItem(
+        TEACHER_INACTIVITY_STORAGE_KEY,
+        JSON.stringify({ lastActivityAt: 120_000 + 430, forceLogoutAt: null }),
+      )
+      window.dispatchEvent(
+        new StorageEvent('storage', { key: TEACHER_INACTIVITY_STORAGE_KEY }),
+      )
+      await vi.advanceTimersByTimeAsync(80)
+    })
+    expect(screen.queryByTestId('teacher-inactivity-warning')).not.toBeInTheDocument()
+    expect(onLogout).not.toHaveBeenCalled()
+  })
 })
 
 describe('teacher inactivity architecture wiring', () => {
@@ -360,9 +561,20 @@ describe('teacher inactivity architecture wiring', () => {
     expect(hook).not.toContain("'mousemove'")
     expect(hook).toContain('visibilitychange')
     expect(hook).toContain('pageshow')
+    expect(hook).toContain('nowRef')
+    expect(hook).toContain('isEventFromWarningDialog')
+    expect(hook).toContain('shouldOpenTeacherInactivityWarning')
     expect(hook).not.toContain('fetch(')
     expect(hook).not.toContain('supabase')
     expect(hook).not.toContain('websocket')
+  })
+
+  it('warning dialog marks root so capture-phase activity ignores Continue chrome', () => {
+    const dialog = readFileSync(
+      resolve(process.cwd(), 'src/components/security/TeacherInactivityWarningDialog.tsx'),
+      'utf8',
+    )
+    expect(dialog).toContain('data-teacher-inactivity-warning')
   })
 
   it('installed app and website share App-level teacher policy (no separate PWA timer)', () => {

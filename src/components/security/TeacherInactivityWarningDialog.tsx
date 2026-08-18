@@ -49,6 +49,7 @@ export function TeacherInactivityWarningDialog({
       dir="rtl"
       role="presentation"
       data-testid="teacher-inactivity-warning"
+      data-teacher-inactivity-warning=""
     >
       <div
         ref={panelRef}
