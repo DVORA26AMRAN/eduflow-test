@@ -9,7 +9,11 @@ import {
   canManageTeamUsers,
   canManageRequests,
 } from '../security/institutionCapabilities'
-import { isAllowedMeetingRolePair, resolveCalendarOwnerUserId } from './meetingCalendar'
+import {
+  isAllowedMeetingRolePair,
+  resolveCalendarOwnerRole,
+  resolveCalendarOwnerUserId,
+} from './meetingCalendar'
 import { canStartGoogleOAuth } from './googleOAuthCrypto'
 import { canReadPrintingRequest } from '../domain/printing/lifecycle'
 import { isGeneralRequestRecipientRole } from './generalRequestDisplay'
@@ -282,6 +286,13 @@ describe('Deputy D2 operational dashboard', () => {
     expect(isAllowedMeetingRolePair('deputy', 'institution_manager')).toBe(false)
     expect(isAllowedMeetingRolePair('deputy', 'deputy')).toBe(false)
     expect(isAllowedMeetingRolePair('teacher', 'institution_manager')).toBe(true)
+
+    expect(resolveCalendarOwnerRole('deputy', 'teacher')).toBe('deputy')
+    expect(resolveCalendarOwnerRole('deputy', 'secretary')).toBe('deputy')
+    expect(resolveCalendarOwnerRole('teacher', 'deputy')).toBe('deputy')
+    expect(resolveCalendarOwnerRole('secretary', 'deputy')).toBe('deputy')
+    expect(resolveCalendarOwnerRole('institution_manager', 'teacher')).toBe('institution_manager')
+    expect(resolveCalendarOwnerRole('secretary', 'teacher')).toBe('secretary')
 
     expect(
       resolveCalendarOwnerUserId({

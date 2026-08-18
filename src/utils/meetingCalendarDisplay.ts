@@ -1,5 +1,9 @@
 import type { MeetingCalendarRole, Meeting, MeetingSlot, MeetingState } from '../types/meetingCalendar'
-import { isAllowedMeetingRolePair, isMeetingCalendarRole } from './meetingCalendar'
+import {
+  isAllowedMeetingRolePair,
+  isMeetingCalendarRole,
+  resolveCalendarOwnerRole,
+} from './meetingCalendar'
 import { translateRole } from './roles'
 
 export const MEETING_CALENDAR_SECTION_ID = 'meetingCalendar'
@@ -64,13 +68,7 @@ export function willRequesterBeCalendarOwner(
   requesterRole: MeetingCalendarRole,
   recipientRole: MeetingCalendarRole,
 ): boolean {
-  if (requesterRole === 'institution_manager' || recipientRole === 'institution_manager') {
-    return requesterRole === 'institution_manager'
-  }
-  if (requesterRole === 'secretary' || recipientRole === 'secretary') {
-    return requesterRole === 'secretary'
-  }
-  return false
+  return resolveCalendarOwnerRole(requesterRole, recipientRole) === requesterRole
 }
 
 export function filterEligibleMeetingRecipients(

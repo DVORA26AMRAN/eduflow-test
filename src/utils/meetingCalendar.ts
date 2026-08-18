@@ -117,28 +117,42 @@ export function isAllowedMeetingRolePair(
   return recipientRole === 'teacher' || recipientRole === 'secretary'
 }
 
+function isMeetingCalendarOperatorRole(role: MeetingCalendarRole): boolean {
+  return role === 'institution_manager' || role === 'deputy'
+}
+
+/**
+ * Canonical calendar-owner role precedence.
+ * Operator (manager or deputy) outranks secretary; teacher never owns.
+ * Disallowed pairs are still rejected by isAllowedMeetingRolePair / SQL.
+ */
+export function resolveCalendarOwnerRole(
+  requesterRole: MeetingCalendarRole,
+  recipientRole: MeetingCalendarRole,
+): MeetingCalendarRole | null {
+  if (isMeetingCalendarOperatorRole(requesterRole) || isMeetingCalendarOperatorRole(recipientRole)) {
+    return isMeetingCalendarOperatorRole(requesterRole) ? requesterRole : recipientRole
+  }
+
+  if (requesterRole === 'secretary' || recipientRole === 'secretary') {
+    return 'secretary'
+  }
+
+  return null
+}
+
 export function resolveCalendarOwnerUserId(input: {
   requesterId: string
   recipientId: string
   requesterRole: MeetingCalendarRole
   recipientRole: MeetingCalendarRole
 }): string {
-  if (
-    input.requesterRole === 'institution_manager' ||
-    input.recipientRole === 'institution_manager' ||
-    input.requesterRole === 'deputy' ||
-    input.recipientRole === 'deputy'
-  ) {
-    return input.requesterRole === 'institution_manager' || input.requesterRole === 'deputy'
-      ? input.requesterId
-      : input.recipientId
+  const ownerRole = resolveCalendarOwnerRole(input.requesterRole, input.recipientRole)
+  if (!ownerRole) {
+    throw new Error('Unsupported participant combination.')
   }
 
-  if (input.requesterRole === 'secretary' || input.recipientRole === 'secretary') {
-    return input.requesterRole === 'secretary' ? input.requesterId : input.recipientId
-  }
-
-  throw new Error('Unsupported participant combination.')
+  return ownerRole === input.requesterRole ? input.requesterId : input.recipientId
 }
 
 export function resolveNonOwnerParticipantId(input: {

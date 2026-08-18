@@ -26,10 +26,16 @@ const recipients: MeetingUserDirectoryEntry[] = [
     primaryRole: 'institution_manager',
     status: 'active',
   },
+  {
+    id: 'secretary-1',
+    fullName: 'רותי מזכירה',
+    primaryRole: 'secretary',
+    status: 'active',
+  },
 ]
 
 function renderModal(
-  actorRole: 'institution_manager' | 'teacher' | 'secretary' = 'institution_manager',
+  actorRole: 'institution_manager' | 'teacher' | 'secretary' | 'deputy' = 'institution_manager',
 ) {
   const onClose = vi.fn()
   const onCreated = vi.fn()
@@ -186,4 +192,56 @@ describe('CreateMeetingModal UI', () => {
       )
     })
   }, 10_000)
+
+  it('treats deputy as calendar owner like manager when meeting a teacher', async () => {
+    renderModal('deputy')
+    fireEvent.click(screen.getByRole('radio', { name: /יעל כהן/i }))
+
+    expect(screen.getByRole('radiogroup', { name: 'משך הפגישה בדקות' })).toBeInTheDocument()
+    expect(screen.queryByText('משך הפגישה והמועדים ייקבעו על ידי בעל היומן.')).not.toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'שליחת הזמנה' })).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'שליחת בקשה' })).not.toBeInTheDocument()
+
+    fillCommonFields()
+    fireEvent.change(screen.getByLabelText('סוג פגישה'), { target: { value: 'online' } })
+    fireEvent.click(screen.getByRole('radio', { name: /30 דקות/i }))
+
+    expect(screen.getByLabelText('תאריך')).toBeInTheDocument()
+    expect(screen.getByLabelText('שעת התחלה')).toBeInTheDocument()
+
+    const tomorrow = new Date()
+    tomorrow.setDate(tomorrow.getDate() + 2)
+    const dateValue = [
+      tomorrow.getFullYear(),
+      String(tomorrow.getMonth() + 1).padStart(2, '0'),
+      String(tomorrow.getDate()).padStart(2, '0'),
+    ].join('-')
+    fireEvent.change(screen.getByLabelText('תאריך'), { target: { value: dateValue } })
+    fireEvent.change(screen.getByLabelText('שעת התחלה'), { target: { value: '14:00' } })
+
+    fireEvent.click(screen.getByRole('button', { name: 'שליחת הזמנה' }))
+
+    await waitFor(() => {
+      expect(createMeetingMock).toHaveBeenCalledWith(
+        expect.objectContaining({
+          recipientId: 'teacher-1',
+          meetingFormat: 'online',
+          phoneNumber: null,
+          durationMinutes: 30,
+          institutionTimezone: 'Asia/Jerusalem',
+        }),
+      )
+    })
+    expect(createMeetingMock.mock.calls[0]?.[0]?.durationMinutes).not.toBeNull()
+    expect(proposeMeetingSlotsMock).toHaveBeenCalled()
+  }, 10_000)
+
+  it('shows owner duration and invitation flow when deputy meets a secretary', () => {
+    renderModal('deputy')
+    fireEvent.click(screen.getByRole('radio', { name: /רותי מזכירה/i }))
+
+    expect(screen.getByRole('radiogroup', { name: 'משך הפגישה בדקות' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'שליחת הזמנה' })).toBeInTheDocument()
+    expect(screen.queryByText('משך הפגישה והמועדים ייקבעו על ידי בעל היומן.')).not.toBeInTheDocument()
+  })
 })

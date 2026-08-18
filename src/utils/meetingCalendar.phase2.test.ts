@@ -69,12 +69,19 @@ describe('meeting calendar recipient filtering', () => {
 })
 
 describe('meeting calendar ownership prediction', () => {
-  it('predicts workflow A and B ownership consistently with Phase 1', () => {
+  it('predicts Manager, Secretary, Teacher, and Deputy ownership from the canonical role helper', () => {
     expect(willRequesterBeCalendarOwner('institution_manager', 'teacher')).toBe(true)
+    expect(willRequesterBeCalendarOwner('institution_manager', 'secretary')).toBe(true)
     expect(willRequesterBeCalendarOwner('teacher', 'institution_manager')).toBe(false)
+    expect(willRequesterBeCalendarOwner('secretary', 'institution_manager')).toBe(false)
+
     expect(willRequesterBeCalendarOwner('secretary', 'teacher')).toBe(true)
     expect(willRequesterBeCalendarOwner('teacher', 'secretary')).toBe(false)
-    expect(willRequesterBeCalendarOwner('secretary', 'institution_manager')).toBe(false)
+
+    expect(willRequesterBeCalendarOwner('deputy', 'teacher')).toBe(true)
+    expect(willRequesterBeCalendarOwner('deputy', 'secretary')).toBe(true)
+    expect(willRequesterBeCalendarOwner('teacher', 'deputy')).toBe(false)
+    expect(willRequesterBeCalendarOwner('secretary', 'deputy')).toBe(false)
   })
 })
 
