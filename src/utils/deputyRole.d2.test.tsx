@@ -455,13 +455,11 @@ describe('Deputy D2 security correction — operator status RPC and national_id'
     expect(rpcMatch?.[0]).toContain('SET status = v_status')
   })
 
-  it('K. keeps the Secretary table UPDATE path unchanged', () => {
+  it('K. leaves the Secretary archive UPDATE policy in D2 SQL', () => {
     expect(secretaryUpdate).toContain('CREATE POLICY requests_secretary_archive_institution')
     expect(d2).not.toContain('DROP POLICY IF EXISTS requests_secretary_archive_institution')
     expect(d2).not.toContain('CREATE OR REPLACE FUNCTION public.enforce_requests_secretary_update_columns')
     expect(secretaryInbox).toContain('updateRequestStatus')
-    expect(requestsService).toContain("if (callerRole === 'secretary')")
-    expect(requestsService).toContain(".from('requests').update({ status })")
   })
 
   it('L/M. does not add a broad operator UPDATE policy or denylist trigger', () => {
@@ -494,7 +492,7 @@ describe('Deputy D2 security correction — operator status RPC and national_id'
     expect(d2).toContain('users_read_same_institution / other users-table RLS (pre-existing PII debt)')
   })
 
-  it('routes Manager/Deputy frontend status writes through the RPC and keeps Secretary on table UPDATE', () => {
+  it('routes Manager/Deputy frontend status writes through the RPC in D2 SQL/service', () => {
     expect(managerRequests).toContain('updateRequestStatus')
     expect(requestsService).toContain("rpc('update_request_status'")
     expect(requestsService).toContain('isInstitutionOperatorRole(callerRole)')

@@ -1,22 +1,38 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import type { RequestStatus, SecretaryInboxFilters, SecretaryInboxRequest } from '../../types/request'
-import type { DashboardRequestNavigationIntent } from '../../types/dashboardAnalytics'
-import type { ReminderNavigationIntent } from '../../types/reminderNavigation'
+import {
+  canOrdinaryStatusUpdate,
+  canShowHandlerStatusSelect,
+  isEligibleHandlerRole,
+} from '../../domain/requestOwnership'
+import { useRequestReminderNavigationEffect } from '../../hooks/useRequestReminderNavigationEffect'
+import { loadRequestAttachmentRequestIds } from '../../services/attachments'
+import { claimRequest } from '../../services/requestOwnership'
 import {
   archiveRequestAsSecretary,
   loadSecretaryRequests,
   updateRequestStatus,
 } from '../../services/requests'
-import { loadRequestAttachmentRequestIds } from '../../services/attachments'
-import { loadInstitutionRequestReminderSummaries, subscribeToInstitutionRequestReminders, unsubscribeFromInstitutionRequestReminders, upsertReminderSummary } from '../../services/requestReminders'
-import type { RequestReminderSummary } from '../../types/requestReminder'
-import { filterSecretaryInboxRequests, REQUEST_STATUS_OPTIONS } from '../../utils/requests'
+import {
+  loadInstitutionRequestReminderSummaries,
+  subscribeToInstitutionRequestReminders,
+  unsubscribeFromInstitutionRequestReminders,
+  upsertReminderSummary,
+} from '../../services/requestReminders'
+import type { DashboardRequestNavigationIntent } from '../../types/dashboardAnalytics'
 import type { RequestDetailsSecretaryRequest } from '../../types/requestDetails'
-import { RequestDetailsModal } from '../requests/RequestDetailsModal'
+import type { RequestStatus, SecretaryInboxFilters, SecretaryInboxRequest } from '../../types/request'
+import type { ReminderNavigationIntent } from '../../types/reminderNavigation'
+import type { RequestReminderSummary } from '../../types/requestReminder'
+import {
+  isRequestOwnershipConflictCode,
+  type RequestHandlerAssignedPatch,
+} from '../../types/requestOwnership'
+import type { PrimaryRole } from '../../types/user'
 import { SECRETARY_INBOX_DEFAULT_FILTERS, shouldResetSecretaryInboxFilters } from '../../utils/reminderNavigation'
-import { useRequestReminderNavigationEffect } from '../../hooks/useRequestReminderNavigationEffect'
+import { filterSecretaryInboxRequests, REQUEST_STATUS_OPTIONS } from '../../utils/requests'
 import { NavInboxIcon } from '../dashboard/dashboardNav'
 import { DashboardSection } from '../dashboard/DashboardSection'
+import { RequestDetailsModal } from '../requests/RequestDetailsModal'
 import { ConfirmDialog } from '../ui/Modal'
 import { SecretaryRequestsFilters } from './SecretaryRequestsFilters'
 import { SecretaryRequestsTable } from './SecretaryRequestsTable'
@@ -25,6 +41,9 @@ const defaultFilters = SECRETARY_INBOX_DEFAULT_FILTERS
 
 type SecretaryRequestsInboxProps = {
   onArchived: () => void
+  actorUserId: string
+  actorRole?: PrimaryRole
+  actorFullName: string
   institutionId?: string | null
   unreadReminderRequestIds?: ReadonlySet<string>
   unreadMessageRequestIds?: ReadonlySet<string>
@@ -39,6 +58,9 @@ type SecretaryRequestsInboxProps = {
 
 export function SecretaryRequestsInbox({
   onArchived,
+  actorUserId,
+  actorRole = 'secretary',
+  actorFullName,
   institutionId,
   unreadReminderRequestIds = new Set(),
   unreadMessageRequestIds = new Set(),
@@ -207,6 +229,21 @@ export function SecretaryRequestsInbox({
       return
     }
 
+    if (
+      !canShowHandlerStatusSelect({
+        actorUserId,
+        handledByUserId: currentRequest.handled_by_user_id,
+      }) ||
+      !canOrdinaryStatusUpdate({
+        actorUserId,
+        handledByUserId: currentRequest.handled_by_user_id,
+        currentStatus: currentRequest.status,
+        nextStatus: status,
+      })
+    ) {
+      return
+    }
+
     setStatusMessage('')
     setUpdatingRequestId(requestId)
 
@@ -229,6 +266,78 @@ export function SecretaryRequestsInbox({
       current?.id === requestId ? { ...current, status } : current,
     )
     setStatusMessage('סטטוס הבקשה עודכן בהצלחה.')
+    setStatusMessageIsError(false)
+  }
+
+  function applyAssignmentPatch(patch: RequestHandlerAssignedPatch) {
+    const assignment = {
+      handled_by_user_id: patch.handledByUserId,
+      handled_by_full_name: patch.handledByFullName,
+      handled_by_primary_role: patch.handledByPrimaryRole,
+      status: patch.status,
+    }
+    setRequests((currentRequests) =>
+      currentRequests.map((request) =>
+        request.id === patch.requestId ? { ...request, ...assignment } : request,
+      ),
+    )
+    setDetailsRequest((current) =>
+      current?.id === patch.requestId ? { ...current, ...assignment } : current,
+    )
+  }
+
+  async function handleOwnershipError(message: string, errorCode?: string) {
+    setStatusMessage(message)
+    setStatusMessageIsError(true)
+    if (isRequestOwnershipConflictCode(errorCode)) {
+      await fetchRequests()
+    }
+  }
+
+  async function handleClaim(requestId: string) {
+    setStatusMessage('')
+    setUpdatingRequestId(requestId)
+    const result = await claimRequest(requestId)
+    setUpdatingRequestId(null)
+
+    if (!result.ok) {
+      await handleOwnershipError(result.errorMessage, result.errorCode)
+      return
+    }
+
+    applyAssignmentPatch({
+      requestId,
+      handledByUserId: result.handledByUserId,
+      handledByFullName: actorFullName,
+      handledByPrimaryRole: isEligibleHandlerRole(actorRole) ? actorRole : 'secretary',
+      status: result.status,
+    })
+    setStatusMessage('הבקשה נלקחה לטיפול.')
+    setStatusMessageIsError(false)
+  }
+
+  function handleHandlerAssigned(patch: RequestHandlerAssignedPatch) {
+    applyAssignmentPatch(patch)
+    setStatusMessage('הטיפול הועבר בהצלחה.')
+    setStatusMessageIsError(false)
+  }
+
+  function handleHandlerReleased(requestId: string, status: RequestStatus) {
+    const assignment = {
+      handled_by_user_id: null,
+      handled_by_full_name: null,
+      handled_by_primary_role: null,
+      status,
+    }
+    setRequests((currentRequests) =>
+      currentRequests.map((request) =>
+        request.id === requestId ? { ...request, ...assignment } : request,
+      ),
+    )
+    setDetailsRequest((current) =>
+      current?.id === requestId ? { ...current, ...assignment } : current,
+    )
+    setStatusMessage('הטיפול שוחרר.')
     setStatusMessageIsError(false)
   }
 
@@ -314,6 +423,9 @@ export function SecretaryRequestsInbox({
         {!isLoading && !loadError && (
           <SecretaryRequestsTable
             requests={filteredRequests}
+            actorUserId={actorUserId}
+            actorRole={actorRole}
+            institutionId={institutionId}
             emptyMessage={emptyMessage}
             updatingRequestId={updatingRequestId}
             archivingRequestId={archivingRequestId}
@@ -326,6 +438,12 @@ export function SecretaryRequestsInbox({
             onStatusChange={handleStatusChange}
             onOpenDetails={handleOpenDetails}
             onArchive={handleOpenArchiveDialog}
+            onClaim={(requestId) => void handleClaim(requestId)}
+            onHandlerAssigned={handleHandlerAssigned}
+            onHandlerReleased={handleHandlerReleased}
+            onHandlerError={(message, errorCode) => {
+              void handleOwnershipError(message, errorCode)
+            }}
           />
         )}
       </DashboardSection>
@@ -356,9 +474,25 @@ export function SecretaryRequestsInbox({
           onConversationOpened={() => void onConversationOpened?.(detailsRequest.id)}
           showHistory
           showNotes
+          ownership={{
+            actorUserId,
+            actorRole,
+            institutionId,
+            isBusy: updatingRequestId === detailsRequest.id || archivingRequestId !== null,
+            onClaim: (requestId) => void handleClaim(requestId),
+            onAssigned: handleHandlerAssigned,
+            onReleased: handleHandlerReleased,
+            onError: (message, errorCode) => {
+              void handleOwnershipError(message, errorCode)
+            },
+          }}
           onClose={handleCloseDetails}
           actions={
             <>
+              {canShowHandlerStatusSelect({
+                actorUserId,
+                handledByUserId: detailsRequest.handled_by_user_id,
+              }) ? (
               <label className="request-details__status-field">
                 <span className="ds-label">עדכון סטטוס</span>
                 <select
@@ -372,13 +506,16 @@ export function SecretaryRequestsInbox({
                   }
                   disabled={updatingRequestId === detailsRequest.id || archivingRequestId !== null}
                 >
-                  {REQUEST_STATUS_OPTIONS.map((option) => (
+                  {REQUEST_STATUS_OPTIONS.filter(
+                    (option) => option.value !== 'in_progress' || detailsRequest.status !== 'new',
+                  ).map((option) => (
                     <option key={option.value} value={option.value}>
                       {option.label}
                     </option>
                   ))}
                 </select>
               </label>
+              ) : null}
               {(detailsRequest.status === 'completed' || detailsRequest.status === 'rejected') && (
                 <button
                   type="button"

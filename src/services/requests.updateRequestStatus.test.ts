@@ -99,14 +99,16 @@ describe('updateRequestStatus role routing', () => {
     expect(requestsUpdateMock).not.toHaveBeenCalled()
   })
 
-  it('keeps Secretary on the existing requests table UPDATE path', async () => {
+  it('calls update_request_status RPC for Secretary and does not table-update', async () => {
     mockCallerRole('secretary')
 
     await expect(updateRequestStatus('req-1', 'rejected')).resolves.toEqual({ ok: true })
 
-    expect(rpcMock).not.toHaveBeenCalled()
-    expect(requestsUpdateMock).toHaveBeenCalledWith({ status: 'rejected' })
-    expect(requestsEqMock).toHaveBeenCalledWith('id', 'req-1')
+    expect(rpcMock).toHaveBeenCalledWith('update_request_status', {
+      p_request_id: 'req-1',
+      p_status: 'rejected',
+    })
+    expect(requestsUpdateMock).not.toHaveBeenCalled()
   })
 
   it('does not send Teacher or Platform Admin through the operator RPC or table UPDATE', async () => {

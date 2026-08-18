@@ -89,8 +89,21 @@ describe('manager active list independence from institutional archive', () => {
 
   it('preserves manager refresh behavior and does not reintroduce shared archive filters in UI', () => {
     expect(managerRecentSectionSource).toContain('refreshToken')
-    expect(managerRecentSectionSource).toContain('loadRecentRequests')
+    expect(managerRecentSectionSource).toContain('loadOperatorInboxRequests')
+    expect(managerRecentSectionSource).not.toContain('loadRecentRequests')
     expect(managerRecentSectionSource).not.toContain('archived_at')
+  })
+
+  it('loads the manager/deputy operational inbox without a hard five-row cap', () => {
+    const operatorInboxFn = extractFunction(
+      requestsSource,
+      'loadOperatorInboxRequests',
+      'loadSecretaryArchivedRequests',
+    )
+
+    expect(operatorInboxFn).toContain('loadManagerPersonalArchivedRequestIds')
+    expect(operatorInboxFn).not.toContain('.limit(5)')
+    expect(operatorInboxFn).not.toContain("is('archived_at', null)")
   })
 
   it('loads description in the existing recent requests query', () => {

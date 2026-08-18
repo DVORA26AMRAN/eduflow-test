@@ -9,9 +9,13 @@ import { Modal } from '../ui/Modal'
 import { RequestReminderRowIndicator } from './RequestReminderRowIndicator'
 import { RequestDetailsAttachmentsSection } from './RequestDetailsAttachmentsSection'
 import { RequestDetailsConversationSection } from './RequestDetailsConversationSection'
+import { RequestHandlerCell } from './RequestHandlerCell'
+import { RequestHandlerHistorySection } from './RequestHandlerHistorySection'
 import { RequestDetailsHistorySection } from './RequestDetailsHistorySection'
 import { RequestDetailsNotesSection } from './RequestDetailsNotesSection'
 import { RequestDetailsSummaryFields } from './RequestDetailsSummaryFields'
+import type { PrimaryRole } from '../../types/user'
+import type { RequestHandlerAssignedPatch } from '../../types/requestOwnership'
 import './RequestDetailsModal.css'
 
 type RequestDetailsModalProps = {
@@ -28,6 +32,16 @@ type RequestDetailsModalProps = {
   showHistory?: boolean
   showNotes?: boolean
   showAttachments?: boolean
+  ownership?: {
+    actorUserId: string
+    actorRole: PrimaryRole
+    institutionId?: string | null
+    isBusy: boolean
+    onClaim: (requestId: string) => void
+    onAssigned: (patch: RequestHandlerAssignedPatch) => void
+    onReleased: (requestId: string, status: RequestStatus) => void
+    onError: (message: string, errorCode?: string) => void
+  }
 }
 
 export function RequestDetailsModal({
@@ -44,6 +58,7 @@ export function RequestDetailsModal({
   showHistory = true,
   showNotes = false,
   showAttachments = true,
+  ownership,
 }: RequestDetailsModalProps) {
   const [lastUpdateAt, setLastUpdateAt] = useState<string | null>(null)
   const returnFocusRef = useRef(returnFocusElement)
@@ -117,6 +132,36 @@ export function RequestDetailsModal({
 
         <RequestDetailsSummaryFields request={request} lastUpdateAt={lastUpdateAt} />
 
+        {request.role !== 'teacher' ? (
+          <section className="request-details__section" aria-label="טיפול בבקשה">
+            <h3 className="request-details__section-title">טיפול בבקשה</h3>
+            {ownership ? (
+              <RequestHandlerCell
+                request={request}
+                actorUserId={ownership.actorUserId}
+                actorRole={ownership.actorRole}
+                institutionId={ownership.institutionId}
+                isBusy={ownership.isBusy}
+                onClaim={ownership.onClaim}
+                onAssigned={ownership.onAssigned}
+                onReleased={ownership.onReleased}
+                onError={ownership.onError}
+              />
+            ) : (
+              <dl className="request-details__summary">
+                <div className="request-details__details-row">
+                  <dt>בטיפול של</dt>
+                  <dd>
+                    {request.handled_by_full_name?.trim()
+                      ? request.handled_by_full_name
+                      : 'לא הוקצתה מטפלת'}
+                  </dd>
+                </div>
+              </dl>
+            )}
+          </section>
+        ) : null}
+
         {showAttachments ? (
           <RequestDetailsAttachmentsSection
             requestId={request.id}
@@ -127,10 +172,18 @@ export function RequestDetailsModal({
 
         {showHistory ? (
           <RequestDetailsHistorySection
-            key={request.id}
+            key={`status-history-${request.id}`}
             requestId={request.id}
             isActive={isOpen}
             onLastUpdateLoaded={setLastUpdateAt}
+          />
+        ) : null}
+
+        {request.role !== 'teacher' ? (
+          <RequestHandlerHistorySection
+            key={`handler-history-${request.id}`}
+            requestId={request.id}
+            isActive={isOpen}
           />
         ) : null}
 

@@ -1,6 +1,9 @@
+import { canShowHandlerStatusSelect } from '../../domain/requestOwnership'
 import type { ManagerRecentRequest } from '../../types/analytics'
 import type { RequestStatus } from '../../types/request'
+import type { RequestHandlerAssignedPatch } from '../../types/requestOwnership'
 import type { RequestReminderSummary } from '../../types/requestReminder'
+import type { PrimaryRole } from '../../types/user'
 import { handleRequestRowActivate } from '../../utils/requestTableRowInteraction'
 import {
   formatRequestDate,
@@ -13,9 +16,13 @@ import { RequestDescriptionCell } from '../requests/RequestDescriptionCell'
 import { RequestConversationRowIndicator } from '../requests/RequestConversationRowIndicator'
 import { RequestReminderRowIndicator } from '../requests/RequestReminderRowIndicator'
 import { RequestArchiveTrashButton } from '../requests/RequestArchiveTrashButton'
+import { RequestHandlerCell } from '../requests/RequestHandlerCell'
 
 type ManagerRecentRequestsTableProps = {
   requests: ManagerRecentRequest[]
+  actorUserId: string
+  actorRole: PrimaryRole
+  institutionId?: string | null
   archivingRequestId: string | null
   updatingRequestId?: string | null
   canChangeStatus?: boolean
@@ -27,10 +34,17 @@ type ManagerRecentRequestsTableProps = {
   onArchive: (request: ManagerRecentRequest) => void
   onOpenDetails: (request: ManagerRecentRequest, rowElement: HTMLTableRowElement) => void
   onStatusChange?: (requestId: string, status: RequestStatus) => void
+  onClaim: (requestId: string) => void
+  onHandlerAssigned: (patch: RequestHandlerAssignedPatch) => void
+  onHandlerReleased: (requestId: string, status: RequestStatus) => void
+  onHandlerError: (message: string, errorCode?: string) => void
 }
 
 export function ManagerRecentRequestsTable({
   requests,
+  actorUserId,
+  actorRole,
+  institutionId = null,
   archivingRequestId,
   updatingRequestId = null,
   canChangeStatus = true,
@@ -42,6 +56,10 @@ export function ManagerRecentRequestsTable({
   onArchive,
   onOpenDetails,
   onStatusChange,
+  onClaim,
+  onHandlerAssigned,
+  onHandlerReleased,
+  onHandlerError,
 }: ManagerRecentRequestsTableProps) {
   return (
     <div className="ds-table-wrapper manager-dashboard__table-wrapper">
@@ -51,6 +69,7 @@ export function ManagerRecentRequestsTable({
             <th>מורה</th>
             <th>סוג בקשה</th>
             <th>תיאור</th>
+            <th>בטיפול של</th>
             <th>סטטוס</th>
             <th>תאריך</th>
             <th>פעולות</th>
@@ -98,6 +117,19 @@ export function ManagerRecentRequestsTable({
                   <RequestDescriptionCell description={request.description} />
                 )}
               </td>
+              <td className="request-row__handler-cell">
+                <RequestHandlerCell
+                  request={request}
+                  actorUserId={actorUserId}
+                  actorRole={actorRole}
+                  institutionId={institutionId}
+                  isBusy={updatingRequestId === request.id || archivingRequestId !== null}
+                  onClaim={onClaim}
+                  onAssigned={onHandlerAssigned}
+                  onReleased={onHandlerReleased}
+                  onError={onHandlerError}
+                />
+              </td>
               <td>
                 <div className="request-row__status-cell">
                   <RequestConversationRowIndicator
@@ -113,7 +145,12 @@ export function ManagerRecentRequestsTable({
                   <span className={`ds-table__status ds-table__status--${request.status}`}>
                     {translateRequestStatus(request.status)}
                   </span>
-                  {canChangeStatus && onStatusChange ? (
+                  {canChangeStatus &&
+                  onStatusChange &&
+                  canShowHandlerStatusSelect({
+                    actorUserId,
+                    handledByUserId: request.handled_by_user_id,
+                  }) ? (
                     <select
                       className="manager-dashboard__status-select"
                       value={request.status}
@@ -124,7 +161,9 @@ export function ManagerRecentRequestsTable({
                       disabled={updatingRequestId === request.id || archivingRequestId !== null}
                       aria-label={`סטטוס בקשה של ${request.teacher_full_name}`}
                     >
-                      {REQUEST_STATUS_OPTIONS.map((option) => (
+                      {REQUEST_STATUS_OPTIONS.filter(
+                        (option) => option.value !== 'in_progress' || request.status !== 'new',
+                      ).map((option) => (
                         <option key={option.value} value={option.value}>
                           {option.label}
                         </option>

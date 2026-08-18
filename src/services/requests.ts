@@ -1,4 +1,5 @@
 import { isInstitutionOperatorRole } from '../security/institutionCapabilities'
+import type { ManagerRecentRequest } from '../types/analytics'
 import type {
   ArchivedTeacherRequest,
   CreateRequestInput,
@@ -10,9 +11,11 @@ import type {
   SecretaryInboxRequest,
   TeacherRequest,
 } from '../types/request'
+import type { RequestAssignmentFields } from '../types/requestOwnership'
 import type { PrimaryRole } from '../types/user'
 import { isGeneralRequestRecipientRole } from '../utils/generalRequestDisplay'
 import { isRequestStatus, isRequestType } from '../utils/requests'
+import { loadManagerPersonalArchivedRequestIds } from './managerPersonalArchive'
 import { supabase } from './supabase'
 
 export type LoadTeacherRequestsResult =
@@ -33,6 +36,10 @@ export type LoadSecretaryRequestsResult =
 
 export type LoadSecretaryArchivedRequestsResult =
   | { ok: true; requests: SecretaryArchivedRequest[]; totalCount: number }
+  | { ok: false; errorMessage: string }
+
+export type LoadOperatorInboxRequestsResult =
+  | { ok: true; requests: ManagerRecentRequest[] }
   | { ok: false; errorMessage: string }
 
 export type LoadSecretaryArchivedRequestsParams = {
@@ -225,6 +232,44 @@ function extractTeacherFullName(users: unknown): string | null {
   return null
 }
 
+function parseHandlerJoin(handler: unknown): {
+  fullName: string | null
+  role: RequestAssignmentFields['handled_by_primary_role']
+} {
+  const value = Array.isArray(handler) ? handler[0] : handler
+  if (!value || typeof value !== 'object') {
+    return { fullName: null, role: null }
+  }
+
+  const row = value as { full_name?: unknown; primary_role?: unknown }
+  const role =
+    row.primary_role === 'institution_manager' ||
+    row.primary_role === 'deputy' ||
+    row.primary_role === 'secretary'
+      ? row.primary_role
+      : null
+
+  return {
+    fullName: typeof row.full_name === 'string' ? row.full_name : null,
+    role,
+  }
+}
+
+function parseAssignmentFields(row: {
+  handled_by_user_id?: unknown
+  recipient_role?: unknown
+  handler?: unknown
+}): RequestAssignmentFields {
+  const handledByUserId = typeof row.handled_by_user_id === 'string' ? row.handled_by_user_id : null
+  const handler = parseHandlerJoin(row.handler)
+
+  return {
+    handled_by_user_id: handledByUserId,
+    handled_by_full_name: handledByUserId ? handler.fullName : null,
+    handled_by_primary_role: handledByUserId ? handler.role : null,
+    recipient_role: parseRecipientRole(row.recipient_role),
+  }
+}
 function parseSecretaryInboxRequest(row: {
   id: unknown
   request_type: unknown
@@ -233,6 +278,9 @@ function parseSecretaryInboxRequest(row: {
   created_at: unknown
   users: unknown
   request_payload?: unknown
+  handled_by_user_id?: unknown
+  recipient_role?: unknown
+  handler?: unknown
 }): SecretaryInboxRequest | null {
   const teacherFullName = extractTeacherFullName(row.users)
 
@@ -257,14 +305,35 @@ function parseSecretaryInboxRequest(row: {
     created_at: row.created_at,
     teacher_full_name: teacherFullName,
     request_payload: parseRequestPayload(row.request_payload),
+    ...parseAssignmentFields(row),
   }
+}
+
+function parseOperatorInboxRequest(row: {
+  id: unknown
+  request_type: unknown
+  description: unknown
+  status: unknown
+  created_at: unknown
+  users: unknown
+  request_payload?: unknown
+  handled_by_user_id?: unknown
+  recipient_role?: unknown
+  handler?: unknown
+}): ManagerRecentRequest | null {
+  const parsed = parseSecretaryInboxRequest(row)
+  if (!parsed) {
+    return null
+  }
+
+  return parsed
 }
 
 export async function loadSecretaryRequests(): Promise<LoadSecretaryRequestsResult> {
   const { data, error } = await supabase
     .from('requests')
     .select(
-      'id, request_type, description, status, created_at, request_payload, users!created_by_user_id(full_name)',
+      'id, request_type, description, status, created_at, request_payload, recipient_role, handled_by_user_id, users!created_by_user_id(full_name), handler:users!handled_by_user_id(full_name, primary_role)',
     )
     .is('archived_at', null)
     .order('created_at', { ascending: false })
@@ -280,6 +349,49 @@ export async function loadSecretaryRequests(): Promise<LoadSecretaryRequestsResu
   const requests = (data ?? [])
     .map(parseSecretaryInboxRequest)
     .filter((request): request is SecretaryInboxRequest => request !== null)
+
+  return { ok: true, requests }
+}
+
+export async function loadOperatorInboxRequests(): Promise<LoadOperatorInboxRequestsResult> {
+  const personalArchiveIdsResult = await loadManagerPersonalArchivedRequestIds()
+
+  if (!personalArchiveIdsResult.ok) {
+    return {
+      ok: false,
+      errorMessage: personalArchiveIdsResult.errorMessage,
+    }
+  }
+
+  let query = supabase
+    .from('requests')
+    .select(
+      'id, request_type, description, status, created_at, request_payload, recipient_role, handled_by_user_id, users!created_by_user_id(full_name), handler:users!handled_by_user_id(full_name, primary_role)',
+    )
+    .order('created_at', { ascending: false })
+
+  const personalArchiveIds = personalArchiveIdsResult.requestIds
+  if (personalArchiveIds.length > 0) {
+    query = query.not(
+      'id',
+      'in',
+      `(${personalArchiveIds.map((requestId) => `"${requestId}"`).join(',')})`,
+    )
+  }
+
+  const { data, error } = await query
+
+  if (error) {
+    console.error('[requests] failed to load operator inbox requests', error)
+    return {
+      ok: false,
+      errorMessage: 'לא ניתן לטעון את הבקשות.',
+    }
+  }
+
+  const requests = (data ?? [])
+    .map(parseOperatorInboxRequest)
+    .filter((request): request is ManagerRecentRequest => request !== null)
 
   return { ok: true, requests }
 }
@@ -410,28 +522,14 @@ export async function updateRequestStatus(
     }
   }
 
-  if (isInstitutionOperatorRole(callerRole)) {
+  if (isInstitutionOperatorRole(callerRole) || callerRole === 'secretary') {
     const { error } = await supabase.rpc('update_request_status', {
       p_request_id: requestId,
       p_status: status,
     })
 
     if (error) {
-      console.error('[requests] failed to update request status via operator RPC', error)
-      return {
-        ok: false,
-        errorMessage: 'עדכון סטטוס הבקשה נכשל.',
-      }
-    }
-
-    return { ok: true }
-  }
-
-  if (callerRole === 'secretary') {
-    const { error } = await supabase.from('requests').update({ status }).eq('id', requestId)
-
-    if (error) {
-      console.error('[requests] failed to update request status', error)
+      console.error('[requests] failed to update request status via ownership RPC', error)
       return {
         ok: false,
         errorMessage: 'עדכון סטטוס הבקשה נכשל.',

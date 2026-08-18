@@ -14,11 +14,17 @@ const sampleRequests = [
     description: 'היעדרות ביום ראשון',
     status: 'in_progress' as const,
     created_at: '2026-07-01T10:00:00.000Z',
+    handled_by_user_id: 'mgr-1',
+    handled_by_full_name: 'מנהלת ראשית',
+    handled_by_primary_role: 'institution_manager' as const,
+    recipient_role: null,
   },
 ]
 
 const baseProps = {
   requests: sampleRequests,
+  actorUserId: 'mgr-1',
+  actorRole: 'institution_manager' as const,
   archivingRequestId: null,
   unreadReminderRequestIds: new Set<string>(),
   unreadMessageRequestIds: new Set<string>(),
@@ -26,6 +32,10 @@ const baseProps = {
   reminderSummariesByRequestId: new Map(),
   onArchive: vi.fn(),
   onOpenDetails: vi.fn(),
+  onClaim: vi.fn(),
+  onHandlerAssigned: vi.fn(),
+  onHandlerReleased: vi.fn(),
+  onHandlerError: vi.fn(),
 }
 
 describe('ManagerRecentRequestsTable', () => {

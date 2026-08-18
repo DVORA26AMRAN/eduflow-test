@@ -1,4 +1,5 @@
-import type { RequestStatus, RequestType, RequestPayload } from './request'
+import type { RequestPayload, RequestStatus, RequestType } from './request'
+import type { RequestAssignmentFields } from './requestOwnership'
 
 export type ManagerAnalytics = {
   activeTeachersCount: number
@@ -24,7 +25,7 @@ export type ManagerRecentRequest = {
   status: RequestStatus
   created_at: string
   request_payload?: RequestPayload
-}
+} & RequestAssignmentFields
 
 export type ManagerRecentActivityEntry = {
   id: string

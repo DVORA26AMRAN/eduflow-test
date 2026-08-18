@@ -76,6 +76,10 @@ function parseManagerRecentRequest(row: {
     status: row.status,
     created_at: row.created_at,
     request_payload: parseRequestPayload(row.request_payload),
+    handled_by_user_id: null,
+    handled_by_full_name: null,
+    handled_by_primary_role: null,
+    recipient_role: null,
   }
 }
 

@@ -299,6 +299,9 @@ export function SecretaryDashboardPage({
         >
           <SecretaryRequestsInbox
             onArchived={handleArchiveChanged}
+            actorUserId={profile.id}
+            actorRole="secretary"
+            actorFullName={profile.fullName}
             institutionId={profile.school?.id ?? null}
             unreadReminderRequestIds={unreadReminderRequestIds}
             unreadMessageRequestIds={unreadMessageRequestIds}

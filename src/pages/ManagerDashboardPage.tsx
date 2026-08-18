@@ -362,6 +362,9 @@ export function ManagerDashboardPage({
           <ManagerRecentRequestsSection
             refreshToken={archiveRefreshToken}
             onArchived={handleRequestArchived}
+            actorUserId={profile.id}
+            actorRole={profile.role === 'deputy' ? 'deputy' : 'institution_manager'}
+            actorFullName={profile.fullName}
             institutionId={profile.school?.id ?? null}
             canChangeStatus={canManageRequests(profile.role)}
             unreadReminderRequestIds={unreadReminderRequestIds}

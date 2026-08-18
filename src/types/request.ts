@@ -75,6 +75,10 @@ export type SecretaryInboxRequest = {
   created_at: string
   teacher_full_name: string
   request_payload?: RequestPayload
+  handled_by_user_id: string | null
+  handled_by_full_name: string | null
+  handled_by_primary_role: 'institution_manager' | 'deputy' | 'secretary' | null
+  recipient_role: GeneralRequestRecipientRole | null
 }
 
 export type SecretaryInboxFilters = {

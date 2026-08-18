@@ -1,5 +1,8 @@
+import { canShowHandlerStatusSelect } from '../../domain/requestOwnership'
 import type { RequestStatus, SecretaryInboxRequest } from '../../types/request'
+import type { RequestHandlerAssignedPatch } from '../../types/requestOwnership'
 import type { RequestReminderSummary } from '../../types/requestReminder'
+import type { PrimaryRole } from '../../types/user'
 import { handleRequestRowActivate } from '../../utils/requestTableRowInteraction'
 import {
   formatRequestDate,
@@ -12,9 +15,13 @@ import { RequestDescriptionCell } from '../requests/RequestDescriptionCell'
 import { RequestConversationRowIndicator } from '../requests/RequestConversationRowIndicator'
 import { RequestReminderRowIndicator } from '../requests/RequestReminderRowIndicator'
 import { SecretaryRequestAttachmentCell } from './SecretaryRequestAttachmentCell'
+import { RequestHandlerCell } from '../requests/RequestHandlerCell'
 
 type SecretaryRequestsTableProps = {
   requests: SecretaryInboxRequest[]
+  actorUserId: string
+  actorRole: PrimaryRole
+  institutionId?: string | null
   emptyMessage: string
   updatingRequestId: string | null
   archivingRequestId: string | null
@@ -27,6 +34,10 @@ type SecretaryRequestsTableProps = {
   onStatusChange: (requestId: string, status: RequestStatus) => void
   onOpenDetails: (request: SecretaryInboxRequest, rowElement: HTMLTableRowElement) => void
   onArchive: (request: SecretaryInboxRequest) => void
+  onClaim: (requestId: string) => void
+  onHandlerAssigned: (patch: RequestHandlerAssignedPatch) => void
+  onHandlerReleased: (requestId: string, status: RequestStatus) => void
+  onHandlerError: (message: string, errorCode?: string) => void
 }
 
 function canArchiveRequest(status: RequestStatus): boolean {
@@ -35,6 +46,9 @@ function canArchiveRequest(status: RequestStatus): boolean {
 
 export function SecretaryRequestsTable({
   requests,
+  actorUserId,
+  actorRole,
+  institutionId = null,
   emptyMessage,
   updatingRequestId,
   archivingRequestId,
@@ -47,6 +61,10 @@ export function SecretaryRequestsTable({
   onStatusChange,
   onOpenDetails,
   onArchive,
+  onClaim,
+  onHandlerAssigned,
+  onHandlerReleased,
+  onHandlerError,
 }: SecretaryRequestsTableProps) {
   if (requests.length === 0) {
     return (
@@ -67,6 +85,7 @@ export function SecretaryRequestsTable({
             <th>שם מורה</th>
             <th>סוג בקשה</th>
             <th>תיאור</th>
+            <th>בטיפול של</th>
             <th>סטטוס</th>
             <th>תאריך</th>
             <th>קובץ מצורף</th>
@@ -117,6 +136,19 @@ export function SecretaryRequestsTable({
                   <RequestDescriptionCell description={request.description} />
                 )}
               </td>
+              <td className="request-row__handler-cell">
+                <RequestHandlerCell
+                  request={request}
+                  actorUserId={actorUserId}
+                  actorRole={actorRole}
+                  institutionId={institutionId}
+                  isBusy={updatingRequestId === request.id || archivingRequestId !== null}
+                  onClaim={onClaim}
+                  onAssigned={onHandlerAssigned}
+                  onReleased={onHandlerReleased}
+                  onError={onHandlerError}
+                />
+              </td>
               <td>
                 <div className="secretary-dashboard__status-cell">
                   <RequestConversationRowIndicator
@@ -133,21 +165,29 @@ export function SecretaryRequestsTable({
                   <span className={`ds-table__status ds-table__status--${request.status}`}>
                     {translateRequestStatus(request.status)}
                   </span>
+                  {canShowHandlerStatusSelect({
+                    actorUserId,
+                    handledByUserId: request.handled_by_user_id,
+                  }) ? (
                   <select
                     className="secretary-dashboard__input secretary-dashboard__status-select"
                     value={request.status}
+                    onClick={(event) => event.stopPropagation()}
                     onChange={(e) =>
                       onStatusChange(request.id, e.target.value as RequestStatus)
                     }
                     disabled={updatingRequestId === request.id || archivingRequestId !== null}
                     aria-label={`סטטוס בקשה של ${request.teacher_full_name}`}
                   >
-                    {REQUEST_STATUS_OPTIONS.map((option) => (
+                    {REQUEST_STATUS_OPTIONS.filter(
+                      (option) => option.value !== 'in_progress' || request.status !== 'new',
+                    ).map((option) => (
                       <option key={option.value} value={option.value}>
                         {option.label}
                       </option>
                     ))}
                   </select>
+                  ) : null}
                 </div>
                 </div>
               </td>

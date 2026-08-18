@@ -1,24 +1,42 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
+import {
+  canOrdinaryStatusUpdate,
+  canShowHandlerStatusSelect,
+  isEligibleHandlerRole,
+} from '../../domain/requestOwnership'
+import { useRequestReminderNavigationEffect } from '../../hooks/useRequestReminderNavigationEffect'
+import { archiveRequestForManager } from '../../services/managerPersonalArchive'
+import { claimRequest } from '../../services/requestOwnership'
+import { loadOperatorInboxRequests, updateRequestStatus } from '../../services/requests'
+import {
+  loadInstitutionRequestReminderSummaries,
+  subscribeToInstitutionRequestReminders,
+  unsubscribeFromInstitutionRequestReminders,
+  upsertReminderSummary,
+} from '../../services/requestReminders'
 import type { ManagerRecentRequest } from '../../types/analytics'
+import type { RequestDetailsManagerRequest } from '../../types/requestDetails'
 import type { RequestStatus } from '../../types/request'
 import type { ReminderNavigationIntent } from '../../types/reminderNavigation'
-import { loadRecentRequests } from '../../services/analytics'
-import { archiveRequestForManager } from '../../services/managerPersonalArchive'
-import { updateRequestStatus } from '../../services/requests'
-import { loadInstitutionRequestReminderSummaries, subscribeToInstitutionRequestReminders, unsubscribeFromInstitutionRequestReminders, upsertReminderSummary } from '../../services/requestReminders'
 import type { RequestReminderSummary } from '../../types/requestReminder'
-import { useRequestReminderNavigationEffect } from '../../hooks/useRequestReminderNavigationEffect'
+import {
+  isRequestOwnershipConflictCode,
+  type RequestHandlerAssignedPatch,
+} from '../../types/requestOwnership'
+import type { PrimaryRole } from '../../types/user'
 import { NavClipboardIcon } from '../dashboard/dashboardNav'
-import type { RequestDetailsManagerRequest } from '../../types/requestDetails'
+import { DashboardSection } from '../dashboard/DashboardSection'
 import { RequestArchiveTrashButton } from '../requests/RequestArchiveTrashButton'
 import { RequestDetailsModal } from '../requests/RequestDetailsModal'
-import { DashboardSection } from '../dashboard/DashboardSection'
 import { ConfirmDialog } from '../ui/Modal'
 import { ManagerRecentRequestsTable } from './ManagerRecentRequestsTable'
 
 type ManagerRecentRequestsSectionProps = {
   refreshToken: number
   onArchived: () => void
+  actorUserId: string
+  actorRole: PrimaryRole
+  actorFullName: string
   institutionId?: string | null
   canChangeStatus?: boolean
   unreadReminderRequestIds?: ReadonlySet<string>
@@ -33,6 +51,9 @@ type ManagerRecentRequestsSectionProps = {
 export function ManagerRecentRequestsSection({
   refreshToken,
   onArchived,
+  actorUserId,
+  actorRole,
+  actorFullName,
   institutionId,
   canChangeStatus = true,
   unreadReminderRequestIds = new Set(),
@@ -66,7 +87,7 @@ export function ManagerRecentRequestsSection({
     setErrorMessage('')
 
     const [requestsResult, remindersResult] = await Promise.all([
-      loadRecentRequests(),
+      loadOperatorInboxRequests(),
       loadInstitutionRequestReminderSummaries(),
     ])
 
@@ -164,6 +185,21 @@ export function ManagerRecentRequestsSection({
       return
     }
 
+    if (
+      !canShowHandlerStatusSelect({
+        actorUserId,
+        handledByUserId: currentRequest.handled_by_user_id,
+      }) ||
+      !canOrdinaryStatusUpdate({
+        actorUserId,
+        handledByUserId: currentRequest.handled_by_user_id,
+        currentStatus: currentRequest.status,
+        nextStatus: status,
+      })
+    ) {
+      return
+    }
+
     setStatusMessage('')
     setUpdatingRequestId(requestId)
 
@@ -186,6 +222,79 @@ export function ManagerRecentRequestsSection({
       current?.id === requestId ? { ...current, status } : current,
     )
     setStatusMessage('סטטוס הבקשה עודכן בהצלחה.')
+    setStatusMessageIsError(false)
+  }
+
+  function applyAssignmentPatch(patch: RequestHandlerAssignedPatch) {
+    const assignment = {
+      handled_by_user_id: patch.handledByUserId,
+      handled_by_full_name: patch.handledByFullName,
+      handled_by_primary_role: patch.handledByPrimaryRole,
+      status: patch.status,
+    }
+
+    setRequests((currentRequests) =>
+      currentRequests.map((request) =>
+        request.id === patch.requestId ? { ...request, ...assignment } : request,
+      ),
+    )
+    setDetailsRequest((current) =>
+      current?.id === patch.requestId ? { ...current, ...assignment } : current,
+    )
+  }
+
+  async function handleOwnershipError(message: string, errorCode?: string) {
+    setStatusMessage(message)
+    setStatusMessageIsError(true)
+    if (isRequestOwnershipConflictCode(errorCode)) {
+      await fetchRequests()
+    }
+  }
+
+  async function handleClaim(requestId: string) {
+    setStatusMessage('')
+    setUpdatingRequestId(requestId)
+    const result = await claimRequest(requestId)
+    setUpdatingRequestId(null)
+
+    if (!result.ok) {
+      await handleOwnershipError(result.errorMessage, result.errorCode)
+      return
+    }
+
+    applyAssignmentPatch({
+      requestId,
+      handledByUserId: result.handledByUserId,
+      handledByFullName: actorFullName,
+      handledByPrimaryRole: isEligibleHandlerRole(actorRole) ? actorRole : 'institution_manager',
+      status: result.status,
+    })
+    setStatusMessage('הבקשה נלקחה לטיפול.')
+    setStatusMessageIsError(false)
+  }
+
+  function handleHandlerAssigned(patch: RequestHandlerAssignedPatch) {
+    applyAssignmentPatch(patch)
+    setStatusMessage('הטיפול הועבר בהצלחה.')
+    setStatusMessageIsError(false)
+  }
+
+  function handleHandlerReleased(requestId: string, status: RequestStatus) {
+    const assignment = {
+      handled_by_user_id: null,
+      handled_by_full_name: null,
+      handled_by_primary_role: null,
+      status,
+    }
+    setRequests((currentRequests) =>
+      currentRequests.map((request) =>
+        request.id === requestId ? { ...request, ...assignment } : request,
+      ),
+    )
+    setDetailsRequest((current) =>
+      current?.id === requestId ? { ...current, ...assignment } : current,
+    )
+    setStatusMessage('הטיפול שוחרר.')
     setStatusMessageIsError(false)
   }
 
@@ -265,6 +374,9 @@ export function ManagerRecentRequestsSection({
         {!isLoading && !errorMessage && requests.length > 0 && (
           <ManagerRecentRequestsTable
             requests={requests}
+            actorUserId={actorUserId}
+            actorRole={actorRole}
+            institutionId={institutionId}
             archivingRequestId={archivingRequestId}
             updatingRequestId={updatingRequestId}
             canChangeStatus={canChangeStatus}
@@ -276,6 +388,12 @@ export function ManagerRecentRequestsSection({
             onArchive={handleOpenArchiveDialog}
             onOpenDetails={handleOpenDetails}
             onStatusChange={canChangeStatus ? handleStatusChange : undefined}
+            onClaim={(requestId) => void handleClaim(requestId)}
+            onHandlerAssigned={handleHandlerAssigned}
+            onHandlerReleased={handleHandlerReleased}
+            onHandlerError={(message, errorCode) => {
+              void handleOwnershipError(message, errorCode)
+            }}
           />
         )}
       </DashboardSection>
@@ -305,6 +423,18 @@ export function ManagerRecentRequestsSection({
           onConversationOpened={() => void onConversationOpened?.(detailsRequest.id)}
           showHistory
           showNotes={false}
+          ownership={{
+            actorUserId,
+            actorRole,
+            institutionId,
+            isBusy: updatingRequestId === detailsRequest.id || archivingRequestId !== null,
+            onClaim: (requestId) => void handleClaim(requestId),
+            onAssigned: handleHandlerAssigned,
+            onReleased: handleHandlerReleased,
+            onError: (message, errorCode) => {
+              void handleOwnershipError(message, errorCode)
+            },
+          }}
           onClose={handleCloseDetails}
           actions={
             <RequestArchiveTrashButton

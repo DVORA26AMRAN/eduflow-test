@@ -150,6 +150,10 @@ export function SecretaryArchiveSection({
         status: request.status,
         created_at: request.created_at,
         teacher_full_name: request.teacher_full_name,
+        handled_by_user_id: null,
+        handled_by_full_name: null,
+        handled_by_primary_role: null,
+        recipient_role: null,
         role: 'secretary',
       })
     },

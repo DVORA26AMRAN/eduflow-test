@@ -13,6 +13,10 @@ const request = {
   status: 'in_progress' as const,
   created_at: '2026-07-01T10:00:00.000Z',
   teacher_full_name: 'מורה א',
+  handled_by_user_id: 'sec-1',
+  handled_by_full_name: 'מזכירה ראשית',
+  handled_by_primary_role: 'secretary' as const,
+  recipient_role: null,
 }
 
 const reminderSummary = new Map([
@@ -28,6 +32,8 @@ const reminderSummary = new Map([
 
 const baseProps = {
   requests: [request],
+  actorUserId: 'sec-1',
+  actorRole: 'secretary' as const,
   emptyMessage: 'אין בקשות',
   updatingRequestId: null,
   archivingRequestId: null,
@@ -39,6 +45,10 @@ const baseProps = {
   onStatusChange: vi.fn(),
   onOpenDetails: vi.fn(),
   onArchive: vi.fn(),
+  onClaim: vi.fn(),
+  onHandlerAssigned: vi.fn(),
+  onHandlerReleased: vi.fn(),
+  onHandlerError: vi.fn(),
 }
 
 describe('SecretaryRequestsTable reminder rows', () => {

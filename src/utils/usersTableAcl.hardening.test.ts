@@ -51,6 +51,7 @@ const FRONTEND_USERS_PATHS = [
   'src/services/substituteBoard.ts',
   'src/services/requestMessages.ts',
   'src/services/managerPersonalArchive.ts',
+  'src/services/requestOwnership.ts',
 ]
 
 function parseUsersColumnList(raw: string): string[] {
