@@ -8,9 +8,10 @@ import type {
 import type { School } from '../types/school'
 import { supabase, supabaseAnonKey, supabaseUrl } from './supabase'
 
-function isPrimaryRole(value: unknown): value is PrimaryRole {
+export function isPrimaryRole(value: unknown): value is PrimaryRole {
   return (
     value === 'institution_manager' ||
+    value === 'deputy' ||
     value === 'secretary' ||
     value === 'teacher' ||
     value === 'platform_admin'

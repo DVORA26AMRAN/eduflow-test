@@ -7,6 +7,7 @@ import { LoginSuccessTransition } from './components/transitions/LoginSuccessTra
 import { LoginPage } from './pages/LoginPage'
 import { ManagerDashboardPage } from './pages/ManagerDashboardPage'
 import { PasswordSetupPage } from './pages/PasswordSetupPage'
+import { DeputyDashboardPlaceholderPage } from './pages/DeputyDashboardPlaceholderPage'
 import { PlatformAdminDashboardPage } from './pages/PlatformAdminDashboardPage'
 import { SecretaryDashboardPage } from './pages/SecretaryDashboardPage'
 import { TeacherDashboardPage } from './pages/TeacherDashboardPage'
@@ -709,6 +710,44 @@ function App() {
     )
   }
 
+  if (currentProfile.role === 'institution_manager') {
+    return (
+      <>
+        <ManagerDashboardPage
+          profile={currentProfile}
+          newUserName={newUserName}
+          newUserEmail={newUserEmail}
+          newUserRole={newUserRole}
+          newUserPhone={newUserPhone}
+          newUserNationalId={newUserNationalId}
+          newUserJobTitle={newUserJobTitle}
+          newUserWeeklyHours={newUserWeeklyHours}
+          message={message}
+          usersListVersion={usersListVersion}
+          onNewUserNameChange={setNewUserName}
+          onNewUserEmailChange={setNewUserEmail}
+          onNewUserRoleChange={setNewUserRole}
+          onNewUserPhoneChange={setNewUserPhone}
+          onNewUserNationalIdChange={setNewUserNationalId}
+          onNewUserJobTitleChange={setNewUserJobTitle}
+          onNewUserWeeklyHoursChange={setNewUserWeeklyHours}
+          onCreateUser={createUser}
+          onLogout={logout}
+        />
+        {loginSuccessTransition}
+      </>
+    )
+  }
+
+  if (currentProfile.role === 'deputy') {
+    return (
+      <>
+        <DeputyDashboardPlaceholderPage profile={currentProfile} onLogout={logout} />
+        {loginSuccessTransition}
+      </>
+    )
+  }
+
   if (currentProfile.role === 'secretary') {
     return (
       <>
@@ -753,30 +792,10 @@ function App() {
   }
 
   return (
-    <>
-      <ManagerDashboardPage
-        profile={currentProfile}
-        newUserName={newUserName}
-        newUserEmail={newUserEmail}
-        newUserRole={newUserRole}
-        newUserPhone={newUserPhone}
-        newUserNationalId={newUserNationalId}
-        newUserJobTitle={newUserJobTitle}
-        newUserWeeklyHours={newUserWeeklyHours}
-        message={message}
-        usersListVersion={usersListVersion}
-        onNewUserNameChange={setNewUserName}
-        onNewUserEmailChange={setNewUserEmail}
-        onNewUserRoleChange={setNewUserRole}
-        onNewUserPhoneChange={setNewUserPhone}
-        onNewUserNationalIdChange={setNewUserNationalId}
-        onNewUserJobTitleChange={setNewUserJobTitle}
-        onNewUserWeeklyHoursChange={setNewUserWeeklyHours}
-        onCreateUser={createUser}
-        onLogout={logout}
-      />
-      {loginSuccessTransition}
-    </>
+    <ProfileLoadErrorPage
+      errorMessage="לא ניתן לטעון את הפרופיל."
+      debugInfo={profileLoadDebug}
+    />
   )
 }
 

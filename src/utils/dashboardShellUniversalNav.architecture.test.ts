@@ -62,10 +62,12 @@ describe('universal DashboardShell navigation architecture', () => {
 
   it('keeps App routing on shared role dashboards (no duplicate shell implementations)', () => {
     const app = read('src/App.tsx')
+    expect(app).toContain("currentProfile.role === 'institution_manager'")
     expect(app).toContain('ManagerDashboardPage')
     expect(app).toContain('SecretaryDashboardPage')
     expect(app).toContain('TeacherDashboardPage')
     expect(app).toContain('PlatformAdminDashboardPage')
+    expect(app).toContain('DeputyDashboardPlaceholderPage')
     expect(app).not.toContain('YaelDashboard')
     expect(app).not.toContain('AnnaDashboard')
   })

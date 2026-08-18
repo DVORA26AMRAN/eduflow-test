@@ -2,7 +2,12 @@ import type { School } from './school'
 
 export type UserRole = 'teacher' | 'secretary'
 
-export type PrimaryRole = 'institution_manager' | 'secretary' | 'teacher' | 'platform_admin'
+export type PrimaryRole =
+  | 'institution_manager'
+  | 'deputy'
+  | 'secretary'
+  | 'teacher'
+  | 'platform_admin'
 
 export type InstitutionUser = {
   full_name: string

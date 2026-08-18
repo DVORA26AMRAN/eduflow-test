@@ -26,6 +26,7 @@ describe('teacherInactivityPolicy', () => {
     expect(isTeacherInactivityRole('teacher')).toBe(true)
     expect(isTeacherInactivityRole('secretary')).toBe(false)
     expect(isTeacherInactivityRole('institution_manager')).toBe(false)
+    expect(isTeacherInactivityRole('deputy')).toBe(false)
     expect(isTeacherInactivityRole('platform_admin')).toBe(false)
     expect(isTeacherInactivityRole(null)).toBe(false)
     expect(isTeacherInactivityRole(undefined)).toBe(false)
