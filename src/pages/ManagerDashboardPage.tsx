@@ -46,6 +46,7 @@ import {
 } from '../types/dashboardAnalytics'
 import type { RequestReminderSummary } from '../types/requestReminder'
 import type { AuthenticatedUserProfile, InstitutionUser, UserRole } from '../types/user'
+import { getAllowedTenantInviteRoles } from '../security/tenantInviteRoles'
 import { MEETING_CALENDAR_NAV_LABEL, MEETING_CALENDAR_SECTION_ID } from '../utils/meetingCalendarDisplay'
 import {
   STAFF_DIRECTORY_NAV_LABEL,
@@ -462,6 +463,7 @@ export function ManagerDashboardPage({
             newUserJobTitle={newUserJobTitle}
             newUserWeeklyHours={newUserWeeklyHours}
             createUserMessage={message}
+            allowedRoles={getAllowedTenantInviteRoles(profile.role)}
             onNewUserNameChange={onNewUserNameChange}
             onNewUserEmailChange={onNewUserEmailChange}
             onNewUserRoleChange={onNewUserRoleChange}

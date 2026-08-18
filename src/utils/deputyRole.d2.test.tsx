@@ -360,14 +360,15 @@ describe('Deputy D2 operational dashboard', () => {
     expect(d2).not.toContain("ADD CONSTRAINT requests_recipient_role_valid")
   })
 
-  it('does not grant D3 user-management privileges', () => {
-    expect(clever).not.toContain("callerRole === 'deputy'")
-    expect(clever).toContain("if (callerRole === 'institution_manager')")
-    expect(clever).toContain("caller.primary_role === 'secretary'")
+  it('does not grant Deputy D3 user-management privileges', () => {
+    expect(canManageTeamUsers('deputy')).toBe(false)
+    expect(clever).toContain(
+      "caller.primary_role === 'institution_manager' || caller.primary_role === 'secretary'",
+    )
+    expect(clever).toContain("if (callerRow.primary_role === 'deputy')")
     expect(staffUpdate).toContain("v_caller.primary_role NOT IN ('institution_manager', 'secretary')")
     expect(d2).not.toContain('CREATE OR REPLACE FUNCTION public.update_staff_member')
     expect(d2).not.toContain('CREATE OR REPLACE FUNCTION public.manager_set_user_extended_profile')
-    expect(canManageTeamUsers('deputy')).toBe(false)
   })
 
   it('preserves Teacher inactivity, Platform Admin isolation, and Phase 3 quotation files', () => {

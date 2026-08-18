@@ -58,17 +58,18 @@ describe('secretary teacher onboarding/edit authorization', () => {
     expect(secretaryPage).toContain("allowedRoles: ['teacher']")
     expect(secretaryPage).toContain('teacherOnboarding')
     expect(secretaryPage).toContain('StaffDirectoryPage')
-    expect(appSource).toContain("currentProfile?.role === 'secretary'")
-    expect(appSource).toContain("? (['teacher'] as const)")
+    expect(appSource).toContain("currentProfile.role === 'secretary'")
+    expect(appSource).toContain('getAllowedTenantInviteRoles')
     expect(detailsModal).not.toMatch(/השבתה|מחיקה|הסרה|deactivat|removeTeacher/i)
   })
 
-  it('clever-processor allows manager teacher|secretary and secretary teacher-only', () => {
+  it('clever-processor allows manager teacher|secretary|deputy and secretary teacher-only', () => {
     expect(edge).toContain('isActiveTenantInviter')
     expect(edge).toContain('canTenantInviteRole')
     expect(edge).toContain("callerRole === 'institution_manager'")
     expect(edge).toContain("callerRole === 'secretary'")
     expect(edge).toContain("return requestedRole === 'teacher'")
+    expect(edge).toContain("requestedRole === 'deputy'")
     expect(edge).toContain('institution_id: callerRow.institution_id')
     expect(edge).toContain('invited_by_user_id: callerRow.id')
   })
@@ -78,7 +79,7 @@ describe('secretary teacher onboarding/edit authorization', () => {
     expect(edge).toContain("requestedRoleRaw === 'institution_manager'")
     expect(edge).toContain('isActiveGlobalPlatformAdmin')
     expect(edge).toContain('parseTenantInviteRole')
-    expect(edge).toContain("value === 'teacher' || value === 'secretary'")
+    expect(edge).toContain("value === 'teacher' || value === 'secretary' || value === 'deputy'")
     expect(edge).not.toContain("value === 'platform_admin'")
     // Tenant branch forbids body institution_id
     expect(edge).toContain('body.institution_id !== undefined && body.institution_id !== null')

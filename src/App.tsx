@@ -27,6 +27,7 @@ import {
   getInitialLoginFormState,
   handleRememberMeAfterLogin,
 } from './utils/rememberedEmail'
+import { getAllowedTenantInviteRoles } from './security/tenantInviteRoles'
 import { validateCreateUserForm } from './utils/createUserForm'
 import { buildSignInCredentials } from './services/authCredentials'
 import {
@@ -508,10 +509,11 @@ function App() {
       return
     }
 
-    const allowedRoles =
-      currentProfile.role === 'secretary'
-        ? (['teacher'] as const)
-        : (['teacher', 'secretary'] as const)
+    const allowedRoles = getAllowedTenantInviteRoles(currentProfile.role)
+    if (allowedRoles.length === 0) {
+      setMessage('אין הרשאה ליצירת משתמש.')
+      return
+    }
 
     const requestedRole =
       currentProfile.role === 'secretary' ? 'teacher' : newUserRole

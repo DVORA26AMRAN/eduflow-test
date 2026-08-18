@@ -1,4 +1,5 @@
 import type { UserRole } from '../../types/user'
+import { MANAGER_TENANT_INVITE_ROLES } from '../../security/tenantInviteRoles'
 
 type CreateUserFormProps = {
   newUserName: string
@@ -9,7 +10,7 @@ type CreateUserFormProps = {
   newUserJobTitle: string
   newUserWeeklyHours: string
   message: string
-  /** Defaults to teacher + secretary (manager). Secretary passes `['teacher']`. */
+  /** Defaults to Manager D3A allow-list. Secretary passes `['teacher']`. */
   allowedRoles?: readonly UserRole[]
   onNewUserNameChange: (value: string) => void
   onNewUserEmailChange: (value: string) => void
@@ -21,7 +22,11 @@ type CreateUserFormProps = {
   onCreateUser: () => void
 }
 
-const DEFAULT_ALLOWED_ROLES: readonly UserRole[] = ['teacher', 'secretary']
+const INVITE_ROLE_LABELS: Record<UserRole, string> = {
+  teacher: 'מורה',
+  secretary: 'מזכירה',
+  deputy: 'סגנית',
+}
 
 function getMessageClassName(message: string): string {
   if (!message) {
@@ -55,7 +60,7 @@ export function CreateUserForm({
   newUserJobTitle,
   newUserWeeklyHours,
   message,
-  allowedRoles = DEFAULT_ALLOWED_ROLES,
+  allowedRoles = MANAGER_TENANT_INVITE_ROLES,
   onNewUserNameChange,
   onNewUserEmailChange,
   onNewUserRoleChange,
@@ -109,18 +114,17 @@ export function CreateUserForm({
               value={newUserRole}
               onChange={(e) => onNewUserRoleChange(e.target.value as UserRole)}
             >
-              {allowedRoles.includes('teacher') ? (
-                <option value="teacher">מורה</option>
-              ) : null}
-              {allowedRoles.includes('secretary') ? (
-                <option value="secretary">מזכירה</option>
-              ) : null}
+              {allowedRoles.map((role) => (
+                <option key={role} value={role}>
+                  {INVITE_ROLE_LABELS[role]}
+                </option>
+              ))}
             </select>
           ) : (
             <input
               id="create-user-role"
               className="ds-input"
-              value={newUserRole === 'teacher' ? 'מורה' : newUserRole}
+              value={INVITE_ROLE_LABELS[newUserRole]}
               readOnly
               aria-readonly="true"
             />

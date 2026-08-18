@@ -25,7 +25,8 @@ export async function loadInstitutionUsers(): Promise<InstitutionUsersLoadResult
       typeof user.email === 'string' &&
       (user.primary_role === 'teacher' ||
         user.primary_role === 'secretary' ||
-        user.primary_role === 'institution_manager'),
+        user.primary_role === 'institution_manager' ||
+        user.primary_role === 'deputy'),
   )
 
   return { ok: true, users }

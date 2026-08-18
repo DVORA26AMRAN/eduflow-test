@@ -4,11 +4,13 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.49.1'
  * clever-processor — privileged Auth invite + public.users provisioning.
  *
  * Authorization (server-side):
- * - institution_manager may invite role=teacher|secretary for their own institution.
+ * - institution_manager may invite role=teacher|secretary|deputy for their own institution.
  * - secretary may invite role=teacher only for their own institution.
+ * - deputy may not invite anyone (D3A).
  * - For tenant callers, institution is taken from the caller row — never from the body.
  * - platform_admin (active, institution_id NULL) may invite role=institution_manager
  *   for a verified body.institution_id when no active manager occupies the slot.
+ * - Existing emails are rejected; tenant invites never UPDATE primary_role.
  */
 
 const CORS_HEADERS: Record<string, string> = {
@@ -17,7 +19,7 @@ const CORS_HEADERS: Record<string, string> = {
   'Access-Control-Allow-Methods': 'POST, OPTIONS',
 }
 
-type TenantInviteRole = 'teacher' | 'secretary'
+type TenantInviteRole = 'teacher' | 'secretary' | 'deputy'
 type InviteRole = TenantInviteRole | 'institution_manager'
 
 type InviteBody = {
@@ -69,12 +71,16 @@ function isUuid(value: string): boolean {
 }
 
 function parseTenantInviteRole(value: unknown): TenantInviteRole | null {
-  return value === 'teacher' || value === 'secretary' ? value : null
+  return value === 'teacher' || value === 'secretary' || value === 'deputy' ? value : null
 }
 
 function canTenantInviteRole(callerRole: string, requestedRole: TenantInviteRole): boolean {
   if (callerRole === 'institution_manager') {
-    return requestedRole === 'teacher' || requestedRole === 'secretary'
+    return (
+      requestedRole === 'teacher' ||
+      requestedRole === 'secretary' ||
+      requestedRole === 'deputy'
+    )
   }
   if (callerRole === 'secretary') {
     return requestedRole === 'teacher'
@@ -388,13 +394,21 @@ Deno.serve(async (request) => {
     }
 
     // -------------------------------------------------------------------------
-    // Tenant invites (Manager / Secretary)
+    // Tenant invites (Manager / Secretary). D3A: Deputy cannot invite.
     // -------------------------------------------------------------------------
+    if (callerRow.primary_role === 'deputy') {
+      return jsonResponse({ ok: false, error: 'forbidden' }, 403)
+    }
+
     if (!isActiveTenantInviter(callerRow)) {
       return jsonResponse({ ok: false, error: 'forbidden' }, 403)
     }
 
     if (body.institution_id !== undefined && body.institution_id !== null) {
+      return jsonResponse({ ok: false, error: 'forbidden' }, 403)
+    }
+
+    if (requestedRoleRaw === 'platform_admin') {
       return jsonResponse({ ok: false, error: 'forbidden' }, 403)
     }
 
@@ -405,6 +419,28 @@ Deno.serve(async (request) => {
 
     if (!canTenantInviteRole(callerRow.primary_role, role)) {
       return jsonResponse({ ok: false, error: 'forbidden' }, 403)
+    }
+
+    const { data: existingByEmail, error: emailLookupError } = await service
+      .from('users')
+      .select('id, primary_role, institution_id')
+      .ilike('email', email)
+      .maybeSingle()
+
+    if (emailLookupError) {
+      console.error('[clever-processor] tenant email lookup failed', emailLookupError)
+      return jsonResponse({ ok: false, error: 'internal_error' }, 500)
+    }
+
+    if (existingByEmail) {
+      return jsonResponse(
+        {
+          ok: false,
+          error: 'conflict',
+          message: 'email already belongs to an existing user',
+        },
+        409,
+      )
     }
 
     const { data: invited, error: inviteError } = await service.auth.admin.inviteUserByEmail(

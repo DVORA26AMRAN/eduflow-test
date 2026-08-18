@@ -17,6 +17,7 @@ type TeamManagementSectionProps = {
   newUserJobTitle: string
   newUserWeeklyHours: string
   createUserMessage: string
+  allowedRoles?: readonly UserRole[]
   onNewUserNameChange: (value: string) => void
   onNewUserEmailChange: (value: string) => void
   onNewUserRoleChange: (value: UserRole) => void
@@ -39,6 +40,7 @@ export function TeamManagementSection({
   newUserJobTitle,
   newUserWeeklyHours,
   createUserMessage,
+  allowedRoles,
   onNewUserNameChange,
   onNewUserEmailChange,
   onNewUserRoleChange,
@@ -126,6 +128,7 @@ export function TeamManagementSection({
           newUserJobTitle={newUserJobTitle}
           newUserWeeklyHours={newUserWeeklyHours}
           message={createUserMessage}
+          allowedRoles={allowedRoles}
           onNewUserNameChange={onNewUserNameChange}
           onNewUserEmailChange={onNewUserEmailChange}
           onNewUserRoleChange={onNewUserRoleChange}

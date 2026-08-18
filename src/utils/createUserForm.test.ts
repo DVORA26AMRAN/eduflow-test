@@ -131,6 +131,46 @@ describe('validateCreateUserForm', () => {
     })
   })
 
+  it('allows deputy when Manager allow-list includes deputy', () => {
+    const result = validateCreateUserForm(
+      {
+        fullName: 'יעל',
+        email: 'yael@school.com',
+        role: 'deputy',
+        phone: '',
+        nationalId: '',
+        jobTitle: '',
+        weeklyHours: '',
+      },
+      { allowedRoles: ['teacher', 'secretary', 'deputy'] },
+    )
+
+    expect(result.ok).toBe(true)
+    if (result.ok) {
+      expect(result.values.role).toBe('deputy')
+    }
+  })
+
+  it('rejects deputy when secretary allow-list is teacher-only', () => {
+    expect(
+      validateCreateUserForm(
+        {
+          fullName: 'יעל',
+          email: 'yael@school.com',
+          role: 'deputy',
+          phone: '',
+          nationalId: '',
+          jobTitle: '',
+          weeklyHours: '',
+        },
+        { allowedRoles: ['teacher'] },
+      ),
+    ).toEqual({
+      ok: false,
+      errorMessage: 'אין לך הרשאה ליצור תפקיד זה.',
+    })
+  })
+
   it('allows teacher when secretary allow-list is teacher-only', () => {
     const result = validateCreateUserForm(
       {

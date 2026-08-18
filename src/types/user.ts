@@ -1,6 +1,14 @@
 import type { School } from './school'
 
-export type UserRole = 'teacher' | 'secretary'
+/**
+ * Roles a tenant inviter may submit on the shared CreateUserForm / clever-processor
+ * tenant branch. Distinct from PrimaryRole (authenticated identity).
+ * Caller-specific allow-lists still decide who may invite which of these.
+ */
+export type TenantInviteRole = 'teacher' | 'secretary' | 'deputy'
+
+/** Invite-form role. Not PrimaryRole. */
+export type UserRole = TenantInviteRole
 
 export type PrimaryRole =
   | 'institution_manager'

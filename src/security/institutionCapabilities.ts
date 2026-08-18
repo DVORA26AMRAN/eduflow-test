@@ -29,7 +29,7 @@ export function canManageInstitutionSettings(role: PrimaryRole | null | undefine
   return role === 'institution_manager'
 }
 
-/** D3 user management. D2: Manager only; Deputy is hard-denied. */
+/** D3A: Manager may invite users; Deputy is hard-denied. Full D3 may revisit. */
 export function canManageTeamUsers(role: PrimaryRole | null | undefined): boolean {
   return role === 'institution_manager'
 }
