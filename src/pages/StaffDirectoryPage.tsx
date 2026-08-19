@@ -10,6 +10,7 @@ import { NavClipboardIcon } from '../components/dashboard/dashboardNav'
 import { DashboardSection } from '../components/dashboard/DashboardSection'
 import {
   canDeactivateStaff,
+  canReactivateStaff,
   canEditOperationalUser,
   canEditStaffNationalId,
 } from '../security/institutionCapabilities'
@@ -162,6 +163,13 @@ export function StaffDirectoryPage({
     selectedMemberId,
   )
 
+  const canReactivateSelectedMember = canReactivateStaff(
+    actorRole,
+    selectedMember?.primaryRole,
+    actorUserId,
+    selectedMemberId,
+  )
+
   function handleMemberSelect(memberId: string) {
     setSelectedMemberId(memberId)
     setIsDetailsOpen(true)
@@ -231,6 +239,7 @@ export function StaffDirectoryPage({
         canEditNationalId={canEditSelectedNationalId}
         institutionName={institutionName}
         canDeactivate={canDeactivateSelectedMember}
+        canReactivate={canReactivateSelectedMember}
         onUpdated={refreshDirectory}
         onClose={handleDetailsClose}
       />

@@ -80,6 +80,27 @@ export function canManageDeputies(role: PrimaryRole | null | undefined): boolean
 }
 
 /**
+ * S4: Manager may reactivate inactive teacher, secretary, or deputy targets.
+ * Same authorization matrix as canDeactivateStaff. Backend remains authoritative.
+ */
+export function canReactivateStaff(
+  actorRole: PrimaryRole | null | undefined,
+  targetRole: PrimaryRole | null | undefined,
+  actorUserId: string | null | undefined,
+  targetUserId: string | null | undefined,
+): boolean {
+  if (actorRole !== 'institution_manager') {
+    return false
+  }
+  if (!actorUserId || !targetUserId || actorUserId === targetUserId) {
+    return false
+  }
+  return (
+    targetRole === 'teacher' || targetRole === 'secretary' || targetRole === 'deputy'
+  )
+}
+
+/**
  * S3: Manager may deactivate teacher, secretary, or deputy targets.
  * Never self, never Manager, never Platform Admin. Backend remains authoritative.
  */

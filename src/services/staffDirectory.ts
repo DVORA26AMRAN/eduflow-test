@@ -1,5 +1,6 @@
 import type {
   DeactivateStaffMemberResult,
+  ReactivateStaffMemberResult,
   LoadStaffDirectoryResult,
   LoadStaffMemberDetailsResult,
   StaffDirectoryMember,
@@ -256,6 +257,45 @@ export async function deactivateStaffMember(
     unchanged: result.unchanged === true,
     releasedRequestCount:
       typeof result.released_request_count === 'number' ? result.released_request_count : 0,
+  }
+}
+
+export async function reactivateStaffMember(
+  userId: string,
+): Promise<ReactivateStaffMemberResult> {
+  if (!userId.trim()) {
+    return { ok: false, errorMessage: 'אין הרשאה לבצע פעולה זו.' }
+  }
+
+  const { data, error } = await supabase.rpc('reactivate_staff_member', {
+    p_user_id: userId,
+  })
+
+  if (error) {
+    console.error('[staffDirectory] reactivate_staff_member failed', error)
+    const message = error.message?.toLowerCase() ?? ''
+    if (
+      message.includes('permission denied') ||
+      message.includes('42501') ||
+      message.includes('unauthorized')
+    ) {
+      return { ok: false, errorMessage: 'אין הרשאה לבצע פעולה זו.' }
+    }
+    return { ok: false, errorMessage: 'ההחזרה לפעילות נכשלה.' }
+  }
+
+  const result = data as {
+    ok?: unknown
+    unchanged?: unknown
+  } | null
+
+  if (!result || result.ok !== true) {
+    return { ok: false, errorMessage: 'ההחזרה לפעילות נכשלה.' }
+  }
+
+  return {
+    ok: true,
+    unchanged: result.unchanged === true,
   }
 }
 

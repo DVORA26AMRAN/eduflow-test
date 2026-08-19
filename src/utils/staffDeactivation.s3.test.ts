@@ -235,14 +235,18 @@ describe('S3 fail-closed inactive session guard (req 6 corrected)', () => {
   })
 })
 
-// S3 req 7: NO REACTIVATION
-describe('S3 no reactivation (req 7)', () => {
-  it('no reactivation UI in any frontend file', () => {
-    const filesToCheck = [APP, TEAM, STAFF_MODAL, DEACTIVATE_MODAL, SERVICE, CAPABILITIES]
-    for (const path of filesToCheck) {
-      const src = read(path)
-      expect(src).not.toMatch(/reactivat|reactivate|הפעלה מחדש|הפעל מחדש/i)
-    }
+// S3 req 7: NO REACTIVATION in the S3 deactivation-only modal.
+// S4 adds controlled reactivation via separate files and a gated capability.
+describe('S3 no reactivation (req 7 — S3 deactivation modal only)', () => {
+  it('StaffDeactivationConfirmModal does not contain reactivation UI', () => {
+    const src = read(DEACTIVATE_MODAL)
+    expect(src).not.toMatch(/reactivat|הפעלה מחדש|הפעל מחדש/i)
+  })
+
+  it('S4 reactivation is gated by a separate canReactivateStaff capability', () => {
+    // S4 adds reactivation behind its own explicit capability — not mixed into S3 paths.
+    expect(read(CAPABILITIES)).toContain('canReactivateStaff')
+    expect(read(CAPABILITIES)).toContain('canDeactivateStaff')
   })
 })
 

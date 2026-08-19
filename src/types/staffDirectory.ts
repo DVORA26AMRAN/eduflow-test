@@ -40,3 +40,7 @@ export type UpdateStaffMemberResult =
 export type DeactivateStaffMemberResult =
   | { ok: true; unchanged: boolean; releasedRequestCount: number }
   | { ok: false; errorMessage: string }
+
+export type ReactivateStaffMemberResult =
+  | { ok: true; unchanged: boolean }
+  | { ok: false; errorMessage: string }

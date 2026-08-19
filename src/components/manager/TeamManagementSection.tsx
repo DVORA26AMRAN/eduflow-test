@@ -4,8 +4,9 @@ import { translateRole } from '../../utils/roles'
 import { NavUsersIcon } from '../dashboard/dashboardNav'
 import { DashboardSection } from '../dashboard/DashboardSection'
 import { CreateUserForm } from './CreateUserForm'
-import { canDeactivateStaff } from '../../security/institutionCapabilities'
+import { canDeactivateStaff, canReactivateStaff } from '../../security/institutionCapabilities'
 import { StaffDeactivationConfirmModal } from '../staff/StaffDeactivationConfirmModal'
+import { StaffReactivationConfirmModal } from '../staff/StaffReactivationConfirmModal'
 
 type TeamManagementSectionProps = {
   users: InstitutionUser[]
@@ -73,6 +74,8 @@ export function TeamManagementSection({
   const [searchQuery, setSearchQuery] = useState('')
   const [deactivationTargetId, setDeactivationTargetId] = useState<string | null>(null)
   const [deactivationTargetName, setDeactivationTargetName] = useState('')
+  const [reactivationTargetId, setReactivationTargetId] = useState<string | null>(null)
+  const [reactivationTargetName, setReactivationTargetName] = useState('')
 
   const filteredUsers = useMemo(() => {
     const query = searchQuery.trim().toLowerCase()
@@ -94,6 +97,11 @@ export function TeamManagementSection({
     setDeactivationTargetName(user.full_name)
   }
 
+  function handleReactivateClick(user: InstitutionUser) {
+    setReactivationTargetId(user.id)
+    setReactivationTargetName(user.full_name)
+  }
+
   const handleDeactivationSuccess = useCallback(async () => {
     if (onUsersRefresh) {
       await onUsersRefresh()
@@ -103,6 +111,11 @@ export function TeamManagementSection({
   function handleDeactivationClose() {
     setDeactivationTargetId(null)
     setDeactivationTargetName('')
+  }
+
+  function handleReactivationClose() {
+    setReactivationTargetId(null)
+    setReactivationTargetName('')
   }
 
   return (
@@ -155,6 +168,12 @@ export function TeamManagementSection({
                       actorUserId,
                       user.id,
                     )
+                    const canReactivate = canReactivateStaff(
+                      actorRole,
+                      user.primary_role,
+                      actorUserId,
+                      user.id,
+                    )
                     return (
                       <tr key={user.email}>
                         <td>{user.full_name}</td>
@@ -172,6 +191,14 @@ export function TeamManagementSection({
                                 onClick={() => handleDeactivateClick(user)}
                               >
                                 השבתה
+                              </button>
+                            ) : canReactivate && user.status === 'inactive' ? (
+                              <button
+                                type="button"
+                                className="ds-btn ds-btn--secondary ds-btn--compact"
+                                onClick={() => handleReactivateClick(user)}
+                              >
+                                החזרה לפעילות
                               </button>
                             ) : null}
                           </td>
@@ -212,6 +239,14 @@ export function TeamManagementSection({
         targetName={deactivationTargetName}
         onSuccess={handleDeactivationSuccess}
         onClose={handleDeactivationClose}
+      />
+
+      <StaffReactivationConfirmModal
+        isOpen={reactivationTargetId !== null}
+        targetUserId={reactivationTargetId}
+        targetName={reactivationTargetName}
+        onSuccess={handleDeactivationSuccess}
+        onClose={handleReactivationClose}
       />
     </section>
   )

@@ -14,6 +14,7 @@ import { translateRole } from '../../utils/roles'
 import { Modal } from '../ui/Modal'
 import { StaffMemberEditForm } from './StaffMemberEditForm'
 import { StaffDeactivationConfirmModal } from './StaffDeactivationConfirmModal'
+import { StaffReactivationConfirmModal } from './StaffReactivationConfirmModal'
 
 type StaffMemberDetailsModalProps = {
   isOpen: boolean
@@ -22,6 +23,7 @@ type StaffMemberDetailsModalProps = {
   canEditNationalId?: boolean
   institutionName: string
   canDeactivate?: boolean
+  canReactivate?: boolean
   onUpdated: () => Promise<void>
   onClose: () => void
 }
@@ -32,6 +34,7 @@ function StaffMemberDetailsContent({
   canEditNationalId = true,
   institutionName,
   canDeactivate = false,
+  canReactivate = false,
   onUpdated,
 }: Omit<StaffMemberDetailsModalProps, 'isOpen' | 'memberId' | 'onClose'> & {
   memberId: string
@@ -43,6 +46,7 @@ function StaffMemberDetailsContent({
   const [errorMessage, setErrorMessage] = useState('')
   const [successMessage, setSuccessMessage] = useState('')
   const [isDeactivateOpen, setIsDeactivateOpen] = useState(false)
+  const [isReactivateOpen, setIsReactivateOpen] = useState(false)
 
   const refreshDetails = useCallback(async (targetMemberId: string) => {
     setIsLoading(true)
@@ -185,7 +189,7 @@ function StaffMemberDetailsContent({
             ) : null}
           </dl>
 
-          {(canEdit || (canDeactivate && member.status === 'active')) ? (
+          {(canEdit || (canDeactivate && member.status === 'active') || (canReactivate && member.status === 'inactive')) ? (
             <div className="ds-form-actions staff-directory__details-actions">
               {canEdit ? (
                 <button
@@ -209,6 +213,15 @@ function StaffMemberDetailsContent({
                   השבתת איש צוות
                 </button>
               ) : null}
+              {canReactivate && member.status === 'inactive' ? (
+                <button
+                  type="button"
+                  className="ds-btn ds-btn--secondary"
+                  onClick={() => setIsReactivateOpen(true)}
+                >
+                  החזרה לפעילות
+                </button>
+              ) : null}
             </div>
           ) : null}
 
@@ -221,6 +234,17 @@ function StaffMemberDetailsContent({
               await onUpdated()
             }}
             onClose={() => setIsDeactivateOpen(false)}
+          />
+
+          <StaffReactivationConfirmModal
+            isOpen={isReactivateOpen}
+            targetUserId={member.id}
+            targetName={member.fullName}
+            onSuccess={async () => {
+              await refreshDetails(memberId)
+              await onUpdated()
+            }}
+            onClose={() => setIsReactivateOpen(false)}
           />
         </>
       ) : null}
@@ -235,6 +259,7 @@ export function StaffMemberDetailsModal({
   canEditNationalId = true,
   institutionName,
   canDeactivate = false,
+  canReactivate = false,
   onUpdated,
   onClose,
 }: StaffMemberDetailsModalProps) {
@@ -248,6 +273,7 @@ export function StaffMemberDetailsModal({
           canEditNationalId={canEditNationalId}
           institutionName={institutionName}
           canDeactivate={canDeactivate}
+          canReactivate={canReactivate}
           onUpdated={onUpdated}
         />
       ) : null}
