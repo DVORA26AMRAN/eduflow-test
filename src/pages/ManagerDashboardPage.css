@@ -293,3 +293,22 @@
     grid-template-columns: minmax(0, 1fr);
   }
 }
+
+.team-mgmt__status-badge {
+  display: inline-block;
+  padding: 0.15rem 0.5rem;
+  border-radius: 999px;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.team-mgmt__status-badge--active {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.team-mgmt__status-badge--inactive {
+  background: #f3f4f6;
+  color: #4b5563;
+}

@@ -708,6 +708,26 @@ function App() {
     )
   }
 
+  if (currentProfile.status !== 'active') {
+    return (
+      <main dir="rtl" className="ds-page-shell">
+        <section className="ds-state ds-state--error" role="status" aria-live="polite">
+          <h1 className="ds-state__title">החשבון אינו פעיל</h1>
+          <p className="ds-state__message">
+            החשבון שלך הושבת ולא ניתן להמשיך לעבוד במערכת. לפרטים נוספים יש לפנות למנהל המוסד.
+          </p>
+          <button
+            type="button"
+            className="ds-btn ds-btn--secondary"
+            onClick={() => void logout()}
+          >
+            יציאה מהמערכת
+          </button>
+        </section>
+      </main>
+    )
+  }
+
   const loginSuccessTransition = showLoginSuccessTransition ? (
     <LoginSuccessTransition
       onComplete={() => setShowLoginSuccessTransition(false)}

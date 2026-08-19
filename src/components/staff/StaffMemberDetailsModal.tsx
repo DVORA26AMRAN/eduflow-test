@@ -13,6 +13,7 @@ import {
 import { translateRole } from '../../utils/roles'
 import { Modal } from '../ui/Modal'
 import { StaffMemberEditForm } from './StaffMemberEditForm'
+import { StaffDeactivationConfirmModal } from './StaffDeactivationConfirmModal'
 
 type StaffMemberDetailsModalProps = {
   isOpen: boolean
@@ -20,6 +21,7 @@ type StaffMemberDetailsModalProps = {
   canEdit: boolean
   canEditNationalId?: boolean
   institutionName: string
+  canDeactivate?: boolean
   onUpdated: () => Promise<void>
   onClose: () => void
 }
@@ -29,6 +31,7 @@ function StaffMemberDetailsContent({
   canEdit,
   canEditNationalId = true,
   institutionName,
+  canDeactivate = false,
   onUpdated,
 }: Omit<StaffMemberDetailsModalProps, 'isOpen' | 'memberId' | 'onClose'> & {
   memberId: string
@@ -39,6 +42,7 @@ function StaffMemberDetailsContent({
   const [isSaving, setIsSaving] = useState(false)
   const [errorMessage, setErrorMessage] = useState('')
   const [successMessage, setSuccessMessage] = useState('')
+  const [isDeactivateOpen, setIsDeactivateOpen] = useState(false)
 
   const refreshDetails = useCallback(async (targetMemberId: string) => {
     setIsLoading(true)
@@ -181,21 +185,43 @@ function StaffMemberDetailsContent({
             ) : null}
           </dl>
 
-          {canEdit ? (
+          {(canEdit || (canDeactivate && member.status === 'active')) ? (
             <div className="ds-form-actions staff-directory__details-actions">
-              <button
-                type="button"
-                className="ds-btn ds-btn--primary"
-                onClick={() => {
-                  setSuccessMessage('')
-                  setErrorMessage('')
-                  setIsEditing(true)
-                }}
-              >
-                עריכת פרטים
-              </button>
+              {canEdit ? (
+                <button
+                  type="button"
+                  className="ds-btn ds-btn--primary"
+                  onClick={() => {
+                    setSuccessMessage('')
+                    setErrorMessage('')
+                    setIsEditing(true)
+                  }}
+                >
+                  עריכת פרטים
+                </button>
+              ) : null}
+              {canDeactivate && member.status === 'active' ? (
+                <button
+                  type="button"
+                  className="ds-btn ds-btn--danger"
+                  onClick={() => setIsDeactivateOpen(true)}
+                >
+                  השבתת איש צוות
+                </button>
+              ) : null}
             </div>
           ) : null}
+
+          <StaffDeactivationConfirmModal
+            isOpen={isDeactivateOpen}
+            targetUserId={member.id}
+            targetName={member.fullName}
+            onSuccess={async () => {
+              await refreshDetails(memberId)
+              await onUpdated()
+            }}
+            onClose={() => setIsDeactivateOpen(false)}
+          />
         </>
       ) : null}
     </>
@@ -208,6 +234,7 @@ export function StaffMemberDetailsModal({
   canEdit,
   canEditNationalId = true,
   institutionName,
+  canDeactivate = false,
   onUpdated,
   onClose,
 }: StaffMemberDetailsModalProps) {
@@ -220,6 +247,7 @@ export function StaffMemberDetailsModal({
           canEdit={canEdit}
           canEditNationalId={canEditNationalId}
           institutionName={institutionName}
+          canDeactivate={canDeactivate}
           onUpdated={onUpdated}
         />
       ) : null}

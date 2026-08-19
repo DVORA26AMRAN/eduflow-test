@@ -8,7 +8,7 @@ export type InstitutionUsersLoadResult =
 export async function loadInstitutionUsers(): Promise<InstitutionUsersLoadResult> {
   const { data, error } = await supabase
     .from('users')
-    .select('full_name, email, primary_role')
+    .select('id, full_name, email, primary_role, status')
     .order('full_name', { ascending: true })
 
   if (error) {
@@ -21,8 +21,10 @@ export async function loadInstitutionUsers(): Promise<InstitutionUsersLoadResult
 
   const users = (data ?? []).filter(
     (user): user is InstitutionUser =>
+      typeof user.id === 'string' &&
       typeof user.full_name === 'string' &&
       typeof user.email === 'string' &&
+      typeof user.status === 'string' &&
       (user.primary_role === 'teacher' ||
         user.primary_role === 'secretary' ||
         user.primary_role === 'institution_manager' ||

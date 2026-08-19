@@ -1,9 +1,11 @@
-import { useMemo, useState } from 'react'
-import type { InstitutionUser, UserRole } from '../../types/user'
+import { useCallback, useMemo, useState } from 'react'
+import type { InstitutionUser, PrimaryRole, UserRole } from '../../types/user'
 import { translateRole } from '../../utils/roles'
 import { NavUsersIcon } from '../dashboard/dashboardNav'
 import { DashboardSection } from '../dashboard/DashboardSection'
 import { CreateUserForm } from './CreateUserForm'
+import { canDeactivateStaff } from '../../security/institutionCapabilities'
+import { StaffDeactivationConfirmModal } from '../staff/StaffDeactivationConfirmModal'
 
 type TeamManagementSectionProps = {
   users: InstitutionUser[]
@@ -18,6 +20,8 @@ type TeamManagementSectionProps = {
   newUserWeeklyHours: string
   createUserMessage: string
   allowedRoles?: readonly UserRole[]
+  actorRole?: PrimaryRole
+  actorUserId?: string
   onNewUserNameChange: (value: string) => void
   onNewUserEmailChange: (value: string) => void
   onNewUserRoleChange: (value: UserRole) => void
@@ -26,6 +30,19 @@ type TeamManagementSectionProps = {
   onNewUserJobTitleChange: (value: string) => void
   onNewUserWeeklyHoursChange: (value: string) => void
   onCreateUser: () => void
+  onUsersRefresh?: () => Promise<void>
+}
+
+function StatusBadge({ status }: { status: string }) {
+  const isActive = status === 'active'
+  return (
+    <span
+      className={`team-mgmt__status-badge ${isActive ? 'team-mgmt__status-badge--active' : 'team-mgmt__status-badge--inactive'}`}
+      aria-label={isActive ? 'פעיל' : 'לא פעיל'}
+    >
+      {isActive ? 'פעיל' : 'לא פעיל'}
+    </span>
+  )
 }
 
 export function TeamManagementSection({
@@ -41,6 +58,8 @@ export function TeamManagementSection({
   newUserWeeklyHours,
   createUserMessage,
   allowedRoles,
+  actorRole,
+  actorUserId,
   onNewUserNameChange,
   onNewUserEmailChange,
   onNewUserRoleChange,
@@ -49,8 +68,11 @@ export function TeamManagementSection({
   onNewUserJobTitleChange,
   onNewUserWeeklyHoursChange,
   onCreateUser,
+  onUsersRefresh,
 }: TeamManagementSectionProps) {
   const [searchQuery, setSearchQuery] = useState('')
+  const [deactivationTargetId, setDeactivationTargetId] = useState<string | null>(null)
+  const [deactivationTargetName, setDeactivationTargetName] = useState('')
 
   const filteredUsers = useMemo(() => {
     const query = searchQuery.trim().toLowerCase()
@@ -64,6 +86,24 @@ export function TeamManagementSection({
         user.email.toLowerCase().includes(query),
     )
   }, [searchQuery, users])
+
+  const showDeactivateColumn = actorRole === 'institution_manager'
+
+  function handleDeactivateClick(user: InstitutionUser) {
+    setDeactivationTargetId(user.id)
+    setDeactivationTargetName(user.full_name)
+  }
+
+  const handleDeactivationSuccess = useCallback(async () => {
+    if (onUsersRefresh) {
+      await onUsersRefresh()
+    }
+  }, [onUsersRefresh])
+
+  function handleDeactivationClose() {
+    setDeactivationTargetId(null)
+    setDeactivationTargetName('')
+  }
 
   return (
     <section className="ds-card manager-dashboard__team">
@@ -96,23 +136,49 @@ export function TeamManagementSection({
                   <th>שם מלא</th>
                   <th>כתובת מייל</th>
                   <th>תפקיד</th>
+                  <th>סטטוס</th>
+                  {showDeactivateColumn ? <th>פעולות</th> : null}
                 </tr>
               </thead>
               <tbody>
                 {filteredUsers.length === 0 ? (
                   <tr>
-                    <td colSpan={3} className="ds-table__empty">
+                    <td colSpan={showDeactivateColumn ? 5 : 4} className="ds-table__empty">
                       לא נמצאו משתמשים.
                     </td>
                   </tr>
                 ) : (
-                  filteredUsers.map((user) => (
-                    <tr key={user.email}>
-                      <td>{user.full_name}</td>
-                      <td>{user.email}</td>
-                      <td>{translateRole(user.primary_role)}</td>
-                    </tr>
-                  ))
+                  filteredUsers.map((user) => {
+                    const canDeactivate = canDeactivateStaff(
+                      actorRole,
+                      user.primary_role,
+                      actorUserId,
+                      user.id,
+                    )
+                    return (
+                      <tr key={user.email}>
+                        <td>{user.full_name}</td>
+                        <td>{user.email}</td>
+                        <td>{translateRole(user.primary_role)}</td>
+                        <td>
+                          <StatusBadge status={user.status} />
+                        </td>
+                        {showDeactivateColumn ? (
+                          <td>
+                            {canDeactivate && user.status === 'active' ? (
+                              <button
+                                type="button"
+                                className="ds-btn ds-btn--danger ds-btn--compact"
+                                onClick={() => handleDeactivateClick(user)}
+                              >
+                                השבתה
+                              </button>
+                            ) : null}
+                          </td>
+                        ) : null}
+                      </tr>
+                    )
+                  })
                 )}
               </tbody>
             </table>
@@ -139,6 +205,14 @@ export function TeamManagementSection({
           onCreateUser={onCreateUser}
         />
       </DashboardSection>
+
+      <StaffDeactivationConfirmModal
+        isOpen={deactivationTargetId !== null}
+        targetUserId={deactivationTargetId}
+        targetName={deactivationTargetName}
+        onSuccess={handleDeactivationSuccess}
+        onClose={handleDeactivationClose}
+      />
     </section>
   )
 }

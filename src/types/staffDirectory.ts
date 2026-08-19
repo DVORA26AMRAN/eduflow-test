@@ -36,3 +36,7 @@ export type LoadStaffMemberDetailsResult =
 export type UpdateStaffMemberResult =
   | { ok: true }
   | { ok: false; errorMessage: string }
+
+export type DeactivateStaffMemberResult =
+  | { ok: true; unchanged: boolean; releasedRequestCount: number }
+  | { ok: false; errorMessage: string }

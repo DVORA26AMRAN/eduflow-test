@@ -1,4 +1,5 @@
 import type {
+  DeactivateStaffMemberResult,
   LoadStaffDirectoryResult,
   LoadStaffMemberDetailsResult,
   StaffDirectoryMember,
@@ -201,6 +202,61 @@ export async function loadStaffMemberDetails(
   }
 
   return { ok: true, member }
+}
+
+function mapDeactivateStaffError(rawMessage: string | null | undefined): string {
+  if (!rawMessage) {
+    return 'ההשבתה נכשלה.'
+  }
+
+  const message = rawMessage.toLowerCase()
+  if (
+    message.includes('permission denied') ||
+    message.includes('42501') ||
+    message.includes('unauthorized')
+  ) {
+    return 'אין הרשאה לבצע השבתה זו.'
+  }
+
+  if (message.includes('conflict') || message.includes('23505')) {
+    return 'לא ניתן להשבית את המשתמש כרגע. נסו שוב.'
+  }
+
+  return 'ההשבתה נכשלה.'
+}
+
+export async function deactivateStaffMember(
+  userId: string,
+): Promise<DeactivateStaffMemberResult> {
+  if (!userId.trim()) {
+    return { ok: false, errorMessage: 'אין הרשאה לבצע השבתה זו.' }
+  }
+
+  const { data, error } = await supabase.rpc('deactivate_staff_member', {
+    p_user_id: userId,
+  })
+
+  if (error) {
+    console.error('[staffDirectory] deactivate_staff_member failed', error)
+    return { ok: false, errorMessage: mapDeactivateStaffError(error.message) }
+  }
+
+  const result = data as {
+    ok?: unknown
+    unchanged?: unknown
+    released_request_count?: unknown
+  } | null
+
+  if (!result || result.ok !== true) {
+    return { ok: false, errorMessage: 'ההשבתה נכשלה.' }
+  }
+
+  return {
+    ok: true,
+    unchanged: result.unchanged === true,
+    releasedRequestCount:
+      typeof result.released_request_count === 'number' ? result.released_request_count : 0,
+  }
 }
 
 export async function updateStaffMember(

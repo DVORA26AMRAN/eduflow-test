@@ -185,6 +185,7 @@ function profileFor(role: 'institution_manager' | 'deputy'): AuthenticatedUserPr
     id: `${role}-1`,
     fullName: role === 'deputy' ? 'סגנית' : 'מנהלת',
     role,
+    status: 'active',
     school: {
       id: 'school-1',
       name: 'בית ספר',
@@ -369,12 +370,16 @@ describe('Deputy D3B — create Teacher and Secretary', () => {
     expect(staffUpdate).toContain("v_caller.primary_role NOT IN ('institution_manager', 'secretary')")
     expect(staffUpdate).toContain("v_actor.primary_role NOT IN ('institution_manager', 'secretary')")
     expect(d2).not.toContain('CREATE OR REPLACE FUNCTION public.update_staff_member')
-    expect(teamSection).not.toMatch(/השבתה|מחיקה|הסרה|deactivat|deleteUser/i)
-    expect(detailsModal).not.toMatch(/השבתה|מחיקה|הסרה|deactivat|removeTeacher/i)
+    // S3: Deactivation is present but gated behind canDeactivateStaff (institution_manager only).
+    expect(teamSection).not.toMatch(/מחיקה|הסרה|deleteUser/i)
+    expect(detailsModal).not.toMatch(/מחיקה|הסרה|removeTeacher/i)
+    expect(teamSection).toContain("canDeactivateStaff")
+    expect(teamSection).toContain("actorRole === 'institution_manager'")
   })
 
   it('does not expose national_id on the Team Management list path', () => {
-    expect(institutionUsers).toContain(".select('full_name, email, primary_role')")
+    // S3 added id and status to the select; national_id must remain absent.
+    expect(institutionUsers).toContain("'id, full_name, email, primary_role, status'")
     expect(institutionUsers).not.toContain('national_id')
     expect(teamSection).not.toContain('national_id')
     expect(teamSection).not.toContain('תעודת זהות')

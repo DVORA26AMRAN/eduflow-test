@@ -100,7 +100,7 @@ export async function loadCurrentUserProfile(
     userId: queryUserId,
     hasAccessToken: !!accessToken,
     query:
-      "from('users').select('id, full_name, primary_role, institution_id, institutions(id, name, timezone, logo_url, logo_updated_at)')",
+      "from('users').select('id, full_name, primary_role, status, institution_id, institutions(id, name, timezone, logo_url, logo_updated_at)')",
   })
 
   if (!accessToken) {
@@ -121,7 +121,7 @@ export async function loadCurrentUserProfile(
 
   const queryUrl =
     `${supabaseUrl}/rest/v1/users` +
-    `?select=id,full_name,primary_role,institution_id,institutions(id,name,timezone,logo_url,logo_updated_at)` +
+    `?select=id,full_name,primary_role,status,institution_id,institutions(id,name,timezone,logo_url,logo_updated_at)` +
     `&id=eq.${encodeURIComponent(queryUserId)}`
 
   const response = await fetch(queryUrl, {
@@ -179,6 +179,7 @@ export async function loadCurrentUserProfile(
         id?: unknown
         full_name?: unknown
         primary_role?: unknown
+        status?: unknown
         institution_id?: unknown
         institutions?: unknown
       }
@@ -240,10 +241,28 @@ export async function loadCurrentUserProfile(
     }
   }
 
+  if (row.status !== 'active' && row.status !== 'inactive') {
+    console.error('[profile] users.status missing or unrecognized — failing closed', {
+      source,
+      userId: queryUserId,
+      status: row.status,
+    })
+    return {
+      ok: false,
+      debug: {
+        ...baseDebug,
+        errorMessage: 'סטטוס חשבון לא ידוע — לא ניתן להמשיך.',
+        errorCode: null,
+        dataWasNull: false,
+      },
+    }
+  }
+
   const profile: AuthenticatedUserProfile = {
     id: row.id,
     fullName: row.full_name,
     role: row.primary_role,
+    status: row.status,
     school,
   }
 

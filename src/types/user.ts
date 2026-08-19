@@ -18,9 +18,11 @@ export type PrimaryRole =
   | 'platform_admin'
 
 export type InstitutionUser = {
+  id: string
   full_name: string
   email: string
   primary_role: PrimaryRole
+  status: string
 }
 
 /** Optional employee fields on public.users (Phase 3A.1 teacher extended profile). */
@@ -31,10 +33,13 @@ export type TeacherExtendedProfileFields = {
   weeklyHours: number | null
 }
 
+export type UserAccountStatus = 'active' | 'inactive'
+
 export type AuthenticatedUserProfile = {
   id: string
   fullName: string
   role: PrimaryRole
+  status: UserAccountStatus
   school: School | null
 }
 

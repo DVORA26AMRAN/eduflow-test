@@ -176,12 +176,14 @@ describe('authenticated users column dependencies stay inside the ACL grant', ()
     }
 
     const profile = read('src/services/profile.ts')
+    // S3 added status to the profile query for inactive-user guard.
     expect(profile).toContain(
-      'select=id,full_name,primary_role,institution_id,institutions(id,name,timezone,logo_url,logo_updated_at)',
+      'select=id,full_name,primary_role,status,institution_id,institutions(id,name,timezone,logo_url,logo_updated_at)',
     )
     requested.add('id')
     requested.add('full_name')
     requested.add('primary_role')
+    requested.add('status')
     requested.add('institution_id')
 
     expect([...requested].sort()).toEqual([...APPROVED_COLUMNS].sort())

@@ -188,6 +188,7 @@ function profileFor(role: 'institution_manager' | 'deputy'): AuthenticatedUserPr
     id: `${role}-1`,
     fullName: role === 'deputy' ? 'סגנית' : 'מנהלת',
     role,
+    status: 'active',
     school: {
       id: 'school-1',
       name: 'בית ספר',

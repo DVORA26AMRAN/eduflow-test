@@ -9,6 +9,7 @@ import { CreateUserForm } from '../components/manager/CreateUserForm'
 import { NavClipboardIcon } from '../components/dashboard/dashboardNav'
 import { DashboardSection } from '../components/dashboard/DashboardSection'
 import {
+  canDeactivateStaff,
   canEditOperationalUser,
   canEditStaffNationalId,
 } from '../security/institutionCapabilities'
@@ -48,6 +49,7 @@ export type StaffDirectoryTeacherOnboardingProps = {
 type StaffDirectoryPageProps = {
   canEdit: boolean
   actorRole?: PrimaryRole
+  actorUserId?: string
   institutionName: string
   teacherOnboarding?: StaffDirectoryTeacherOnboardingProps
 }
@@ -55,6 +57,7 @@ type StaffDirectoryPageProps = {
 export function StaffDirectoryPage({
   canEdit,
   actorRole,
+  actorUserId,
   institutionName,
   teacherOnboarding,
 }: StaffDirectoryPageProps) {
@@ -152,6 +155,13 @@ export function StaffDirectoryPage({
 
   const canEditSelectedNationalId = actorRole ? canEditStaffNationalId(actorRole) : canEdit
 
+  const canDeactivateSelectedMember = canDeactivateStaff(
+    actorRole,
+    selectedMember?.primaryRole,
+    actorUserId,
+    selectedMemberId,
+  )
+
   function handleMemberSelect(memberId: string) {
     setSelectedMemberId(memberId)
     setIsDetailsOpen(true)
@@ -220,6 +230,7 @@ export function StaffDirectoryPage({
         canEdit={canEditSelectedMember}
         canEditNationalId={canEditSelectedNationalId}
         institutionName={institutionName}
+        canDeactivate={canDeactivateSelectedMember}
         onUpdated={refreshDirectory}
         onClose={handleDetailsClose}
       />

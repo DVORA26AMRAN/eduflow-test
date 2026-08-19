@@ -115,6 +115,7 @@ export function ManagerDashboardPage({
   const [users, setUsers] = useState<InstitutionUser[]>([])
   const [isUsersLoading, setIsUsersLoading] = useState(true)
   const [usersError, setUsersError] = useState('')
+  const [usersRefreshToken, setUsersRefreshToken] = useState(0)
   const [archiveRefreshToken, setArchiveRefreshToken] = useState(0)
   const [analyticsRefreshToken, setAnalyticsRefreshToken] = useState(0)
   const [activeSectionId, setActiveSectionId] = useState<string>(DASHBOARD_OVERVIEW_SECTION_ID)
@@ -283,7 +284,7 @@ export function ManagerDashboardPage({
     return () => {
       isCancelled = true
     }
-  }, [profile.role, usersListVersion])
+  }, [profile.role, usersListVersion, usersRefreshToken])
 
   useEffect(() => {
     let isCancelled = false
@@ -429,6 +430,7 @@ export function ManagerDashboardPage({
           <StaffDirectoryPage
             canEdit={canEditOperationalUser(profile.role, 'teacher')}
             actorRole={profile.role}
+            actorUserId={profile.id}
             institutionName={profile.school?.name ?? ''}
           />
         </DashboardSectionPanel>
@@ -476,6 +478,11 @@ export function ManagerDashboardPage({
             onNewUserNationalIdChange={onNewUserNationalIdChange}
             onNewUserJobTitleChange={onNewUserJobTitleChange}
             onNewUserWeeklyHoursChange={onNewUserWeeklyHoursChange}
+            actorRole={profile.role}
+            actorUserId={profile.id}
+            onUsersRefresh={async () => {
+              setUsersRefreshToken((t) => t + 1)
+            }}
             onCreateUser={onCreateUser}
           />
         </DashboardSectionPanel>

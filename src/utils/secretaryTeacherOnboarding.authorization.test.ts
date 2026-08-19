@@ -60,7 +60,9 @@ describe('secretary teacher onboarding/edit authorization', () => {
     expect(secretaryPage).toContain('StaffDirectoryPage')
     expect(appSource).toContain("currentProfile.role === 'secretary'")
     expect(appSource).toContain('getAllowedTenantInviteRoles')
-    expect(detailsModal).not.toMatch(/השבתה|מחיקה|הסרה|deactivat|removeTeacher/i)
+    // S3: Deactivation is present but gated by canDeactivate (institution_manager only, not secretary).
+    expect(detailsModal).not.toMatch(/מחיקה|הסרה|removeTeacher/i)
+    expect(detailsModal).toContain('canDeactivate')
   })
 
   it('clever-processor allows manager teacher|secretary|deputy and secretary teacher-only', () => {
