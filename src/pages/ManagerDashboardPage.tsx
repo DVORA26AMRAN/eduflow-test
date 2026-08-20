@@ -8,11 +8,13 @@ import {
   NavChartIcon,
   NavClipboardIcon,
   NavInboxIcon,
+  NavNotebookIcon,
   NavPrintIcon,
   NavSettingsIcon,
   NavUsersIcon,
   type DashboardNavItem,
 } from '../components/dashboard/dashboardNav'
+import { ManagementJournalSection } from '../components/managementJournal/ManagementJournalSection'
 import { MeetingCalendarSection } from '../components/meetingCalendar/MeetingCalendarSection'
 import { AdminNotificationsSection } from '../components/notifications/AdminNotificationsSection'
 import { ManagerAnalyticsSection } from '../components/manager/ManagerAnalyticsSection'
@@ -29,6 +31,7 @@ import {
   canEditOperationalUser,
   canManageCalendar,
   canManageRequests,
+  canUseManagementJournal,
   canViewTeamManagement,
   canUseOperationalPrinting,
   canViewInstitutionArchive,
@@ -49,6 +52,10 @@ import type { RequestReminderSummary } from '../types/requestReminder'
 import type { AuthenticatedUserProfile, InstitutionUser, UserRole } from '../types/user'
 import { getAllowedTenantInviteRoles } from '../security/tenantInviteRoles'
 import { MEETING_CALENDAR_NAV_LABEL, MEETING_CALENDAR_SECTION_ID } from '../utils/meetingCalendarDisplay'
+import {
+  MANAGEMENT_JOURNAL_NAV_LABEL,
+  MANAGEMENT_JOURNAL_SECTION_ID,
+} from '../utils/managementJournalDisplay'
 import {
   STAFF_DIRECTORY_NAV_LABEL,
   STAFF_DIRECTORY_SECTION_ID,
@@ -228,6 +235,15 @@ export function ManagerDashboardPage({
               id: MEETING_CALENDAR_SECTION_ID,
               label: MEETING_CALENDAR_NAV_LABEL,
               icon: <NavCalendarIcon />,
+            },
+          ]
+        : []),
+      ...(canUseManagementJournal(profile.role)
+        ? [
+            {
+              id: MANAGEMENT_JOURNAL_SECTION_ID,
+              label: MANAGEMENT_JOURNAL_NAV_LABEL,
+              icon: <NavNotebookIcon />,
             },
           ]
         : []),
@@ -418,6 +434,20 @@ export function ManagerDashboardPage({
             actorUserId={profile.id}
             actorRole={profile.role === 'deputy' ? 'deputy' : 'institution_manager'}
             institutionTimezone={profile.school!.timeZone}
+          />
+        </DashboardSectionPanel>
+
+        <DashboardSectionPanel
+          id="manager-management-journal"
+          sectionId={MANAGEMENT_JOURNAL_SECTION_ID}
+          activeSectionId={activeSectionId}
+          className="manager-dashboard__shell-section"
+        >
+          <ManagementJournalSection
+            actorUserId={profile.id}
+            actorFullName={profile.fullName}
+            actorRole={profile.role}
+            institutionId={profile.school!.id}
           />
         </DashboardSectionPanel>
 

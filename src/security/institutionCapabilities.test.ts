@@ -11,6 +11,8 @@ import {
   canManageTeamUsers,
   canUseOperationalPrinting,
   canUsePersonalGoogleIntegration,
+  canUseManagementJournal,
+  canCreateSharedManagementJournalPage,
   canViewInstitutionArchive,
   canViewTeamManagement,
   isInstitutionOperatorRole,
@@ -40,6 +42,8 @@ describe('D2 institution capability helpers', () => {
     expect(canUseOperationalPrinting('deputy')).toBe(true)
     expect(canViewInstitutionArchive('deputy')).toBe(true)
     expect(canUsePersonalGoogleIntegration('deputy')).toBe(true)
+    expect(canUseManagementJournal('deputy')).toBe(true)
+    expect(canCreateSharedManagementJournalPage('deputy')).toBe(true)
     expect(canManageInstitutionSettings('deputy')).toBe(false)
     expect(canManageTeamUsers('deputy')).toBe(false)
     expect(canViewTeamManagement('deputy')).toBe(true)
@@ -71,6 +75,8 @@ describe('D2 institution capability helpers', () => {
     expect(canEditStaffNationalId('secretary')).toBe(true)
     expect(canManageDeputies('institution_manager')).toBe(true)
     expect(canUsePersonalGoogleIntegration('institution_manager')).toBe(true)
+    expect(canUseManagementJournal('institution_manager')).toBe(true)
+    expect(canCreateSharedManagementJournalPage('institution_manager')).toBe(true)
   })
 
   it('does not grant operator dashboard capabilities to Secretary, Teacher, or Platform Admin', () => {
@@ -90,7 +96,13 @@ describe('D2 institution capability helpers', () => {
     }
 
     expect(canUsePersonalGoogleIntegration('secretary')).toBe(true)
+    expect(canUseManagementJournal('secretary')).toBe(true)
+    expect(canCreateSharedManagementJournalPage('secretary')).toBe(false)
     expect(canUsePersonalGoogleIntegration('teacher')).toBe(false)
+    expect(canUseManagementJournal('teacher')).toBe(false)
+    expect(canCreateSharedManagementJournalPage('teacher')).toBe(false)
     expect(canUsePersonalGoogleIntegration('platform_admin')).toBe(false)
+    expect(canUseManagementJournal('platform_admin')).toBe(false)
+    expect(canCreateSharedManagementJournalPage('platform_admin')).toBe(false)
   })
 })

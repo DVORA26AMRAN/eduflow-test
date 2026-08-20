@@ -10,12 +10,14 @@ import {
   NavChartIcon,
   NavClipboardIcon,
   NavInboxIcon,
+  NavNotebookIcon,
   NavPrintIcon,
   NavSettingsIcon,
   NavUsersIcon,
   type DashboardNavItem,
 } from '../components/dashboard/dashboardNav'
 
+import { ManagementJournalSection } from '../components/managementJournal/ManagementJournalSection'
 import { MeetingCalendarSection } from '../components/meetingCalendar/MeetingCalendarSection'
 import { AdminNotificationsSection } from '../components/notifications/AdminNotificationsSection'
 import { SecretaryAnalyticsSection } from '../components/secretary/SecretaryAnalyticsSection'
@@ -47,6 +49,10 @@ import {
 } from '../utils/reminderNavigation'
 import type { AuthenticatedUserProfile, UserRole } from '../types/user'
 import { MEETING_CALENDAR_NAV_LABEL, MEETING_CALENDAR_SECTION_ID } from '../utils/meetingCalendarDisplay'
+import {
+  MANAGEMENT_JOURNAL_NAV_LABEL,
+  MANAGEMENT_JOURNAL_SECTION_ID,
+} from '../utils/managementJournalDisplay'
 import {
   STAFF_DIRECTORY_NAV_LABEL,
   STAFF_DIRECTORY_SECTION_ID,
@@ -200,6 +206,11 @@ export function SecretaryDashboardPage({
         icon: <NavPrintIcon />,
       },
       { id: MEETING_CALENDAR_SECTION_ID, label: MEETING_CALENDAR_NAV_LABEL, icon: <NavCalendarIcon /> },
+      {
+        id: MANAGEMENT_JOURNAL_SECTION_ID,
+        label: MANAGEMENT_JOURNAL_NAV_LABEL,
+        icon: <NavNotebookIcon />,
+      },
       { id: STAFF_DIRECTORY_SECTION_ID, label: STAFF_DIRECTORY_NAV_LABEL, icon: <NavClipboardIcon /> },
       { id: 'institutionalArchive', label: 'ארכיון מוסדי', icon: <NavArchiveIcon /> },
       { id: USER_SETTINGS_SECTION_ID, label: USER_SETTINGS_NAV_LABEL, icon: <NavSettingsIcon /> },
@@ -355,6 +366,20 @@ export function SecretaryDashboardPage({
             actorUserId={profile.id}
             actorRole="secretary"
             institutionTimezone={profile.school!.timeZone}
+          />
+        </DashboardSectionPanel>
+
+        <DashboardSectionPanel
+          id="secretary-management-journal"
+          sectionId={MANAGEMENT_JOURNAL_SECTION_ID}
+          activeSectionId={activeSectionId}
+          className="secretary-dashboard__shell-section"
+        >
+          <ManagementJournalSection
+            actorUserId={profile.id}
+            actorFullName={profile.fullName}
+            actorRole={profile.role}
+            institutionId={profile.school!.id}
           />
         </DashboardSectionPanel>
 

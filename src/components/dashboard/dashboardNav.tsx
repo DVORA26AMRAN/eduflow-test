@@ -115,6 +115,17 @@ export function NavCalendarIcon() {
   )
 }
 
+export function NavNotebookIcon() {
+  const stroke = iconStroke()
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true">
+      <rect x="6" y="3.5" width="13" height="17" rx="1.5" {...stroke} />
+      <path d="M6 7.5h13M6 11h13M6 14.5h13M6 18h9" {...stroke} />
+      <path d="M9 3.5v17" {...stroke} />
+    </svg>
+  )
+}
+
 export function NavPackageIcon() {
   const stroke = iconStroke()
   return (

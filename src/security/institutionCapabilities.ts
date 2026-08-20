@@ -124,3 +124,19 @@ export function canDeactivateStaff(
 export function canUsePersonalGoogleIntegration(role: PrimaryRole | null | undefined): boolean {
   return role === 'institution_manager' || role === 'secretary' || role === 'deputy'
 }
+
+/**
+ * J2A: Management Daily Journal navigation. Manager, Deputy, and Secretary only.
+ * Teacher and Platform Admin must not receive this surface. Backend/RLS remains
+ * authoritative.
+ */
+export function canUseManagementJournal(role: PrimaryRole | null | undefined): boolean {
+  return role === 'institution_manager' || role === 'deputy' || role === 'secretary'
+}
+
+/** UI-only shared-page controls. Secretary may not create or extend shared pages. */
+export function canCreateSharedManagementJournalPage(
+  role: PrimaryRole | null | undefined,
+): boolean {
+  return role === 'institution_manager' || role === 'deputy'
+}

@@ -1,0 +1,375 @@
+.management-journal-section {
+  min-width: 0;
+  max-width: 100%;
+}
+
+.management-journal {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+}
+
+.management-journal__status,
+.management-journal__error {
+  margin: 0;
+  padding: 0.75rem 1rem;
+  border-radius: var(--ds-radius-md, 12px);
+}
+
+.management-journal__error {
+  background: var(--ds-color-error-bg);
+  color: var(--ds-color-error);
+}
+
+.management-journal__status {
+  color: var(--ds-color-text-secondary);
+}
+
+.management-journal__date-header {
+  text-align: center;
+  min-width: 0;
+}
+
+.management-journal__day {
+  margin: 0;
+  font-size: var(--ds-font-size-section-title, 1.25rem);
+  font-weight: var(--ds-font-weight-semibold);
+  color: var(--ds-color-text-primary);
+}
+
+.management-journal__date-key {
+  margin: 0.25rem 0 0;
+  color: var(--ds-color-text-muted);
+  font-size: var(--ds-font-size-sm, 0.875rem);
+}
+
+.management-journal__type-switch {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  justify-content: center;
+}
+
+.management-journal__type-button,
+.management-journal__primary {
+  min-height: 44px;
+  min-width: 44px;
+  padding: 0.55rem 1.1rem;
+  border-radius: 999px;
+  border: 1px solid var(--ds-color-border-strong);
+  background: var(--ds-color-surface);
+  color: var(--ds-color-text-primary);
+  font: inherit;
+  cursor: pointer;
+}
+
+.management-journal__type-button.is-selected,
+.management-journal__primary {
+  background: var(--ds-gradient-primary);
+  color: var(--ds-color-text-inverse);
+  border-color: transparent;
+}
+
+.management-journal__primary:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.management-journal__picker {
+  width: 100%;
+  max-width: 36rem;
+  margin-inline: auto;
+  padding: 1rem;
+  border: 1px solid var(--ds-color-border);
+  border-radius: var(--ds-radius-lg, 16px);
+  background: var(--ds-color-surface-soft);
+  min-width: 0;
+}
+
+.management-journal__picker-title {
+  margin: 0 0 0.75rem;
+  font-size: 1rem;
+}
+
+.management-journal__candidate-list {
+  list-style: none;
+  margin: 0 0 1rem;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.management-journal__candidate {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  min-height: 44px;
+}
+
+.management-journal__candidate em {
+  font-style: normal;
+  color: var(--ds-color-text-secondary);
+  font-size: 0.85em;
+}
+
+.management-journal__paper {
+  width: 100%;
+  max-width: 44rem;
+  margin-inline: auto;
+  min-width: 0;
+  padding: 1.5rem 1.25rem 2rem;
+  border-radius: 4px 18px 18px 4px;
+  background-color: #fffdf8;
+  background-image: repeating-linear-gradient(
+    to bottom,
+    transparent 0,
+    transparent 31px,
+    rgba(118, 88, 212, 0.12) 31px,
+    rgba(118, 88, 212, 0.12) 32px
+  );
+  background-size: 100% 32px;
+  box-shadow:
+    inset 12px 0 0 rgba(248, 180, 212, 0.35),
+    0 18px 40px rgba(56, 41, 111, 0.08);
+  border: 1px solid rgba(118, 88, 212, 0.12);
+}
+
+.management-journal__paper-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+  min-width: 0;
+}
+
+.management-journal__badge {
+  display: inline-flex;
+  align-items: center;
+  min-height: 32px;
+  padding: 0.2rem 0.8rem;
+  border-radius: 999px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  background: var(--ds-color-primary-50);
+  color: var(--ds-color-primary-800);
+}
+
+.management-journal__chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  min-width: 0;
+  max-width: 100%;
+}
+
+.management-journal__chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  min-height: 36px;
+  max-width: 100%;
+  padding: 0.2rem 0.65rem 0.2rem 0.25rem;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.88);
+  border: 1px solid var(--ds-color-border);
+}
+
+.management-journal__avatar {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--ds-color-primary-100);
+  color: var(--ds-color-primary-800);
+  font-size: 0.8rem;
+  flex-shrink: 0;
+}
+
+.management-journal__add {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  margin-bottom: 1rem;
+  min-width: 0;
+}
+
+.management-journal__add-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  min-width: 0;
+}
+
+.management-journal__add-row select {
+  flex: 1 1 12rem;
+  min-width: 0;
+  min-height: 44px;
+  max-width: 100%;
+}
+
+.management-journal__ruled {
+  min-height: 16rem;
+  min-width: 0;
+}
+
+.management-journal__empty {
+  margin: 0 0 0.5rem;
+  color: var(--ds-color-text-secondary);
+}
+
+.management-journal__rule,
+.management-journal__task-line {
+  min-height: 32px;
+  display: flex;
+  align-items: flex-end;
+  padding-bottom: 0.35rem;
+}
+
+.management-journal__task-title {
+  color: var(--ds-color-text-primary);
+}
+
+.management-journal__frozen {
+  margin: 0 0 1rem;
+  padding: 0.75rem 1rem;
+  border-radius: 12px;
+  background: var(--ds-color-warning-bg);
+  color: var(--ds-color-warning);
+}
+
+.management-journal__composer,
+.management-journal__task-block {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  margin-bottom: 1rem;
+  padding: 0.85rem 0.2rem 1rem;
+  background: rgba(255, 253, 248, 0.72);
+}
+
+.management-journal__composer-title,
+.management-journal__task-title {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+.management-journal__field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  min-width: 0;
+}
+
+.management-journal__field input,
+.management-journal__field textarea,
+.management-journal__field select,
+.management-journal__task-meta select {
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  min-height: 44px;
+  font: inherit;
+}
+
+.management-journal__secondary {
+  min-height: 44px;
+  min-width: 44px;
+  padding: 0.45rem 0.9rem;
+  border-radius: 999px;
+  border: 1px solid var(--ds-color-border-strong);
+  background: var(--ds-color-surface);
+  color: var(--ds-color-text-primary);
+  font: inherit;
+  cursor: pointer;
+  align-self: flex-start;
+}
+
+.management-journal__task-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem 1.25rem;
+  margin: 0;
+  min-width: 0;
+}
+
+.management-journal__task-meta > div {
+  min-width: 0;
+}
+
+.management-journal__task-meta dt {
+  font-size: 0.75rem;
+  color: var(--ds-color-text-muted);
+}
+
+.management-journal__task-meta dd {
+  margin: 0;
+}
+
+.management-journal__carried {
+  display: inline-block;
+  font-size: 0.8rem;
+  color: var(--ds-color-text-secondary);
+}
+
+.management-journal__self-assignee {
+  margin: 0;
+  color: var(--ds-color-text-secondary);
+}
+
+.management-journal__task-details,
+.management-journal__task-note {
+  margin: 0;
+  color: var(--ds-color-text-secondary);
+  overflow-wrap: anywhere;
+}
+
+.management-journal__reassign {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  min-width: 0;
+}
+
+@media (max-width: 1024px) {
+  .management-journal__paper {
+    max-width: 100%;
+    padding: 1.1rem 0.85rem 1.5rem;
+    border-radius: 4px 12px 12px 4px;
+  }
+
+  .management-journal__type-switch,
+  .management-journal__chips,
+  .management-journal__add-row,
+  .management-journal__task-meta,
+  .management-journal__reassign {
+    flex-wrap: wrap;
+  }
+
+  .management-journal__task-meta {
+    flex-direction: column;
+  }
+}
+
+@media (max-width: 480px) {
+  .management-journal__paper {
+    padding-inline: 0.7rem;
+  }
+
+  .management-journal__type-button {
+    flex: 1 1 calc(50% - 0.5rem);
+  }
+}
