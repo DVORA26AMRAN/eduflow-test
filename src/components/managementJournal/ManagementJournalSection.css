@@ -1,3 +1,5 @@
+/* Management Journal — visual polish aligned to EduFlow design tokens */
+
 .management-journal-section {
   min-width: 0;
   max-width: 100%;
@@ -6,7 +8,7 @@
 .management-journal {
   display: flex;
   flex-direction: column;
-  gap: 1rem;
+  gap: var(--ds-control-gap);
   width: 100%;
   max-width: 100%;
   min-width: 0;
@@ -15,92 +17,160 @@
 .management-journal__status,
 .management-journal__error {
   margin: 0;
-  padding: 0.75rem 1rem;
-  border-radius: var(--ds-radius-md, 12px);
+  padding: var(--ds-label-gap) var(--ds-control-gap);
+  border-radius: var(--ds-radius-md);
+  font-size: var(--ds-font-size-body);
 }
 
 .management-journal__error {
   background: var(--ds-color-error-bg);
   color: var(--ds-color-error);
+  border: 1px solid rgba(197, 48, 48, 0.18);
 }
 
 .management-journal__status {
   color: var(--ds-color-text-secondary);
+  background: var(--ds-color-surface-soft);
 }
 
+/* —— Page header —— */
 .management-journal__date-header {
   text-align: center;
   min-width: 0;
+  padding: var(--ds-label-gap) 0;
 }
 
 .management-journal__day {
   margin: 0;
-  font-size: var(--ds-font-size-section-title, 1.25rem);
+  font-size: var(--ds-font-size-section-title);
   font-weight: var(--ds-font-weight-semibold);
   color: var(--ds-color-text-primary);
+  line-height: var(--ds-line-height-tight, 1.25);
 }
 
 .management-journal__date-key {
-  margin: 0.25rem 0 0;
+  margin: var(--ds-label-gap) 0 0;
   color: var(--ds-color-text-muted);
-  font-size: var(--ds-font-size-sm, 0.875rem);
+  font-size: var(--ds-font-size-sm);
 }
 
 .management-journal__type-switch {
   display: flex;
   flex-wrap: wrap;
-  gap: 0.5rem;
+  gap: var(--ds-label-gap);
   justify-content: center;
 }
 
-.management-journal__type-button,
-.management-journal__primary {
+.management-journal__type-button {
   min-height: 44px;
   min-width: 44px;
-  padding: 0.55rem 1.1rem;
-  border-radius: 999px;
+  padding: var(--ds-label-gap) var(--ds-control-gap);
+  border-radius: var(--ds-radius-pill);
   border: 1px solid var(--ds-color-border-strong);
   background: var(--ds-color-surface);
   color: var(--ds-color-text-primary);
   font: inherit;
+  font-size: var(--ds-font-size-button, 0.9375rem);
+  font-weight: var(--ds-font-weight-semibold);
   cursor: pointer;
+  transition:
+    background var(--ds-transition-base, 0.15s ease),
+    border-color var(--ds-transition-base, 0.15s ease),
+    box-shadow var(--ds-transition-base, 0.15s ease);
 }
 
-.management-journal__type-button.is-selected,
-.management-journal__primary {
+.management-journal__type-button:hover:not(:disabled) {
+  background: var(--ds-color-primary-50);
+  border-color: var(--ds-color-primary);
+}
+
+.management-journal__type-button:focus-visible {
+  outline: none;
+  box-shadow: var(--ds-shadow-focus);
+}
+
+.management-journal__type-button.is-selected {
   background: var(--ds-gradient-primary);
   color: var(--ds-color-text-inverse);
   border-color: transparent;
+  box-shadow: var(--ds-shadow-button);
 }
 
-.management-journal__primary:disabled {
+.management-journal__primary {
+  /* fallback if ds-btn not present; prefer ds-btn--primary in markup */
+  min-height: 44px;
+  min-width: 44px;
+  padding: var(--ds-label-gap) var(--ds-card-gap);
+  border-radius: var(--ds-radius-pill);
+  border: 1px solid transparent;
+  background: var(--ds-gradient-primary);
+  color: var(--ds-color-text-inverse);
+  font: inherit;
+  font-weight: var(--ds-font-weight-semibold);
+  cursor: pointer;
+  box-shadow: var(--ds-shadow-button);
+}
+
+.management-journal__primary:disabled,
+.management-journal__secondary:disabled,
+.management-journal__type-button:disabled {
   opacity: 0.55;
   cursor: not-allowed;
+  box-shadow: none;
+}
+
+.management-journal__secondary {
+  min-height: 44px;
+  min-width: 44px;
+  padding: var(--ds-label-gap) var(--ds-control-gap);
+  border-radius: var(--ds-radius-pill);
+  border: 1px solid var(--ds-color-border-strong);
+  background: var(--ds-color-surface);
+  color: var(--ds-color-primary);
+  font: inherit;
+  font-weight: var(--ds-font-weight-semibold);
+  cursor: pointer;
+  align-self: flex-start;
+  box-shadow: var(--ds-shadow-xs);
+}
+
+.management-journal__secondary:hover:not(:disabled) {
+  background: var(--ds-color-primary-50);
+  border-color: var(--ds-color-primary);
+}
+
+.management-journal__secondary:focus-visible,
+.management-journal__primary:focus-visible {
+  outline: none;
+  box-shadow: var(--ds-shadow-focus);
 }
 
 .management-journal__picker {
   width: 100%;
   max-width: 36rem;
   margin-inline: auto;
-  padding: 1rem;
+  padding: var(--ds-card-padding);
   border: 1px solid var(--ds-color-border);
-  border-radius: var(--ds-radius-lg, 16px);
+  border-radius: var(--ds-radius-lg);
   background: var(--ds-color-surface-soft);
+  box-shadow: var(--ds-shadow-xs);
   min-width: 0;
 }
 
 .management-journal__picker-title {
-  margin: 0 0 0.75rem;
-  font-size: 1rem;
+  margin: 0 0 var(--ds-control-gap);
+  font-size: var(--ds-font-size-card-title, 1.0625rem);
+  font-weight: var(--ds-font-weight-semibold);
+  color: var(--ds-color-text-primary);
 }
 
 .management-journal__candidate-list {
   list-style: none;
-  margin: 0 0 1rem;
+  margin: 0 0 var(--ds-control-gap);
   padding: 0;
   display: flex;
   flex-direction: column;
-  gap: 0.5rem;
+  gap: var(--ds-label-gap);
 }
 
 .management-journal__candidate {
@@ -108,34 +178,44 @@
   align-items: center;
   gap: 0.6rem;
   min-height: 44px;
+  padding: var(--ds-label-gap) var(--ds-control-gap);
+  border-radius: var(--ds-radius-md);
+  background: var(--ds-color-surface);
+  border: 1px solid var(--ds-color-border);
 }
 
 .management-journal__candidate em {
   font-style: normal;
   color: var(--ds-color-text-secondary);
-  font-size: 0.85em;
+  font-size: var(--ds-font-size-sm);
 }
 
+/* —— Notebook body —— */
 .management-journal__paper {
+  --journal-line-height: 36px;
+  --journal-rule-color: color-mix(in srgb, var(--ds-color-primary) 14%, transparent);
+
   width: 100%;
   max-width: 44rem;
   margin-inline: auto;
   min-width: 0;
-  padding: 1.5rem 1.25rem 2rem;
-  border-radius: 4px 18px 18px 4px;
-  background-color: #fffdf8;
+  padding: var(--ds-card-padding) var(--ds-control-gap) var(--ds-section-gap);
+  border-radius: var(--ds-radius-xl);
+  background-color: var(--ds-color-surface);
   background-image: repeating-linear-gradient(
     to bottom,
     transparent 0,
-    transparent 31px,
-    rgba(118, 88, 212, 0.12) 31px,
-    rgba(118, 88, 212, 0.12) 32px
+    transparent calc(var(--journal-line-height) - 1px),
+    var(--journal-rule-color) calc(var(--journal-line-height) - 1px),
+    var(--journal-rule-color) var(--journal-line-height)
   );
-  background-size: 100% 32px;
+  background-size: 100% var(--journal-line-height);
+  box-shadow: var(--ds-shadow-card);
+  border: 1px solid var(--ds-color-border);
+  /* subtle notebook cue — soft binding edge, not literal paper texture */
   box-shadow:
-    inset 12px 0 0 rgba(248, 180, 212, 0.35),
-    0 18px 40px rgba(56, 41, 111, 0.08);
-  border: 1px solid rgba(118, 88, 212, 0.12);
+    inset 3px 0 0 color-mix(in srgb, var(--ds-color-primary) 22%, transparent),
+    var(--ds-shadow-card);
 }
 
 .management-journal__paper-head {
@@ -143,8 +223,10 @@
   flex-wrap: wrap;
   align-items: center;
   justify-content: space-between;
-  gap: 0.75rem;
-  margin-bottom: 1rem;
+  gap: var(--ds-control-gap);
+  margin-bottom: var(--ds-control-gap);
+  padding-bottom: var(--ds-control-gap);
+  border-bottom: 1px solid var(--ds-color-border);
   min-width: 0;
 }
 
@@ -152,10 +234,22 @@
   display: inline-flex;
   align-items: center;
   min-height: 32px;
-  padding: 0.2rem 0.8rem;
-  border-radius: 999px;
-  font-size: 0.85rem;
-  font-weight: 600;
+  padding: 0.2rem 0.85rem;
+  border-radius: var(--ds-radius-pill);
+  font-size: var(--ds-font-size-sm);
+  font-weight: var(--ds-font-weight-semibold);
+  background: var(--ds-color-primary-50);
+  color: var(--ds-color-primary-800);
+  border: 1px solid color-mix(in srgb, var(--ds-color-primary) 18%, transparent);
+}
+
+.management-journal__badge--personal {
+  background: var(--ds-color-surface-soft);
+  color: var(--ds-color-text-secondary);
+  border-color: var(--ds-color-border);
+}
+
+.management-journal__badge--shared {
   background: var(--ds-color-primary-50);
   color: var(--ds-color-primary-800);
 }
@@ -163,12 +257,13 @@
 .management-journal__chips {
   display: flex;
   flex-wrap: wrap;
-  gap: 0.4rem;
+  gap: var(--ds-label-gap);
   list-style: none;
   margin: 0;
   padding: 0;
   min-width: 0;
   max-width: 100%;
+  justify-content: flex-end;
 }
 
 .management-journal__chip {
@@ -177,10 +272,13 @@
   gap: 0.35rem;
   min-height: 36px;
   max-width: 100%;
-  padding: 0.2rem 0.65rem 0.2rem 0.25rem;
-  border-radius: 999px;
-  background: rgba(255, 255, 255, 0.88);
+  padding: 0.2rem 0.7rem 0.2rem 0.25rem;
+  border-radius: var(--ds-radius-pill);
+  background: var(--ds-color-surface);
   border: 1px solid var(--ds-color-border);
+  box-shadow: var(--ds-shadow-xs);
+  font-size: var(--ds-font-size-sm);
+  color: var(--ds-color-text-primary);
 }
 
 .management-journal__avatar {
@@ -192,142 +290,191 @@
   justify-content: center;
   background: var(--ds-color-primary-100);
   color: var(--ds-color-primary-800);
-  font-size: 0.8rem;
+  font-size: var(--ds-font-size-sm);
+  font-weight: var(--ds-font-weight-semibold);
   flex-shrink: 0;
 }
 
 .management-journal__add {
   display: flex;
   flex-direction: column;
-  gap: 0.4rem;
-  margin-bottom: 1rem;
+  gap: var(--ds-label-gap);
+  margin-bottom: var(--ds-control-gap);
   min-width: 0;
+}
+
+.management-journal__add-label {
+  font-size: var(--ds-font-size-sm);
+  font-weight: var(--ds-font-weight-medium);
+  color: var(--ds-color-text-secondary);
 }
 
 .management-journal__add-row {
   display: flex;
   flex-wrap: wrap;
-  gap: 0.5rem;
+  gap: var(--ds-label-gap);
   min-width: 0;
+  align-items: stretch;
+}
+
+.management-journal__add-row select,
+.management-journal__field input,
+.management-journal__field textarea,
+.management-journal__field select,
+.management-journal__task-meta select,
+.management-journal__status-select {
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  min-height: 44px;
+  font: inherit;
+  font-size: var(--ds-font-size-body);
+  padding: var(--ds-label-gap) var(--ds-control-gap);
+  border: 1px solid var(--ds-color-border-strong);
+  border-radius: var(--ds-radius-md);
+  background: var(--ds-color-surface);
+  color: var(--ds-color-text-primary);
 }
 
 .management-journal__add-row select {
   flex: 1 1 12rem;
-  min-width: 0;
-  min-height: 44px;
-  max-width: 100%;
+}
+
+.management-journal__field input:focus-visible,
+.management-journal__field textarea:focus-visible,
+.management-journal__field select:focus-visible,
+.management-journal__add-row select:focus-visible,
+.management-journal__status-select:focus-visible {
+  outline: none;
+  border-color: var(--ds-color-border-focus, var(--ds-color-primary));
+  box-shadow: var(--ds-shadow-focus);
 }
 
 .management-journal__ruled {
-  min-height: 16rem;
+  min-height: calc(var(--journal-line-height) * 6);
   min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0;
 }
 
 .management-journal__empty {
-  margin: 0 0 0.5rem;
+  margin: 0 0 var(--ds-label-gap);
+  padding: var(--ds-control-gap);
   color: var(--ds-color-text-secondary);
+  text-align: center;
+  font-size: var(--ds-font-size-body);
+  border: 1px dashed var(--ds-color-border);
+  border-radius: var(--ds-radius-md);
+  background: color-mix(in srgb, var(--ds-color-surface-soft) 80%, transparent);
 }
 
-.management-journal__rule,
-.management-journal__task-line {
-  min-height: 32px;
-  display: flex;
-  align-items: flex-end;
-  padding-bottom: 0.35rem;
-}
-
-.management-journal__task-title {
-  color: var(--ds-color-text-primary);
+.management-journal__rule {
+  min-height: var(--journal-line-height);
+  display: block;
 }
 
 .management-journal__frozen {
-  margin: 0 0 1rem;
-  padding: 0.75rem 1rem;
-  border-radius: 12px;
+  margin: 0 0 var(--ds-control-gap);
+  padding: var(--ds-label-gap) var(--ds-control-gap);
+  border-radius: var(--ds-radius-md);
   background: var(--ds-color-warning-bg);
   color: var(--ds-color-warning);
+  border: 1px solid color-mix(in srgb, var(--ds-color-warning) 28%, transparent);
+  font-size: var(--ds-font-size-body);
 }
 
+/* —— Composer / task rows —— */
 .management-journal__composer,
 .management-journal__task-block {
   display: flex;
   flex-direction: column;
-  gap: 0.6rem;
+  gap: var(--ds-label-gap);
   width: 100%;
   max-width: 100%;
   min-width: 0;
-  margin-bottom: 1rem;
-  padding: 0.85rem 0.2rem 1rem;
-  background: rgba(255, 253, 248, 0.72);
+  margin-bottom: var(--ds-control-gap);
+  padding: var(--ds-control-gap);
+  background: color-mix(in srgb, var(--ds-color-surface) 92%, var(--ds-color-primary-50));
+  border: 1px solid var(--ds-color-border);
+  border-radius: var(--ds-radius-lg);
+  box-shadow: var(--ds-shadow-xs);
 }
 
 .management-journal__composer-title,
 .management-journal__task-title {
   margin: 0;
   overflow-wrap: anywhere;
+  font-size: var(--ds-font-size-card-title, 1.0625rem);
+  font-weight: var(--ds-font-weight-semibold);
+  color: var(--ds-color-text-primary);
+  line-height: 1.4;
+}
+
+.management-journal__task-main {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--ds-label-gap);
+  min-width: 0;
 }
 
 .management-journal__field {
   display: flex;
   flex-direction: column;
-  gap: 0.3rem;
+  gap: var(--ds-label-gap);
   min-width: 0;
 }
 
-.management-journal__field input,
-.management-journal__field textarea,
-.management-journal__field select,
-.management-journal__task-meta select {
-  width: 100%;
-  max-width: 100%;
-  min-width: 0;
-  min-height: 44px;
-  font: inherit;
-}
-
-.management-journal__secondary {
-  min-height: 44px;
-  min-width: 44px;
-  padding: 0.45rem 0.9rem;
-  border-radius: 999px;
-  border: 1px solid var(--ds-color-border-strong);
-  background: var(--ds-color-surface);
-  color: var(--ds-color-text-primary);
-  font: inherit;
-  cursor: pointer;
-  align-self: flex-start;
+.management-journal__field > span {
+  font-size: var(--ds-font-size-sm);
+  font-weight: var(--ds-font-weight-medium);
+  color: var(--ds-color-text-secondary);
 }
 
 .management-journal__task-meta {
   display: flex;
   flex-wrap: wrap;
-  gap: 0.75rem 1.25rem;
+  gap: var(--ds-control-gap);
   margin: 0;
   min-width: 0;
 }
 
 .management-journal__task-meta > div {
   min-width: 0;
+  flex: 1 1 8rem;
 }
 
 .management-journal__task-meta dt {
-  font-size: 0.75rem;
+  font-size: var(--ds-font-size-sm);
+  font-weight: var(--ds-font-weight-medium);
   color: var(--ds-color-text-muted);
+  margin-bottom: 0.2rem;
 }
 
 .management-journal__task-meta dd {
   margin: 0;
+  font-size: var(--ds-font-size-body);
+  color: var(--ds-color-text-primary);
 }
 
 .management-journal__carried {
-  display: inline-block;
-  font-size: 0.8rem;
+  display: inline-flex;
+  align-items: center;
+  min-height: 24px;
+  padding: 0.1rem 0.55rem;
+  border-radius: var(--ds-radius-pill);
+  font-size: var(--ds-font-size-sm);
+  font-weight: var(--ds-font-weight-medium);
   color: var(--ds-color-text-secondary);
+  background: var(--ds-color-surface-soft);
+  border: 1px solid var(--ds-color-border);
 }
 
 .management-journal__self-assignee {
   margin: 0;
   color: var(--ds-color-text-secondary);
+  font-size: var(--ds-font-size-sm);
 }
 
 .management-journal__task-details,
@@ -335,51 +482,163 @@
   margin: 0;
   color: var(--ds-color-text-secondary);
   overflow-wrap: anywhere;
+  font-size: var(--ds-font-size-body);
+  line-height: 1.5;
 }
 
-.management-journal__reassign {
+.management-journal__unassigned {
+  color: var(--ds-color-warning);
+  font-weight: var(--ds-font-weight-semibold);
+}
+
+.management-journal__reassign,
+.management-journal__content-edit {
   display: flex;
   flex-wrap: wrap;
-  gap: 0.5rem;
+  gap: var(--ds-label-gap);
   min-width: 0;
+  align-items: flex-end;
+}
+
+.management-journal__reassign .management-journal__field {
+  flex: 1 1 12rem;
 }
 
 .management-journal__report-actions {
   display: flex;
   flex-wrap: wrap;
-  gap: 0.5rem;
-  margin-top: 1.25rem;
-  padding-top: 1rem;
-  border-top: 1px dashed rgba(118, 88, 212, 0.22);
+  gap: var(--ds-label-gap);
+  margin-top: var(--ds-control-gap);
+  padding-top: var(--ds-control-gap);
+  border-top: 1px solid var(--ds-color-border);
   min-width: 0;
+}
+
+/* Status badges / selects — aligned with ds-table__status semantics */
+.management-journal__status-badge,
+.management-journal__status-select {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 36px;
+  max-width: 100%;
+  padding: 0.2rem 0.7rem;
+  border-radius: var(--ds-radius-pill);
+  font-size: var(--ds-font-size-sm);
+  font-weight: var(--ds-font-weight-semibold);
+  border: 1px solid transparent;
+}
+
+.management-journal__status-select {
+  cursor: pointer;
+  appearance: auto;
+  width: auto;
+  min-width: 7.5rem;
+}
+
+.management-journal__status-badge--new,
+.management-journal__status-select--new {
+  color: #83550a;
+  background: #fff4d6;
+  border-color: #f3d79b;
+}
+
+.management-journal__status-badge--in_progress,
+.management-journal__status-select--in_progress {
+  color: var(--ds-color-info);
+  background: var(--ds-color-info-bg);
+  border-color: color-mix(in srgb, var(--ds-color-info) 28%, transparent);
+}
+
+.management-journal__status-badge--completed,
+.management-journal__status-select--completed {
+  color: #166746;
+  background: #e6f6ee;
+  border-color: #b7e5cb;
+}
+
+.management-journal__status-badge--blocked,
+.management-journal__status-select--blocked {
+  color: #8f2f2f;
+  background: #fdeaea;
+  border-color: #f6c8c8;
 }
 
 @media (max-width: 1024px) {
   .management-journal__paper {
     max-width: 100%;
-    padding: 1.1rem 0.85rem 1.5rem;
-    border-radius: 4px 12px 12px 4px;
+    padding: var(--ds-control-gap) var(--ds-label-gap) var(--ds-card-padding);
+    border-radius: var(--ds-radius-lg);
   }
 
-  .management-journal__type-switch,
-  .management-journal__chips,
-  .management-journal__add-row,
-  .management-journal__task-meta,
-  .management-journal__reassign {
-    flex-wrap: wrap;
+  .management-journal__chips {
+    justify-content: flex-start;
+    width: 100%;
+  }
+
+  .management-journal__paper-head {
+    flex-direction: column;
+    align-items: flex-start;
   }
 
   .management-journal__task-meta {
     flex-direction: column;
+    gap: var(--ds-label-gap);
+  }
+
+  .management-journal__task-meta > div {
+    flex: 1 1 auto;
+  }
+}
+
+@media (max-width: 768px) {
+  .management-journal__paper {
+    --journal-line-height: 40px;
+    box-shadow:
+      inset 2px 0 0 color-mix(in srgb, var(--ds-color-primary) 18%, transparent),
+      var(--ds-shadow-sm);
+  }
+
+  .management-journal__composer,
+  .management-journal__task-block {
+    padding: var(--ds-label-gap) var(--ds-control-gap);
+  }
+
+  .management-journal__reassign,
+  .management-journal__content-edit,
+  .management-journal__add-row {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .management-journal__secondary,
+  .management-journal__primary,
+  .management-journal__add-row .ds-btn,
+  .management-journal__report-actions .ds-btn {
+    width: 100%;
+  }
+
+  .management-journal__status-select {
+    width: 100%;
+    min-width: 0;
   }
 }
 
 @media (max-width: 480px) {
   .management-journal__paper {
-    padding-inline: 0.7rem;
+    padding-inline: var(--ds-label-gap);
+    border-radius: var(--ds-radius-md);
   }
 
   .management-journal__type-button {
-    flex: 1 1 calc(50% - 0.5rem);
+    flex: 1 1 calc(50% - var(--ds-label-gap));
+  }
+
+  .management-journal__day {
+    font-size: var(--ds-font-size-lg, 1.125rem);
+  }
+
+  .management-journal__chip {
+    max-width: 100%;
   }
 }

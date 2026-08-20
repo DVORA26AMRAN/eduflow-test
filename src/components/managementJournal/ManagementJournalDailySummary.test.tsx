@@ -215,6 +215,40 @@ describe('ManagementJournalDailySummary J3A/J3B', () => {
     expect(css).toContain('table-layout: fixed')
     expect(css).toContain('overflow-wrap: anywhere')
     expect(css).toContain('@media (max-width: 480px)')
+    expect(css).toContain('@media (max-width: 768px)')
+    expect(css).toContain('journal-daily-summary__table-wrap')
+    expect(css).toContain('min-height: 44px')
     expect(css).not.toContain('overflow-x: hidden')
+  })
+
+  it('renders status pills with semantic status class names', () => {
+    render(
+      <ManagementJournalDailySummary
+        isOpen
+        page={page}
+        participants={participants}
+        tasks={[
+          task({ id: 't-new', title: 'א', status: 'new', sortOrder: 1 }),
+          task({ id: 't-prog', title: 'ב', status: 'in_progress', sortOrder: 2 }),
+          task({ id: 't-done', title: 'ג', status: 'completed', sortOrder: 3 }),
+          task({ id: 't-block', title: 'ד', status: 'blocked', sortOrder: 4 }),
+        ]}
+        onClose={() => undefined}
+      />,
+    )
+
+    expect(screen.getByTestId('journal-daily-summary-status-t-new')).toHaveClass(
+      'journal-daily-summary__status--new',
+    )
+    expect(screen.getByTestId('journal-daily-summary-status-t-prog')).toHaveClass(
+      'journal-daily-summary__status--in_progress',
+    )
+    expect(screen.getByTestId('journal-daily-summary-status-t-done')).toHaveClass(
+      'journal-daily-summary__status--completed',
+    )
+    expect(screen.getByTestId('journal-daily-summary-status-t-block')).toHaveClass(
+      'journal-daily-summary__status--blocked',
+    )
+    expect(screen.getByTestId('journal-daily-summary-pdf')).toHaveClass('ds-btn')
   })
 })

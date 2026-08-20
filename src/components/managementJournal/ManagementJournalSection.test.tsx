@@ -1,5 +1,7 @@
 import { cleanup, render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
+import { readFileSync } from 'node:fs'
+import { resolve } from 'node:path'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { ManagementJournalSection } from './ManagementJournalSection'
 
@@ -1077,5 +1079,21 @@ describe('ManagementJournalSection J3A daily summary', () => {
       'אין משימות להצגה בדוח היומי',
     )
     expect(screen.queryByTestId('journal-daily-summary-table')).not.toBeInTheDocument()
+  })
+
+  it('keeps a notebook-like layout that reuses EduFlow tokens (presentation contract)', () => {
+    const css = readFileSync(
+      resolve(process.cwd(), 'src/components/managementJournal/ManagementJournalSection.css'),
+      'utf8',
+    )
+    expect(css).toContain('repeating-linear-gradient')
+    expect(css).toContain('--ds-color-surface')
+    expect(css).toContain('--ds-shadow-card')
+    expect(css).toContain('--ds-radius-pill')
+    expect(css).toContain('min-height: 44px')
+    expect(css).toContain('@media (max-width: 768px)')
+    expect(css).toContain('@media (max-width: 480px)')
+    expect(css).not.toContain('#fffdf8')
+    expect(css).toContain('management-journal__status-badge--blocked')
   })
 })

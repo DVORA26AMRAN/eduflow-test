@@ -1,7 +1,9 @@
+/* Daily summary modal — matches EduFlow Modal + ds-table status language */
+
 .journal-daily-summary {
   display: flex;
   flex-direction: column;
-  gap: 1.25rem;
+  gap: var(--ds-control-gap);
   width: 100%;
   max-width: 100%;
   min-width: 0;
@@ -11,67 +13,98 @@
 .journal-daily-summary__header {
   display: flex;
   flex-direction: column;
-  gap: 0.35rem;
-  padding-bottom: 1rem;
+  gap: var(--ds-label-gap);
+  padding-bottom: var(--ds-control-gap);
   border-bottom: 1px solid var(--ds-color-border);
   min-width: 0;
 }
 
 .journal-daily-summary__title {
   margin: 0;
-  font-size: 1.35rem;
-  font-weight: 700;
-  letter-spacing: 0.01em;
+  font-size: var(--ds-font-size-section-title);
+  font-weight: var(--ds-font-weight-semibold);
+  color: var(--ds-color-text-primary);
+  letter-spacing: 0;
 }
 
 .journal-daily-summary__date {
   margin: 0;
-  font-size: 1.05rem;
-  font-weight: 600;
+  font-size: var(--ds-font-size-card-title, 1.0625rem);
+  font-weight: var(--ds-font-weight-semibold);
+  color: var(--ds-color-text-primary);
 }
 
 .journal-daily-summary__date-key {
   margin: 0;
   color: var(--ds-color-text-muted);
-  font-size: 0.875rem;
+  font-size: var(--ds-font-size-sm);
 }
 
 .journal-daily-summary__page-type {
-  margin: 0.35rem 0 0;
+  margin: var(--ds-label-gap) 0 0;
   display: inline-flex;
   align-self: flex-start;
   min-height: 28px;
-  padding: 0.15rem 0.7rem;
-  border-radius: 999px;
-  font-size: 0.85rem;
-  font-weight: 600;
+  padding: 0.15rem 0.75rem;
+  border-radius: var(--ds-radius-pill);
+  font-size: var(--ds-font-size-sm);
+  font-weight: var(--ds-font-weight-semibold);
   background: var(--ds-color-primary-50);
   color: var(--ds-color-primary-800);
+  border: 1px solid color-mix(in srgb, var(--ds-color-primary) 18%, transparent);
+}
+
+.journal-daily-summary__page-type--personal {
+  background: var(--ds-color-surface-soft);
+  color: var(--ds-color-text-secondary);
+  border-color: var(--ds-color-border);
 }
 
 .journal-daily-summary__participants {
   display: flex;
   flex-wrap: wrap;
-  gap: 0.35rem 0.75rem;
+  gap: var(--ds-label-gap);
   list-style: none;
-  margin: 0.5rem 0 0;
+  margin: var(--ds-label-gap) 0 0;
   padding: 0;
-  color: var(--ds-color-text-secondary);
-  font-size: 0.9rem;
   min-width: 0;
   max-width: 100%;
 }
 
 .journal-daily-summary__participants li {
+  display: inline-flex;
+  align-items: center;
+  min-height: 32px;
   max-width: 100%;
+  padding: 0.15rem 0.7rem;
+  border-radius: var(--ds-radius-pill);
+  background: var(--ds-color-surface-soft);
+  border: 1px solid var(--ds-color-border);
+  color: var(--ds-color-text-secondary);
+  font-size: var(--ds-font-size-sm);
   overflow-wrap: anywhere;
 }
 
 .journal-daily-summary__empty {
   margin: 0;
-  padding: 1.25rem 0.25rem;
+  padding: var(--ds-card-padding);
   color: var(--ds-color-text-secondary);
   text-align: center;
+  border: 1px dashed var(--ds-color-border);
+  border-radius: var(--ds-radius-md);
+  background: var(--ds-color-surface-soft);
+}
+
+.journal-daily-summary__table-wrap {
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+  border: 1px solid var(--ds-color-border);
+  border-radius: var(--ds-radius-lg);
+  background: var(--ds-color-surface);
+  box-shadow: var(--ds-shadow-xs);
 }
 
 .journal-daily-summary__table {
@@ -80,23 +113,28 @@
   min-width: 0;
   border-collapse: collapse;
   table-layout: fixed;
-  background: #fff;
+  background: var(--ds-color-surface);
 }
 
 .journal-daily-summary__table th,
 .journal-daily-summary__table td {
-  padding: 0.7rem 0.55rem;
-  border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+  padding: var(--ds-control-gap);
+  border-bottom: 1px solid var(--ds-color-border);
   text-align: start;
   vertical-align: top;
   overflow-wrap: anywhere;
   word-break: break-word;
 }
 
+.journal-daily-summary__table tbody tr:last-child td {
+  border-bottom: none;
+}
+
 .journal-daily-summary__table th {
-  font-size: 0.8rem;
-  font-weight: 700;
-  color: var(--ds-color-text-muted);
+  font-size: var(--ds-font-size-sm);
+  font-weight: var(--ds-font-weight-semibold);
+  color: var(--ds-color-text-secondary);
+  background: var(--ds-color-surface-soft);
 }
 
 .journal-daily-summary__table th:first-child,
@@ -115,39 +153,44 @@
   justify-content: center;
   min-height: 28px;
   max-width: 100%;
-  padding: 0.15rem 0.55rem;
-  border-radius: 999px;
-  font-size: 0.8rem;
-  font-weight: 600;
+  padding: 0.15rem 0.65rem;
+  border-radius: var(--ds-radius-pill);
+  font-size: var(--ds-font-size-sm);
+  font-weight: var(--ds-font-weight-semibold);
   white-space: nowrap;
+  border: 1px solid transparent;
 }
 
 .journal-daily-summary__status--new {
-  background: rgba(99, 102, 241, 0.12);
-  color: #3730a3;
+  color: #83550a;
+  background: #fff4d6;
+  border-color: #f3d79b;
 }
 
 .journal-daily-summary__status--in_progress {
-  background: rgba(14, 165, 233, 0.14);
-  color: #075985;
+  color: var(--ds-color-info);
+  background: var(--ds-color-info-bg);
+  border-color: color-mix(in srgb, var(--ds-color-info) 28%, transparent);
 }
 
 .journal-daily-summary__status--completed {
-  background: rgba(34, 197, 94, 0.14);
-  color: #166534;
+  color: #166746;
+  background: #e6f6ee;
+  border-color: #b7e5cb;
 }
 
 .journal-daily-summary__status--blocked {
-  background: rgba(239, 68, 68, 0.12);
-  color: #991b1b;
+  color: #8f2f2f;
+  background: #fdeaea;
+  border-color: #f6c8c8;
 }
 
 .journal-daily-summary__actions {
   display: flex;
   flex-direction: column;
-  align-items: flex-start;
-  gap: 0.35rem;
-  padding-top: 0.5rem;
+  align-items: stretch;
+  gap: var(--ds-label-gap);
+  padding-top: var(--ds-control-gap);
   border-top: 1px solid var(--ds-color-border);
   min-width: 0;
 }
@@ -155,50 +198,75 @@
 .journal-daily-summary__pdf {
   min-height: 44px;
   min-width: 44px;
-  padding: 0.45rem 1rem;
-  border-radius: 999px;
+  align-self: flex-start;
+  padding: var(--ds-label-gap) var(--ds-card-gap);
+  border-radius: var(--ds-radius-pill);
   border: 1px solid var(--ds-color-border-strong);
   background: var(--ds-color-surface);
-  color: var(--ds-color-text-primary);
+  color: var(--ds-color-primary);
   font: inherit;
+  font-weight: var(--ds-font-weight-semibold);
   cursor: pointer;
+  box-shadow: var(--ds-shadow-xs);
+}
+
+.journal-daily-summary__pdf:hover:not(:disabled) {
+  background: var(--ds-color-primary-50);
+  border-color: var(--ds-color-primary);
+}
+
+.journal-daily-summary__pdf:focus-visible {
+  outline: none;
+  box-shadow: var(--ds-shadow-focus);
 }
 
 .journal-daily-summary__pdf:disabled {
-  opacity: 0.65;
+  opacity: 0.55;
   cursor: not-allowed;
+  box-shadow: none;
 }
 
 .journal-daily-summary__pdf-hint {
   margin: 0;
-  font-size: 0.8rem;
+  font-size: var(--ds-font-size-sm);
   color: var(--ds-color-text-muted);
 }
 
 .journal-daily-summary__pdf-error {
   margin: 0;
-  font-size: 0.9rem;
+  font-size: var(--ds-font-size-body);
   color: var(--ds-color-error);
+}
+
+@media (max-width: 768px) {
+  .journal-daily-summary__pdf {
+    width: 100%;
+    align-self: stretch;
+  }
+
+  .journal-daily-summary__table th,
+  .journal-daily-summary__table td {
+    padding: var(--ds-label-gap);
+  }
 }
 
 @media (max-width: 480px) {
   .journal-daily-summary__table th:first-child,
   .journal-daily-summary__task-cell {
-    width: 68%;
+    width: 64%;
   }
 
   .journal-daily-summary__table th:last-child,
   .journal-daily-summary__status-cell {
-    width: 32%;
-  }
-
-  .journal-daily-summary__table th,
-  .journal-daily-summary__table td {
-    padding-inline: 0.35rem;
+    width: 36%;
   }
 
   .journal-daily-summary__status {
     white-space: normal;
     text-align: center;
+  }
+
+  .journal-daily-summary__title {
+    font-size: var(--ds-font-size-lg, 1.125rem);
   }
 }

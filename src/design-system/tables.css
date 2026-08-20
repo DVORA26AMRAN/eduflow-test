@@ -93,7 +93,8 @@
 }
 
 .ds-table__status--rejected,
-.ds-table__status--cancelled {
+.ds-table__status--cancelled,
+.ds-table__status--blocked {
   color: #8f2f2f;
   background: #fdeaea;
   border-color: #f6c8c8;

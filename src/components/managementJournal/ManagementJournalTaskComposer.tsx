@@ -109,7 +109,11 @@ export function ManagementJournalTaskComposer({
           disabled={disabled}
         />
       </label>
-      <button type="submit" className="management-journal__primary" disabled={disabled || !title.trim()}>
+      <button
+        type="submit"
+        className="ds-btn ds-btn--primary management-journal__primary"
+        disabled={disabled || !title.trim()}
+      >
         {MANAGEMENT_JOURNAL_ADD_TASK_LABEL}
       </button>
     </form>

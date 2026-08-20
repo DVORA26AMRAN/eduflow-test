@@ -558,7 +558,7 @@ export function ManagementJournalSection({
             </ul>
             <button
               type="button"
-              className="management-journal__primary"
+              className="ds-btn ds-btn--primary management-journal__primary"
               disabled={isWorking}
               onClick={() => {
                 void handleOpenSharedPage()
@@ -613,7 +613,7 @@ export function ManagementJournalSection({
                   </select>
                   <button
                     type="button"
-                    className="management-journal__primary"
+                    className="ds-btn ds-btn--primary ds-btn--compact management-journal__primary"
                     disabled={!userToAdd || isWorking}
                     onClick={() => {
                       void handleAddParticipant()
@@ -708,7 +708,7 @@ export function ManagementJournalSection({
             <div className="management-journal__report-actions">
               <button
                 type="button"
-                className="management-journal__secondary"
+                className="ds-btn ds-btn--secondary management-journal__secondary"
                 data-testid="journal-daily-summary-open"
                 disabled={isWorking}
                 onClick={() => {

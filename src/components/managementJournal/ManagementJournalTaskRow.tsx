@@ -92,7 +92,9 @@ export function ManagementJournalTaskRow({
             {task.responsibleUserId ? (
               responsible?.fullName ?? 'אחראית'
             ) : (
-              <strong data-testid="journal-unassigned-label">{MANAGEMENT_JOURNAL_UNASSIGNED_LABEL}</strong>
+              <strong className="management-journal__unassigned" data-testid="journal-unassigned-label">
+                {MANAGEMENT_JOURNAL_UNASSIGNED_LABEL}
+              </strong>
             )}
           </dd>
         </div>
@@ -102,6 +104,7 @@ export function ManagementJournalTaskRow({
             {canEditStatus ? (
               <select
                 aria-label="סטטוס משימה"
+                className={`management-journal__status-select management-journal__status-select--${task.status}`}
                 value={task.status}
                 disabled={busy}
                 onChange={(event) => {
@@ -118,7 +121,12 @@ export function ManagementJournalTaskRow({
                 ))}
               </select>
             ) : (
-              <span data-testid="journal-status-readonly">{translateManagementJournalTaskStatus(task.status)}</span>
+              <span
+                className={`management-journal__status-badge management-journal__status-badge--${task.status}`}
+                data-testid="journal-status-readonly"
+              >
+                {translateManagementJournalTaskStatus(task.status)}
+              </span>
             )}
           </dd>
         </div>
@@ -144,7 +152,7 @@ export function ManagementJournalTaskRow({
           />
           <button
             type="button"
-            className="management-journal__secondary"
+            className="ds-btn ds-btn--secondary ds-btn--compact management-journal__secondary"
             disabled={busy}
             onClick={() => onUpdateNote(task, noteDraft)}
           >
@@ -181,7 +189,7 @@ export function ManagementJournalTaskRow({
               </label>
               <button
                 type="button"
-                className="management-journal__secondary"
+                className="ds-btn ds-btn--secondary ds-btn--compact management-journal__secondary"
                 disabled={busy || !titleDraft.trim()}
                 onClick={() => {
                   onUpdateContent(task, {
@@ -196,7 +204,11 @@ export function ManagementJournalTaskRow({
               </button>
             </>
           ) : (
-            <button type="button" className="management-journal__secondary" onClick={() => setEditingContent(true)}>
+            <button
+              type="button"
+              className="ds-btn ds-btn--secondary ds-btn--compact management-journal__secondary"
+              onClick={() => setEditingContent(true)}
+            >
               עריכת תוכן המשימה
             </button>
           )}
@@ -218,7 +230,7 @@ export function ManagementJournalTaskRow({
           </label>
           <button
             type="button"
-            className="management-journal__secondary"
+            className="ds-btn ds-btn--secondary ds-btn--compact management-journal__secondary"
             disabled={busy || !assignTo}
             onClick={() => onAssign(task, assignTo)}
           >

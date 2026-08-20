@@ -103,35 +103,37 @@ export function ManagementJournalDailySummary({
             {MANAGEMENT_JOURNAL_DAILY_SUMMARY_EMPTY_LABEL}
           </p>
         ) : (
-          <table className="journal-daily-summary__table" data-testid="journal-daily-summary-table">
-            <thead>
-              <tr>
-                <th scope="col">{MANAGEMENT_JOURNAL_DAILY_SUMMARY_TASK_COLUMN}</th>
-                <th scope="col">{MANAGEMENT_JOURNAL_DAILY_SUMMARY_STATUS_COLUMN}</th>
-              </tr>
-            </thead>
-            <tbody>
-              {orderedTasks.map((task) => (
-                <tr key={task.id} data-testid={`journal-daily-summary-row-${task.id}`}>
-                  <td className="journal-daily-summary__task-cell">{task.title}</td>
-                  <td className="journal-daily-summary__status-cell">
-                    <span
-                      className={`journal-daily-summary__status journal-daily-summary__status--${task.status}`}
-                      data-testid={`journal-daily-summary-status-${task.id}`}
-                    >
-                      {translateManagementJournalTaskStatus(task.status)}
-                    </span>
-                  </td>
+          <div className="journal-daily-summary__table-wrap">
+            <table className="journal-daily-summary__table" data-testid="journal-daily-summary-table">
+              <thead>
+                <tr>
+                  <th scope="col">{MANAGEMENT_JOURNAL_DAILY_SUMMARY_TASK_COLUMN}</th>
+                  <th scope="col">{MANAGEMENT_JOURNAL_DAILY_SUMMARY_STATUS_COLUMN}</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {orderedTasks.map((task) => (
+                  <tr key={task.id} data-testid={`journal-daily-summary-row-${task.id}`}>
+                    <td className="journal-daily-summary__task-cell">{task.title}</td>
+                    <td className="journal-daily-summary__status-cell">
+                      <span
+                        className={`journal-daily-summary__status journal-daily-summary__status--${task.status}`}
+                        data-testid={`journal-daily-summary-status-${task.id}`}
+                      >
+                        {translateManagementJournalTaskStatus(task.status)}
+                      </span>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         )}
 
         <div className="journal-daily-summary__actions">
           <button
             type="button"
-            className="journal-daily-summary__pdf"
+            className="ds-btn ds-btn--secondary journal-daily-summary__pdf"
             data-testid="journal-daily-summary-pdf"
             disabled={isGeneratingPdf}
             aria-busy={isGeneratingPdf}
