@@ -2,6 +2,9 @@ import { describe, expect, it } from 'vitest'
 import type { ManagementJournalCandidate } from '../types/managementJournal'
 import {
   canAssignManagementJournalTask,
+  canCreateManagementJournalTaskUi,
+  canCreateSharedManagementJournalPageUi,
+  canReassignManagementJournalTaskUi,
   canSelectSharedManagementJournalPage,
   filterAssignableJournalParticipants,
   filterEligibleJournalParticipantCandidates,
@@ -46,10 +49,22 @@ describe('management journal display helpers', () => {
     expect(eligible.map((row) => row.id)).toEqual(['mgr', 'dep', 'sec'])
   })
 
-  it('hides shared-page selection from secretary in UI helpers', () => {
-    expect(canSelectSharedManagementJournalPage('institution_manager')).toBe(true)
-    expect(canSelectSharedManagementJournalPage('deputy')).toBe(true)
+  it('hides shared-page CREATE from secretary while still allowing open when participant-visible', () => {
+    expect(canCreateSharedManagementJournalPageUi('institution_manager')).toBe(true)
+    expect(canCreateSharedManagementJournalPageUi('deputy')).toBe(true)
+    expect(canCreateSharedManagementJournalPageUi('secretary')).toBe(false)
     expect(canSelectSharedManagementJournalPage('secretary')).toBe(false)
+  })
+
+  it('hides shared task create/reassign UI for secretary only', () => {
+    expect(canCreateManagementJournalTaskUi('secretary', 'shared')).toBe(false)
+    expect(canReassignManagementJournalTaskUi('secretary', 'shared')).toBe(false)
+    expect(canCreateManagementJournalTaskUi('secretary', 'personal')).toBe(true)
+    expect(canReassignManagementJournalTaskUi('secretary', 'personal')).toBe(false)
+    expect(canCreateManagementJournalTaskUi('institution_manager', 'shared')).toBe(true)
+    expect(canCreateManagementJournalTaskUi('deputy', 'shared')).toBe(true)
+    expect(canReassignManagementJournalTaskUi('institution_manager', 'shared')).toBe(true)
+    expect(canReassignManagementJournalTaskUi('deputy', 'shared')).toBe(true)
   })
 
   it('keeps journal_page_exists copy from leaking page or participant data', () => {

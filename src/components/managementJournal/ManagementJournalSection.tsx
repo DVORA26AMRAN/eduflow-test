@@ -23,7 +23,8 @@ import {
   MANAGEMENT_JOURNAL_FROZEN_LABEL,
   MANAGEMENT_JOURNAL_NAV_LABEL,
   canAddManagementJournalParticipantUi,
-  canSelectSharedManagementJournalPage,
+  canCreateManagementJournalTaskUi,
+  canCreateSharedManagementJournalPageUi,
   formatManagementJournalHebrewDate,
   isManagementJournalPageReadOnly,
   sortManagementJournalTasks,
@@ -63,7 +64,7 @@ export function ManagementJournalSection({
   actorRole,
   institutionId,
 }: ManagementJournalSectionProps) {
-  const canUseShared = canSelectSharedManagementJournalPage(actorRole)
+  const canCreateShared = canCreateSharedManagementJournalPageUi(actorRole)
   const canAddParticipant = canAddManagementJournalParticipantUi(actorRole)
 
   const [journalDate, setJournalDate] = useState<string | null>(null)
@@ -80,6 +81,8 @@ export function ManagementJournalSection({
   const [sharedDenial, setSharedDenial] = useState<SharedAccessDenial>({ visible: false })
   const [isPageFrozen, setIsPageFrozen] = useState(false)
   const [newerPageExists, setNewerPageExists] = useState(false)
+  /** RLS-visible today's shared page id (participant membership). Never use create RPC to discover this. */
+  const [visibleSharedPageId, setVisibleSharedPageId] = useState<string | null>(null)
 
   const hebrewDate = journalDate ? formatManagementJournalHebrewDate(journalDate) : ''
 
@@ -142,6 +145,7 @@ export function ManagementJournalSection({
       setIsBooting(true)
       setErrorMessage('')
       setSharedDenial({ visible: false })
+      setVisibleSharedPageId(null)
 
       const dateResult = await loadManagementJournalCurrentDate()
       if (cancelled) {
@@ -155,7 +159,7 @@ export function ManagementJournalSection({
 
       setJournalDate(dateResult.journalDate)
 
-      if (canUseShared) {
+      if (canCreateShared) {
         const candidatesResult = await loadEligibleManagementJournalParticipants(institutionId)
         if (cancelled) {
           return
@@ -163,6 +167,19 @@ export function ManagementJournalSection({
         if (candidatesResult.ok) {
           setCandidates(candidatesResult.candidates)
         }
+      }
+
+      // Discover today's shared page via RLS SELECT only (no create RPC).
+      // Participant → visible row; non-participant → no row.
+      const sharedProbe = await loadTodayManagementJournalPage({
+        journalDate: dateResult.journalDate,
+        pageType: 'shared',
+      })
+      if (cancelled) {
+        return
+      }
+      if (sharedProbe.ok && sharedProbe.page) {
+        setVisibleSharedPageId(sharedProbe.page.id)
       }
 
       const personalResult = await openPersonalManagementJournalPage()
@@ -195,7 +212,7 @@ export function ManagementJournalSection({
     return () => {
       cancelled = true
     }
-  }, [actorUserId, applyLoadedBundle, canUseShared, institutionId, refreshPageBundle])
+  }, [actorUserId, applyLoadedBundle, canCreateShared, institutionId, refreshPageBundle])
 
   const remainingCandidates = useMemo(() => {
     const memberIds = new Set(participants.map((participant) => participant.userId))
@@ -207,8 +224,10 @@ export function ManagementJournalSection({
     [actorUserId, candidates],
   )
 
+  const showSharedTypeOption = canCreateShared || Boolean(visibleSharedPageId)
+
   async function handleSelectType(nextType: ManagementJournalPageType) {
-    if (nextType === 'shared' && !canUseShared) {
+    if (nextType === 'shared' && !showSharedTypeOption) {
       return
     }
 
@@ -244,6 +263,7 @@ export function ManagementJournalSection({
       return
     }
 
+    // Shared: open existing page via RLS SELECT only. Never use create RPC for discovery.
     setIsWorking(true)
     const existing = await loadTodayManagementJournalPage({
       journalDate,
@@ -256,27 +276,22 @@ export function ManagementJournalSection({
     }
 
     if (existing.page) {
-      const opened = await openSharedManagementJournalPage([])
-      if (!opened.ok) {
-        if (opened.errorCode === 'JOURNAL_PAGE_EXISTS') {
-          setSharedDenial({ visible: true })
-          setPage(null)
-          setParticipants([])
-          setTasks([])
-          setIsWorking(false)
-          return
-        }
-        setErrorMessage(opened.errorMessage)
-        setIsWorking(false)
-        return
-      }
-      const bundle = await refreshPageBundle(opened.pageId)
+      setVisibleSharedPageId(existing.page.id)
+      const bundle = await refreshPageBundle(existing.page.id)
       setIsWorking(false)
       if (!bundle.ok) {
         setErrorMessage(bundle.errorMessage)
+        setVisibleSharedPageId(null)
         return
       }
       applyLoadedBundle(bundle)
+      return
+    }
+
+    // No visible shared page (RLS). Creators may start the create picker; Secretary must not.
+    setVisibleSharedPageId(null)
+    if (!canCreateShared) {
+      setIsWorking(false)
       return
     }
 
@@ -293,6 +308,10 @@ export function ManagementJournalSection({
   }
 
   async function handleOpenSharedPage() {
+    if (!canCreateShared) {
+      return
+    }
+
     setIsWorking(true)
     setErrorMessage('')
     setSharedDenial({ visible: false })
@@ -312,6 +331,7 @@ export function ManagementJournalSection({
       return
     }
 
+    setVisibleSharedPageId(opened.pageId)
     const bundle = await refreshPageBundle(opened.pageId)
     setIsWorking(false)
     if (!bundle.ok) {
@@ -386,7 +406,12 @@ export function ManagementJournalSection({
   const pageReadOnly = isPageFrozen || isManagementJournalPageReadOnly(newerPageExists)
 
   const showSharedPicker =
-    selectedType === 'shared' && canUseShared && !sharedDenial.visible && !page && !isBooting
+    selectedType === 'shared' &&
+    canCreateShared &&
+    !visibleSharedPageId &&
+    !sharedDenial.visible &&
+    !page &&
+    !isBooting
   const showNotebook = Boolean(page) && !sharedDenial.visible
 
   return (
@@ -431,7 +456,7 @@ export function ManagementJournalSection({
           >
             דף אישי
           </button>
-          {canUseShared ? (
+          {showSharedTypeOption ? (
             <button
               type="button"
               role="radio"
@@ -560,7 +585,7 @@ export function ManagementJournalSection({
               <p className="management-journal__frozen" role="status" data-testid="journal-frozen-banner">
                 {MANAGEMENT_JOURNAL_FROZEN_LABEL}
               </p>
-            ) : (
+            ) : canCreateManagementJournalTaskUi(actorRole, page.pageType) ? (
               <ManagementJournalTaskComposer
                 pageType={page.pageType}
                 actorUserId={actorUserId}
@@ -579,7 +604,7 @@ export function ManagementJournalSection({
                   )
                 }}
               />
-            )}
+            ) : null}
 
             <div className="management-journal__ruled" data-testid="journal-ruled-body">
               {tasks.length === 0 ? (

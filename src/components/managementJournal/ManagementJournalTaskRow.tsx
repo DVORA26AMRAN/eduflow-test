@@ -11,6 +11,7 @@ import {
   MANAGEMENT_JOURNAL_STATUS_LABELS,
   MANAGEMENT_JOURNAL_UNASSIGNED_LABEL,
   canAssignManagementJournalTask,
+  canReassignManagementJournalTaskUi,
   filterAssignableJournalParticipants,
   formatManagementJournalTargetTime,
   isManagementJournalTaskStatus,
@@ -55,7 +56,7 @@ export function ManagementJournalTaskRow({
   const assignable = filterAssignableJournalParticipants(actorRole, actorUserId, participants)
   const canReassign =
     !readOnly &&
-    pageType === 'shared' &&
+    canReassignManagementJournalTaskUi(actorRole, pageType) &&
     assignable.some((participant) =>
       canAssignManagementJournalTask(actorRole, actorUserId, participant.primaryRole, participant.userId),
     )

@@ -65,12 +65,60 @@ export function canUseManagementJournalUi(role: PrimaryRole | null | undefined):
   return isManagementJournalRole(role)
 }
 
-export function canSelectSharedManagementJournalPage(role: PrimaryRole | null | undefined): boolean {
+/**
+ * UI-only: Manager/Deputy may create/open shared pages via the create RPC.
+ * Secretary must never receive shared-page CREATE controls.
+ */
+export function canCreateSharedManagementJournalPageUi(
+  role: PrimaryRole | null | undefined,
+): boolean {
   return role === 'institution_manager' || role === 'deputy'
+}
+
+/**
+ * @deprecated Prefer canCreateSharedManagementJournalPageUi. Kept for call-site clarity:
+ * "select" historically meant create/open for operators only.
+ */
+export function canSelectSharedManagementJournalPage(role: PrimaryRole | null | undefined): boolean {
+  return canCreateSharedManagementJournalPageUi(role)
 }
 
 export function canAddManagementJournalParticipantUi(role: PrimaryRole | null | undefined): boolean {
   return role === 'institution_manager' || role === 'deputy'
+}
+
+/**
+ * UI-only: Secretary must not create tasks on shared pages (DB denies).
+ * Personal pages keep owner create for all management roles.
+ */
+export function canCreateManagementJournalTaskUi(
+  role: PrimaryRole | null | undefined,
+  pageType: ManagementJournalPageType | null | undefined,
+): boolean {
+  if (!isManagementJournalRole(role) || !pageType) {
+    return false
+  }
+  if (pageType === 'shared' && role === 'secretary') {
+    return false
+  }
+  return true
+}
+
+/**
+ * UI-only: Secretary must not assign/reassign on shared pages (DB denies).
+ * Does not change the display copy of management_journal_can_assign.
+ */
+export function canReassignManagementJournalTaskUi(
+  role: PrimaryRole | null | undefined,
+  pageType: ManagementJournalPageType | null | undefined,
+): boolean {
+  if (!isManagementJournalRole(role) || pageType !== 'shared') {
+    return false
+  }
+  if (role === 'secretary') {
+    return false
+  }
+  return true
 }
 
 export function translateManagementJournalPageType(pageType: ManagementJournalPageType): string {

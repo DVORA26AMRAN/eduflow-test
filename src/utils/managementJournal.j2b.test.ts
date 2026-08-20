@@ -94,4 +94,15 @@ describe('J2B management journal task workflow contracts', () => {
     expect(service).toContain("page.pageType === 'personal'")
     expect(service).toContain(".eq('owner_user_id', page.ownerUserId)")
   })
+
+  it('keeps Secretary shared open on RLS SELECT and never grants shared create', () => {
+    const section = read(SECTION)
+    const display = read('src/utils/managementJournalDisplay.ts')
+    expect(display).toContain('canCreateSharedManagementJournalPageUi')
+    expect(display).toContain("role === 'institution_manager' || role === 'deputy'")
+    expect(section).toContain('canCreateShared')
+    expect(section).toContain('visibleSharedPageId')
+    expect(section).toContain('loadTodayManagementJournalPage')
+    expect(section).toMatch(/async function handleOpenSharedPage\(\) \{[\s\S]*?if \(!canCreateShared\) \{/)
+  })
 })

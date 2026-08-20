@@ -111,7 +111,7 @@ describe('J2A management journal UI shell contracts', () => {
     const section = read(SECTION)
     expect(section).toContain('דף אישי')
     expect(section).toContain('דף משותף')
-    expect(section).toContain('canSelectSharedManagementJournalPage')
+    expect(section).toContain('canCreateSharedManagementJournalPageUi')
     expect(section).toContain('journal-shared-participant-selector')
     expect(section).toContain('disabled')
     expect(section).not.toContain('הסרה')
@@ -120,6 +120,14 @@ describe('J2A management journal UI shell contracts', () => {
     expect(section).toContain('MANAGEMENT_JOURNAL_EMPTY_TASKS_LABEL')
     expect(section).toContain('JOURNAL_PAGE_EXISTS')
     expect(section).toContain('journal-page-exists-denial')
+  })
+
+  it('never uses shared create RPC as a discovery path for Secretary', () => {
+    const section = read(SECTION)
+    expect(section).toContain('loadTodayManagementJournalPage')
+    expect(section).toContain('visibleSharedPageId')
+    expect(section).toContain('if (!canCreateShared)')
+    expect(section).toMatch(/async function handleOpenSharedPage\(\) \{[\s\S]*?if \(!canCreateShared\) \{/)
   })
 
   it('uses CSS ruled lines and a mobile-width notebook contract', () => {

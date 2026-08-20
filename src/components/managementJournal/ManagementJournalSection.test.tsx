@@ -115,6 +115,7 @@ function mockPersonalOpen() {
   }))
   loadParticipantsMock.mockResolvedValue({ ok: true, participants: [] })
   loadTasksMock.mockResolvedValue({ ok: true, tasks: [] })
+  loadTodayMock.mockResolvedValue({ ok: true, page: null })
   loadNewerMock.mockResolvedValue({ ok: true, exists: false })
   createTaskMock.mockResolvedValue({ ok: true, taskId: 'task-1' })
   updateContentMock.mockResolvedValue({ ok: true, taskId: 'task-1' })
@@ -191,7 +192,8 @@ describe('ManagementJournalSection J2A', () => {
     expect(openSharedMock).toHaveBeenCalledWith(['mgr-1'])
   })
 
-  it('does not show shared-page creation to secretary', async () => {
+  it('does not show shared-page creation to secretary when she is not a participant', async () => {
+    loadTodayMock.mockResolvedValue({ ok: true, page: null })
     render(
       <ManagementJournalSection
         actorUserId="sec-1"
@@ -205,21 +207,113 @@ describe('ManagementJournalSection J2A', () => {
     expect(screen.getByRole('radio', { name: 'דף אישי' })).toBeInTheDocument()
     expect(screen.queryByRole('radio', { name: 'דף משותף' })).not.toBeInTheDocument()
     expect(screen.queryByTestId('journal-add-participant')).not.toBeInTheDocument()
+    expect(screen.queryByTestId('journal-shared-participant-selector')).not.toBeInTheDocument()
     expect(screen.queryByTestId('journal-assignee-picker')).not.toBeInTheDocument()
+    expect(screen.getByTestId('journal-personal-self-assignee')).toBeInTheDocument()
+    expect(openSharedMock).not.toHaveBeenCalled()
+  })
+
+  it('lets a participating secretary open today shared page via RLS SELECT without create RPC', async () => {
+    const user = userEvent.setup({ delay: null })
+    loadTodayMock.mockResolvedValue({ ok: true, page: sharedPage })
+    loadPageMock.mockImplementation(async (pageId: string) => ({
+      ok: true,
+      page: pageId === 'shared-1' ? sharedPage : { ...personalPage, ownerUserId: 'sec-1', createdByUserId: 'sec-1' },
+    }))
+    loadParticipantsMock.mockImplementation(async (pageId: string) => {
+      if (pageId === 'shared-1') {
+        return {
+          ok: true,
+          participants: [
+            {
+              pageId: 'shared-1',
+              userId: 'mgr-1',
+              addedByUserId: null,
+              addedAutomatically: true,
+              addedAt: '2026-08-19T07:00:00.000Z',
+              fullName: 'מנהלת כהן',
+              primaryRole: 'institution_manager',
+              status: 'active',
+            },
+            {
+              pageId: 'shared-1',
+              userId: 'sec-1',
+              addedByUserId: 'mgr-1',
+              addedAutomatically: false,
+              addedAt: '2026-08-19T07:00:00.000Z',
+              fullName: 'מזכירה לוי',
+              primaryRole: 'secretary',
+              status: 'active',
+            },
+          ],
+        }
+      }
+      return { ok: true, participants: [] }
+    })
+
+    render(
+      <ManagementJournalSection
+        actorUserId="sec-1"
+        actorFullName="מזכירה לוי"
+        actorRole="secretary"
+        institutionId="inst-1"
+      />,
+    )
+
+    await screen.findByTestId('journal-notebook')
+    expect(screen.getByRole('radio', { name: 'דף אישי' })).toBeInTheDocument()
+    expect(screen.getByRole('radio', { name: 'דף משותף' })).toBeInTheDocument()
+
+    await user.click(screen.getByRole('radio', { name: 'דף משותף' }))
+    expect(await screen.findByText('דף משותף', { selector: '.management-journal__badge' })).toBeInTheDocument()
+    expect(screen.queryByTestId('journal-shared-participant-selector')).not.toBeInTheDocument()
+    expect(screen.queryByTestId('journal-add-participant')).not.toBeInTheDocument()
+    expect(openSharedMock).not.toHaveBeenCalled()
+    expect(loadTodayMock).toHaveBeenCalled()
+    expect(createTaskMock).not.toHaveBeenCalled()
+
+    expect(screen.queryByTestId('journal-add-task-composer')).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'הוספת משימה' })).not.toBeInTheDocument()
+    expect(screen.queryByTestId('journal-assignee-picker')).not.toBeInTheDocument()
+    expect(screen.queryByTestId('journal-reassign')).not.toBeInTheDocument()
+  })
+
+  it('keeps personal add-task UI for secretary on her own personal page', async () => {
+    openPersonalMock.mockResolvedValue({
+      ok: true,
+      unchanged: false,
+      pageId: 'personal-sec',
+      pageType: 'personal',
+      journalDate: '2026-08-19',
+      carriedTaskCount: 0,
+    })
+    loadPageMock.mockResolvedValue({
+      ok: true,
+      page: {
+        ...personalPage,
+        id: 'personal-sec',
+        ownerUserId: 'sec-1',
+        createdByUserId: 'sec-1',
+      },
+    })
+
+    render(
+      <ManagementJournalSection
+        actorUserId="sec-1"
+        actorFullName="מזכירה לוי"
+        actorRole="secretary"
+        institutionId="inst-1"
+      />,
+    )
+
+    expect(await screen.findByTestId('journal-add-task-composer')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'הוספת משימה' })).toBeInTheDocument()
     expect(screen.getByTestId('journal-personal-self-assignee')).toBeInTheDocument()
   })
 
   it('displays existing shared participants and adds via the intended RPC', async () => {
     const user = userEvent.setup({ delay: null })
     loadTodayMock.mockResolvedValue({ ok: true, page: sharedPage })
-    openSharedMock.mockResolvedValue({
-      ok: true,
-      unchanged: true,
-      pageId: 'shared-1',
-      pageType: 'shared',
-      journalDate: '2026-08-19',
-      carriedTaskCount: 0,
-    })
     loadPageMock.mockImplementation(async (pageId: string) => ({
       ok: true,
       page: pageId === 'shared-1' ? sharedPage : personalPage,
@@ -264,6 +358,7 @@ describe('ManagementJournalSection J2A', () => {
     await user.click(screen.getByRole('radio', { name: 'דף משותף' }))
     expect((await screen.findAllByText('מנהלת כהן')).length).toBeGreaterThan(0)
     expect(screen.getByTestId('journal-add-participant')).toBeInTheDocument()
+    expect(openSharedMock).not.toHaveBeenCalled()
 
     await user.selectOptions(screen.getByLabelText('הוספת משתתפת'), 'sec-1')
     await user.click(screen.getByRole('button', { name: 'הוספה' }))
@@ -422,6 +517,108 @@ describe('ManagementJournalSection J2B task workflow', () => {
     assignTaskMock.mockReset()
     updateStatusMock.mockReset()
     mockPersonalOpen()
+  })
+
+  it('keeps status and note read-only for secretary on another responsible user task', async () => {
+    mockSharedWorkspace()
+    loadTasksMock.mockResolvedValue({
+      ok: true,
+      tasks: [{ ...baseTask, responsibleUserId: 'mgr-1', createdByUserId: 'mgr-1', note: 'הערת מנהלת' }],
+    })
+
+    render(
+      <ManagementJournalSection
+        actorUserId="sec-1"
+        actorFullName="מזכירה לוי"
+        actorRole="secretary"
+        institutionId="inst-1"
+      />,
+    )
+
+    await screen.findByTestId('journal-notebook')
+    await userEvent.setup({ delay: null }).click(screen.getByRole('radio', { name: 'דף משותף' }))
+    expect(await screen.findByTestId('journal-status-readonly')).toHaveTextContent('חדש')
+    expect(screen.queryByLabelText('סטטוס משימה')).not.toBeInTheDocument()
+    expect(screen.queryByLabelText('הערת טיפול')).not.toBeInTheDocument()
+    expect(screen.getByText(/הערת מנהלת/)).toBeInTheDocument()
+    expect(screen.queryByTestId('journal-reassign')).not.toBeInTheDocument()
+    expect(screen.queryByTestId('journal-add-task-composer')).not.toBeInTheDocument()
+    expect(screen.queryByTestId('journal-add-participant')).not.toBeInTheDocument()
+    expect(openSharedMock).not.toHaveBeenCalled()
+  })
+
+  it('lets secretary update status and note on own shared assignment without create/reassign UI', async () => {
+    const user = userEvent.setup({ delay: null })
+    mockSharedWorkspace()
+    loadTasksMock.mockResolvedValue({
+      ok: true,
+      tasks: [{ ...baseTask, note: null }],
+    })
+
+    render(
+      <ManagementJournalSection
+        actorUserId="sec-1"
+        actorFullName="מזכירה לוי"
+        actorRole="secretary"
+        institutionId="inst-1"
+      />,
+    )
+
+    await screen.findByTestId('journal-notebook')
+    await user.click(screen.getByRole('radio', { name: 'דף משותף' }))
+    expect(await screen.findByTestId('journal-task-task-1')).toBeInTheDocument()
+    expect(screen.queryByTestId('journal-add-task-composer')).not.toBeInTheDocument()
+    expect(screen.queryByTestId('journal-reassign')).not.toBeInTheDocument()
+
+    await user.selectOptions(screen.getByLabelText('סטטוס משימה'), 'in_progress')
+    expect(updateStatusMock).toHaveBeenCalledWith({
+      taskId: 'task-1',
+      expectedStatus: 'new',
+      newStatus: 'in_progress',
+    })
+
+    await user.type(screen.getByLabelText('הערת טיפול'), 'בטיפול מול ספק')
+    await user.click(screen.getByRole('button', { name: 'שמירת הערה' }))
+    expect(updateNoteMock).toHaveBeenCalledWith('task-1', 'בטיפול מול ספק')
+  })
+
+  it('keeps manager shared create UI available', async () => {
+    mockSharedWorkspace()
+    loadTasksMock.mockResolvedValue({ ok: true, tasks: [] })
+
+    render(
+      <ManagementJournalSection
+        actorUserId="mgr-1"
+        actorFullName="מנהלת כהן"
+        actorRole="institution_manager"
+        institutionId="inst-1"
+      />,
+    )
+
+    await screen.findByTestId('journal-notebook')
+    await userEvent.setup({ delay: null }).click(screen.getByRole('radio', { name: 'דף משותף' }))
+    expect(await screen.findByTestId('journal-add-task-composer')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'הוספת משימה' })).toBeInTheDocument()
+    expect(screen.getByTestId('journal-assignee-picker')).toBeInTheDocument()
+  })
+
+  it('keeps deputy shared create UI available', async () => {
+    mockSharedWorkspace()
+    loadTasksMock.mockResolvedValue({ ok: true, tasks: [] })
+
+    render(
+      <ManagementJournalSection
+        actorUserId="dep-1"
+        actorFullName="סגנית פרץ"
+        actorRole="deputy"
+        institutionId="inst-1"
+      />,
+    )
+
+    await screen.findByTestId('journal-notebook')
+    await userEvent.setup({ delay: null }).click(screen.getByRole('radio', { name: 'דף משותף' }))
+    expect(await screen.findByTestId('journal-add-task-composer')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'הוספת משימה' })).toBeInTheDocument()
   })
 
   it('creates a personal task assigned to self through the public RPC', async () => {
