@@ -19,6 +19,15 @@ export const MANAGEMENT_JOURNAL_UNASSIGNED_LABEL =
 export const MANAGEMENT_JOURNAL_FROZEN_LABEL = 'דף זה נשמר בהיסטוריה ואינו ניתן לעריכה.'
 export const MANAGEMENT_JOURNAL_STALE_STATUS_LABEL = 'המשימה עודכנה במקום אחר. הנתונים רועננו.'
 export const MANAGEMENT_JOURNAL_NOTE_LABEL = 'הערת טיפול'
+export const MANAGEMENT_JOURNAL_DAILY_SUMMARY_BUTTON_LABEL = 'הוצא דוח יומי'
+export const MANAGEMENT_JOURNAL_DAILY_SUMMARY_TITLE = 'סיכום יומי'
+export const MANAGEMENT_JOURNAL_DAILY_SUMMARY_EMPTY_LABEL = 'אין משימות להצגה בדוח היומי'
+export const MANAGEMENT_JOURNAL_DAILY_SUMMARY_TASK_COLUMN = 'משימה'
+export const MANAGEMENT_JOURNAL_DAILY_SUMMARY_STATUS_COLUMN = 'סטטוס'
+export const MANAGEMENT_JOURNAL_DAILY_SUMMARY_PDF_LABEL = 'הפקת PDF'
+export const MANAGEMENT_JOURNAL_DAILY_SUMMARY_PDF_HINT = 'הפקת PDF תתווסף בהמשך'
+export const MANAGEMENT_JOURNAL_DAILY_SUMMARY_REFRESH_ERROR =
+  'לא ניתן לרענן את נתוני הדוח. הדוח לא הוצג.'
 
 export const MANAGEMENT_JOURNAL_ROLES: readonly ManagementJournalRole[] = [
   'institution_manager',

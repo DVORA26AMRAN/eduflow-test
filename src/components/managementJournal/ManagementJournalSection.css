@@ -344,6 +344,16 @@
   min-width: 0;
 }
 
+.management-journal__report-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-top: 1.25rem;
+  padding-top: 1rem;
+  border-top: 1px dashed rgba(118, 88, 212, 0.22);
+  min-width: 0;
+}
+
 @media (max-width: 1024px) {
   .management-journal__paper {
     max-width: 100%;

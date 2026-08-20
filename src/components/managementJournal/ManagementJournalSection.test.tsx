@@ -919,3 +919,163 @@ describe('ManagementJournalSection J2B task workflow', () => {
     expect(titles.map((node) => node.textContent)).toEqual(['ראשונה', 'שנייה'])
   })
 })
+
+describe('ManagementJournalSection J3A daily summary', () => {
+  afterEach(() => {
+    cleanup()
+  })
+
+  beforeEach(() => {
+    loadDateMock.mockReset()
+    loadEligibleMock.mockReset()
+    openPersonalMock.mockReset()
+    openSharedMock.mockReset()
+    loadPageMock.mockReset()
+    loadParticipantsMock.mockReset()
+    loadTasksMock.mockReset()
+    loadTodayMock.mockReset()
+    addParticipantMock.mockReset()
+    loadNewerMock.mockReset()
+    createTaskMock.mockReset()
+    updateContentMock.mockReset()
+    updateNoteMock.mockReset()
+    assignTaskMock.mockReset()
+    updateStatusMock.mockReset()
+    mockPersonalOpen()
+  })
+
+  it('shows the daily-summary button on a readable personal page and opens after refresh', async () => {
+    const user = userEvent.setup({ delay: null })
+    loadTasksMock
+      .mockResolvedValueOnce({ ok: true, tasks: [] })
+      .mockResolvedValue({
+        ok: true,
+        tasks: [{ ...baseTask, pageId: 'personal-1', title: 'משימת אישי', status: 'new', sortOrder: 1 }],
+      })
+
+    render(
+      <ManagementJournalSection
+        actorUserId="mgr-1"
+        actorFullName="מנהלת כהן"
+        actorRole="institution_manager"
+        institutionId="inst-1"
+      />,
+    )
+
+    expect(await screen.findByTestId('journal-daily-summary-open')).toBeInTheDocument()
+    const loadsBeforeOpen = loadTasksMock.mock.calls.length
+    await user.click(screen.getByTestId('journal-daily-summary-open'))
+
+    expect(await screen.findByTestId('journal-daily-summary')).toBeInTheDocument()
+    expect(loadTasksMock.mock.calls.length).toBeGreaterThan(loadsBeforeOpen)
+    expect(screen.getByTestId('journal-daily-summary-page-type')).toHaveTextContent('דף אישי')
+    expect(screen.getByTestId('journal-daily-summary-row-task-1')).toHaveTextContent('משימת אישי')
+    expect(screen.getByTestId('journal-daily-summary-status-task-1')).toHaveTextContent('חדש')
+    expect(createTaskMock).not.toHaveBeenCalled()
+    expect(updateStatusMock).not.toHaveBeenCalled()
+    expect(updateNoteMock).not.toHaveBeenCalled()
+    expect(assignTaskMock).not.toHaveBeenCalled()
+    expect(screen.getByTestId('journal-daily-summary-pdf')).toBeDisabled()
+  })
+
+  it('lets a secretary participant open the shared daily summary', async () => {
+    const user = userEvent.setup({ delay: null })
+    mockSharedWorkspace()
+    loadTasksMock.mockResolvedValue({
+      ok: true,
+      tasks: [
+        { ...baseTask, id: 'later', title: 'שנייה', status: 'blocked', sortOrder: 2, details: 'לא בדוח', note: 'לא בדוח' },
+        { ...baseTask, id: 'first', title: 'ראשונה', status: 'in_progress', sortOrder: 1, details: null, note: null },
+      ],
+    })
+
+    render(
+      <ManagementJournalSection
+        actorUserId="sec-1"
+        actorFullName="מזכירה לוי"
+        actorRole="secretary"
+        institutionId="inst-1"
+      />,
+    )
+
+    await screen.findByTestId('journal-notebook')
+    await user.click(screen.getByRole('radio', { name: 'דף משותף' }))
+    expect(await screen.findByTestId('journal-daily-summary-open')).toBeInTheDocument()
+    await user.click(screen.getByTestId('journal-daily-summary-open'))
+
+    const summary = await screen.findByTestId('journal-daily-summary')
+    expect(screen.getByTestId('journal-daily-summary-page-type')).toHaveTextContent('דף משותף')
+    expect(screen.getByTestId('journal-daily-summary-participants')).toHaveTextContent('מזכירה לוי')
+    const rows = within(screen.getByTestId('journal-daily-summary-table')).getAllByRole('row').slice(1)
+    expect(rows.map((row) => row.textContent)).toEqual(['ראשונהבטיפול', 'שנייהחסום'])
+    expect(summary).not.toHaveTextContent('לא בדוח')
+    expect(within(summary).queryByLabelText('סטטוס משימה')).not.toBeInTheDocument()
+    expect(updateStatusMock).not.toHaveBeenCalled()
+    expect(assignTaskMock).not.toHaveBeenCalled()
+    expect(createTaskMock).not.toHaveBeenCalled()
+  })
+
+  it('does not expose report data to a non-participant secretary', async () => {
+    loadTodayMock.mockResolvedValue({ ok: true, page: null })
+
+    render(
+      <ManagementJournalSection
+        actorUserId="sec-1"
+        actorFullName="מזכירה לוי"
+        actorRole="secretary"
+        institutionId="inst-1"
+      />,
+    )
+
+    await screen.findByTestId('journal-notebook')
+    expect(screen.queryByRole('radio', { name: 'דף משותף' })).not.toBeInTheDocument()
+    expect(screen.queryByTestId('journal-daily-summary')).not.toBeInTheDocument()
+    expect(screen.getByTestId('journal-daily-summary-open')).toBeInTheDocument()
+    expect(openSharedMock).not.toHaveBeenCalled()
+  })
+
+  it('does not open a stale report when authoritative refresh fails', async () => {
+    const user = userEvent.setup({ delay: null })
+    loadTasksMock
+      .mockResolvedValueOnce({
+        ok: true,
+        tasks: [{ ...baseTask, pageId: 'personal-1', title: 'ישנה', status: 'new', sortOrder: 1 }],
+      })
+      .mockResolvedValue({ ok: false, errorMessage: 'לא ניתן להתחבר ליומן הניהול כרגע.' })
+
+    render(
+      <ManagementJournalSection
+        actorUserId="mgr-1"
+        actorFullName="מנהלת כהן"
+        actorRole="institution_manager"
+        institutionId="inst-1"
+      />,
+    )
+
+    await screen.findByTestId('journal-daily-summary-open')
+    await user.click(screen.getByTestId('journal-daily-summary-open'))
+
+    expect(await screen.findByRole('alert')).toHaveTextContent('לא ניתן להתחבר ליומן הניהול כרגע.')
+    expect(screen.queryByTestId('journal-daily-summary')).not.toBeInTheDocument()
+  })
+
+  it('shows the empty report state when the refreshed page has no tasks', async () => {
+    const user = userEvent.setup({ delay: null })
+    loadTasksMock.mockResolvedValue({ ok: true, tasks: [] })
+
+    render(
+      <ManagementJournalSection
+        actorUserId="mgr-1"
+        actorFullName="מנהלת כהן"
+        actorRole="institution_manager"
+        institutionId="inst-1"
+      />,
+    )
+
+    await user.click(await screen.findByTestId('journal-daily-summary-open'))
+    expect(await screen.findByTestId('journal-daily-summary-empty')).toHaveTextContent(
+      'אין משימות להצגה בדוח היומי',
+    )
+    expect(screen.queryByTestId('journal-daily-summary-table')).not.toBeInTheDocument()
+  })
+})

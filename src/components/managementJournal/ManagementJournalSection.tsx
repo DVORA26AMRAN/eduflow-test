@@ -19,6 +19,8 @@ import {
   updateManagementJournalTaskStatus,
 } from '../../services/managementJournal'
 import {
+  MANAGEMENT_JOURNAL_DAILY_SUMMARY_BUTTON_LABEL,
+  MANAGEMENT_JOURNAL_DAILY_SUMMARY_REFRESH_ERROR,
   MANAGEMENT_JOURNAL_EMPTY_TASKS_LABEL,
   MANAGEMENT_JOURNAL_FROZEN_LABEL,
   MANAGEMENT_JOURNAL_NAV_LABEL,
@@ -41,6 +43,7 @@ import type {
   ManagementJournalTaskStatus,
 } from '../../types/managementJournal'
 import type { PrimaryRole } from '../../types/user'
+import { ManagementJournalDailySummary } from './ManagementJournalDailySummary'
 import { ManagementJournalTaskComposer } from './ManagementJournalTaskComposer'
 import { ManagementJournalTaskRow } from './ManagementJournalTaskRow'
 import './ManagementJournalSection.css'
@@ -83,6 +86,12 @@ export function ManagementJournalSection({
   const [newerPageExists, setNewerPageExists] = useState(false)
   /** RLS-visible today's shared page id (participant membership). Never use create RPC to discover this. */
   const [visibleSharedPageId, setVisibleSharedPageId] = useState<string | null>(null)
+  const [summaryOpen, setSummaryOpen] = useState(false)
+  const [summarySnapshot, setSummarySnapshot] = useState<{
+    page: ManagementJournalPage
+    participants: ManagementJournalParticipant[]
+    tasks: ManagementJournalTask[]
+  } | null>(null)
 
   const hebrewDate = journalDate ? formatManagementJournalHebrewDate(journalDate) : ''
 
@@ -240,6 +249,8 @@ export function ManagementJournalSection({
     setUserToAdd('')
     setIsPageFrozen(false)
     setNewerPageExists(false)
+    setSummaryOpen(false)
+    setSummarySnapshot(null)
 
     if (!journalDate) {
       return
@@ -362,6 +373,39 @@ export function ManagementJournalSection({
       return
     }
     applyLoadedBundle(bundle)
+  }
+
+  async function handleOpenDailySummary() {
+    if (!page) {
+      return
+    }
+
+    setIsWorking(true)
+    setErrorMessage('')
+    const bundle = await refreshPageBundle(page.id)
+    setIsWorking(false)
+
+    if (!bundle.ok || !bundle.page) {
+      setSummaryOpen(false)
+      setSummarySnapshot(null)
+      setErrorMessage(
+        bundle.ok ? MANAGEMENT_JOURNAL_DAILY_SUMMARY_REFRESH_ERROR : bundle.errorMessage,
+      )
+      return
+    }
+
+    applyLoadedBundle(bundle)
+    setSummarySnapshot({
+      page: bundle.page,
+      participants: bundle.participants,
+      tasks: bundle.tasks,
+    })
+    setSummaryOpen(true)
+  }
+
+  function handleCloseDailySummary() {
+    setSummaryOpen(false)
+    setSummarySnapshot(null)
   }
 
   async function handleMutationFailure(
@@ -660,7 +704,31 @@ export function ManagementJournalSection({
                 ))
               )}
             </div>
+
+            <div className="management-journal__report-actions">
+              <button
+                type="button"
+                className="management-journal__secondary"
+                data-testid="journal-daily-summary-open"
+                disabled={isWorking}
+                onClick={() => {
+                  void handleOpenDailySummary()
+                }}
+              >
+                {MANAGEMENT_JOURNAL_DAILY_SUMMARY_BUTTON_LABEL}
+              </button>
+            </div>
           </article>
+        ) : null}
+
+        {summaryOpen && summarySnapshot ? (
+          <ManagementJournalDailySummary
+            isOpen={summaryOpen}
+            page={summarySnapshot.page}
+            participants={summarySnapshot.participants}
+            tasks={summarySnapshot.tasks}
+            onClose={handleCloseDailySummary}
+          />
         ) : null}
       </div>
     </DashboardSection>
