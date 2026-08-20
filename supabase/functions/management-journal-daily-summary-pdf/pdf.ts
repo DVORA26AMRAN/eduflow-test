@@ -4,10 +4,19 @@ import {
   NOTO_SANS_HEBREW_REGULAR_TTF_SHA256,
   notoSansHebrewRegularBytes,
 } from './fonts/notoSansHebrewRegular.b64.ts'
+import {
+  layoutRtlLine,
+  measureMixedLineWidth,
+  splitBidiRuns,
+  type BidiRun,
+} from './rtlLayout.ts'
+
+export type { BidiRun }
+export { splitBidiRuns, layoutRtlLine, measureMixedLineWidth }
 
 const fontkit = (fontkitImport as { default?: unknown }).default ?? fontkitImport
 
-export const MANAGEMENT_JOURNAL_PDF_GENERATOR_VERSION = 'mpex-management-journal-pdf/v1'
+export const MANAGEMENT_JOURNAL_PDF_GENERATOR_VERSION = 'mpex-management-journal-pdf/v2'
 
 /** Integrity constant — update only together with regenerating the font embed. */
 export const BUNDLED_NOTO_SANS_HEBREW_SHA256 =
@@ -33,11 +42,6 @@ export type ManagementJournalPdfInput = {
   owner_full_name: string | null
   participant_names: string[]
   tasks: ManagementJournalPdfTask[]
-}
-
-export type BidiRun = {
-  text: string
-  hebrew: boolean
 }
 
 export async function sha256Hex(bytes: Uint8Array): Promise<string> {
@@ -96,52 +100,11 @@ export function sanitizePdfText(text: string): string {
     .trim()
 }
 
-/**
- * Split logical bidi runs. Spaces stay attached to the preceding run.
- * Hebrew runs use the bundled Hebrew TTF; other runs use Helvetica because
- * Noto Sans Hebrew does not reliably include Latin digit glyphs.
- */
-export function splitBidiRuns(text: string): BidiRun[] {
-  const runs: BidiRun[] = []
-  for (const ch of text) {
-    const hebrew = /[\u0590-\u05FF]/.test(ch)
-    const space = /\s/.test(ch)
-    const last = runs[runs.length - 1]
-    if (!last) {
-      runs.push({ text: ch, hebrew })
-      continue
-    }
-    if (space) {
-      last.text += ch
-      continue
-    }
-    if (hebrew === last.hebrew) {
-      last.text += ch
-    } else {
-      runs.push({ text: ch, hebrew })
-    }
+function makeMeasure(hebrewFont: PDFFont, latinFont: PDFFont, size: number) {
+  return (chunk: string, hebrew: boolean) => {
+    const font = hebrew ? hebrewFont : latinFont
+    return font.widthOfTextAtSize(chunk, size)
   }
-  return runs
-}
-
-/** @deprecated Prefer splitBidiRuns. Kept for source contracts. */
-export function toVisualPdfText(text: string): string {
-  return splitBidiRuns(text)
-    .map((run) => (run.hebrew ? [...run.text].reverse().join('') : run.text))
-    .join('')
-}
-
-function measureMixedLine(
-  text: string,
-  hebrewFont: PDFFont,
-  latinFont: PDFFont,
-  size: number,
-): number {
-  return splitBidiRuns(text).reduce((total, run) => {
-    const painted = run.hebrew ? [...run.text].reverse().join('') : run.text
-    const font = run.hebrew ? hebrewFont : latinFont
-    return total + font.widthOfTextAtSize(painted, size)
-  }, 0)
 }
 
 export function wrapTextToWidth(
@@ -154,6 +117,7 @@ export function wrapTextToWidth(
   const normalized = sanitizePdfText(text)
   if (!normalized) return []
 
+  const measure = makeMeasure(hebrewFont, latinFont, size)
   const words = normalized.split(' ')
   const lines: string[] = []
   let current = ''
@@ -167,14 +131,14 @@ export function wrapTextToWidth(
 
   for (const word of words) {
     const candidate = current ? `${current} ${word}` : word
-    if (measureMixedLine(candidate, hebrewFont, latinFont, size) <= maxWidth) {
+    if (measureMixedLineWidth(candidate, measure) <= maxWidth) {
       current = candidate
       continue
     }
 
     pushCurrent()
 
-    if (measureMixedLine(word, hebrewFont, latinFont, size) <= maxWidth) {
+    if (measureMixedLineWidth(word, measure) <= maxWidth) {
       current = word
       continue
     }
@@ -182,7 +146,7 @@ export function wrapTextToWidth(
     let chunk = ''
     for (const ch of word) {
       const next = chunk + ch
-      if (measureMixedLine(next, hebrewFont, latinFont, size) <= maxWidth) {
+      if (measureMixedLineWidth(next, measure) <= maxWidth) {
         chunk = next
       } else {
         if (chunk) lines.push(chunk)
@@ -206,18 +170,16 @@ function drawRtlMixedLine(
   latinFont: PDFFont,
   color = rgb(0.08, 0.12, 0.18),
 ) {
-  const runs = splitBidiRuns(text)
-  if (runs.length === 0) return
+  const measure = makeMeasure(hebrewFont, latinFont, size)
+  const glyphs = layoutRtlLine(text, measure)
+  const rightEdge = pageWidth - margin
 
-  let x = pageWidth - margin
-  for (const run of runs) {
-    const painted = run.hebrew ? [...run.text].reverse().join('') : run.text
-    if (!painted) continue
-    const font = run.hebrew ? hebrewFont : latinFont
-    const width = font.widthOfTextAtSize(painted, size)
-    x -= width
-    page.drawText(painted, {
-      x: Math.max(margin, x),
+  for (const glyph of glyphs) {
+    if (!glyph.char) continue
+    const font = glyph.hebrew ? hebrewFont : latinFont
+    const x = Math.max(margin, rightEdge - glyph.offsetFromRight)
+    page.drawText(glyph.char, {
+      x,
       y,
       size,
       font,
@@ -237,15 +199,16 @@ function drawInLeftColumn(
   latinFont: PDFFont,
   color = rgb(0.08, 0.12, 0.18),
 ) {
-  let x = margin + columnWidth
-  for (const run of splitBidiRuns(text)) {
-    const painted = run.hebrew ? [...run.text].reverse().join('') : run.text
-    if (!painted) continue
-    const font = run.hebrew ? hebrewFont : latinFont
-    const width = font.widthOfTextAtSize(painted, size)
-    x -= width
-    page.drawText(painted, {
-      x: Math.max(margin, x),
+  const measure = makeMeasure(hebrewFont, latinFont, size)
+  const glyphs = layoutRtlLine(text, measure)
+  const rightEdge = margin + columnWidth
+
+  for (const glyph of glyphs) {
+    if (!glyph.char) continue
+    const font = glyph.hebrew ? hebrewFont : latinFont
+    const x = Math.max(margin, rightEdge - glyph.offsetFromRight)
+    page.drawText(glyph.char, {
+      x,
       y,
       size,
       font,

@@ -71,11 +71,13 @@ describe('J3B management journal daily-summary PDF', () => {
     expect(pdf).toContain('sort_order')
     expect(pdf).toContain('wrapTextToWidth')
     expect(pdf).toContain('splitBidiRuns')
-    expect(pdf).toContain('toVisualPdfText')
+    expect(pdf).toContain('layoutRtlLine')
     expect(pdf).toContain('StandardFonts.Helvetica')
     expect(pdf).toContain('registerFontkit')
     expect(pdf).toContain('BUNDLED_NOTO_SANS_HEBREW_SHA256')
     expect(pdf).toContain('pdf_font_hash_mismatch')
+    expect(pdf).not.toContain('[...run.text].reverse()')
+    expect(pdf).not.toContain('toVisualPdfText')
   })
 
   it('isolates Hebrew font under the journal function with OFL license docs', () => {
