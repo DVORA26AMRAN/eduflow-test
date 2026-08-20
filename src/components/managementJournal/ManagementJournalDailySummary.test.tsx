@@ -2,14 +2,24 @@ import { cleanup, render, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
-import { afterEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { ManagementJournalPage, ManagementJournalTask } from '../../types/managementJournal'
 import {
   MANAGEMENT_JOURNAL_DAILY_SUMMARY_EMPTY_LABEL,
+  MANAGEMENT_JOURNAL_DAILY_SUMMARY_PDF_GENERATING_LABEL,
   MANAGEMENT_JOURNAL_DAILY_SUMMARY_PDF_HINT,
   MANAGEMENT_JOURNAL_DAILY_SUMMARY_PDF_LABEL,
   MANAGEMENT_JOURNAL_STATUS_LABELS,
 } from '../../utils/managementJournalDisplay'
+
+const { downloadPdfMock } = vi.hoisted(() => ({
+  downloadPdfMock: vi.fn(),
+}))
+
+vi.mock('../../services/managementJournal', () => ({
+  downloadManagementJournalDailySummaryPdf: downloadPdfMock,
+}))
+
 import { ManagementJournalDailySummary } from './ManagementJournalDailySummary'
 
 const page: ManagementJournalPage = {
@@ -46,7 +56,10 @@ const participants = [
   },
 ]
 
-function task(overrides: Partial<ManagementJournalTask> & Pick<ManagementJournalTask, 'id' | 'title' | 'status' | 'sortOrder'>): ManagementJournalTask {
+function task(
+  overrides: Partial<ManagementJournalTask> &
+    Pick<ManagementJournalTask, 'id' | 'title' | 'status' | 'sortOrder'>,
+): ManagementJournalTask {
   return {
     pageId: 'shared-1',
     institutionId: 'inst-1',
@@ -64,9 +77,13 @@ function task(overrides: Partial<ManagementJournalTask> & Pick<ManagementJournal
   }
 }
 
-describe('ManagementJournalDailySummary J3A', () => {
+describe('ManagementJournalDailySummary J3A/J3B', () => {
   afterEach(() => {
     cleanup()
+  })
+
+  beforeEach(() => {
+    downloadPdfMock.mockReset()
   })
 
   it('renders every task once as title + status only, preserving sort_order', () => {
@@ -147,9 +164,17 @@ describe('ManagementJournalDailySummary J3A', () => {
     expect(screen.queryByTestId('journal-daily-summary-table')).not.toBeInTheDocument()
   })
 
-  it('keeps PDF action disabled and non-operational', async () => {
+  it('requests PDF by page id, prevents duplicate submit, and keeps summary open on error', async () => {
     const user = userEvent.setup({ delay: null })
     const onClose = vi.fn()
+    let resolveDownload: ((value: { ok: false; errorMessage: string }) => void) | null = null
+    downloadPdfMock.mockImplementation(
+      () =>
+        new Promise((resolve) => {
+          resolveDownload = resolve
+        }),
+    )
+
     render(
       <ManagementJournalDailySummary
         isOpen
@@ -161,11 +186,22 @@ describe('ManagementJournalDailySummary J3A', () => {
     )
 
     const pdf = screen.getByTestId('journal-daily-summary-pdf')
-    expect(pdf).toBeDisabled()
-    expect(pdf).toHaveAttribute('aria-disabled', 'true')
+    expect(pdf).not.toBeDisabled()
     expect(pdf).toHaveTextContent(MANAGEMENT_JOURNAL_DAILY_SUMMARY_PDF_LABEL)
     expect(pdf).toHaveAttribute('title', MANAGEMENT_JOURNAL_DAILY_SUMMARY_PDF_HINT)
+
     await user.click(pdf)
+    expect(pdf).toBeDisabled()
+    expect(pdf).toHaveTextContent(MANAGEMENT_JOURNAL_DAILY_SUMMARY_PDF_GENERATING_LABEL)
+    await user.click(pdf)
+    expect(downloadPdfMock).toHaveBeenCalledTimes(1)
+    expect(downloadPdfMock).toHaveBeenCalledWith('shared-1')
+
+    resolveDownload?.({ ok: false, errorMessage: 'לא ניתן להפיק את קובץ ה־PDF כרגע.' })
+    expect(await screen.findByTestId('journal-daily-summary-pdf-error')).toHaveTextContent(
+      'לא ניתן להפיק את קובץ ה־PDF כרגע.',
+    )
+    expect(screen.getByTestId('journal-daily-summary')).toBeInTheDocument()
     expect(onClose).not.toHaveBeenCalled()
   })
 

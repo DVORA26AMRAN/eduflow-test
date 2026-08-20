@@ -975,7 +975,7 @@ describe('ManagementJournalSection J3A daily summary', () => {
     expect(updateStatusMock).not.toHaveBeenCalled()
     expect(updateNoteMock).not.toHaveBeenCalled()
     expect(assignTaskMock).not.toHaveBeenCalled()
-    expect(screen.getByTestId('journal-daily-summary-pdf')).toBeDisabled()
+    expect(screen.getByTestId('journal-daily-summary-pdf')).not.toBeDisabled()
   })
 
   it('lets a secretary participant open the shared daily summary', async () => {

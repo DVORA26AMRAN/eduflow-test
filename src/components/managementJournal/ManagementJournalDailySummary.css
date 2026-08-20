@@ -158,17 +158,27 @@
   padding: 0.45rem 1rem;
   border-radius: 999px;
   border: 1px solid var(--ds-color-border-strong);
-  background: var(--ds-color-surface-soft);
-  color: var(--ds-color-text-secondary);
+  background: var(--ds-color-surface);
+  color: var(--ds-color-text-primary);
   font: inherit;
-  cursor: not-allowed;
+  cursor: pointer;
+}
+
+.journal-daily-summary__pdf:disabled {
   opacity: 0.65;
+  cursor: not-allowed;
 }
 
 .journal-daily-summary__pdf-hint {
   margin: 0;
   font-size: 0.8rem;
   color: var(--ds-color-text-muted);
+}
+
+.journal-daily-summary__pdf-error {
+  margin: 0;
+  font-size: 0.9rem;
+  color: var(--ds-color-error);
 }
 
 @media (max-width: 480px) {

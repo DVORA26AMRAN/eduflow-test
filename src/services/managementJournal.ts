@@ -15,11 +15,12 @@ import {
   isManagementJournalPageType,
   isManagementJournalRole,
   isManagementJournalTaskStatus,
+  MANAGEMENT_JOURNAL_DAILY_SUMMARY_PDF_ERROR,
   MANAGEMENT_JOURNAL_MESSAGES,
   parseManagementJournalDateKey,
   sortManagementJournalTasks,
 } from '../utils/managementJournalDisplay'
-import { supabase } from './supabase'
+import { supabase, supabaseUrl } from './supabase'
 
 const USERS_JOURNAL_SELECT = 'id, full_name, primary_role, status, institution_id'
 const PAGES_SELECT =
@@ -551,4 +552,127 @@ export async function updateManagementJournalTaskStatus(input: {
   })
 
   return parseTaskMutation(data, error)
+}
+
+export type DownloadManagementJournalDailySummaryPdfResult =
+  | { ok: true; filename: string }
+  | { ok: false; errorMessage: string; errorCode?: string }
+
+function triggerPdfBytesDownload(filename: string, bytes: Uint8Array): void {
+  const copy = new Uint8Array(bytes.byteLength)
+  copy.set(bytes)
+  const blob = new Blob([copy], { type: 'application/pdf' })
+  const objectUrl = URL.createObjectURL(blob)
+  const link = document.createElement('a')
+  link.href = objectUrl
+  link.download = filename
+  link.rel = 'noopener'
+  document.body.appendChild(link)
+  link.click()
+  link.remove()
+  URL.revokeObjectURL(objectUrl)
+}
+
+function parseContentDispositionFilename(header: string | null): string | null {
+  if (!header) return null
+  const utfMatch = /filename\*=UTF-8''([^;]+)/i.exec(header)
+  if (utfMatch?.[1]) {
+    try {
+      return decodeURIComponent(utfMatch[1].trim())
+    } catch {
+      return utfMatch[1].trim()
+    }
+  }
+  const plainMatch = /filename="?([^";]+)"?/i.exec(header)
+  return plainMatch?.[1]?.trim() ?? null
+}
+
+/**
+ * Request a transient daily-summary PDF for a readable journal page.
+ * Sends page_id only — server reloads authoritative data under J1 RLS.
+ */
+export async function downloadManagementJournalDailySummaryPdf(
+  pageId: string,
+): Promise<DownloadManagementJournalDailySummaryPdfResult> {
+  const { data: sessionData, error: sessionError } = await supabase.auth.getSession()
+  const accessToken = sessionData.session?.access_token
+  if (sessionError || !accessToken) {
+    return {
+      ok: false,
+      errorMessage: MANAGEMENT_JOURNAL_MESSAGES.PERMISSION_DENIED,
+      errorCode: 'unauthorized',
+    }
+  }
+
+  let response: Response
+  try {
+    response = await fetch(`${supabaseUrl}/functions/v1/management-journal-daily-summary-pdf`, {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+        apikey: import.meta.env.VITE_SUPABASE_ANON_KEY ?? '',
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ page_id: pageId }),
+    })
+  } catch {
+    return {
+      ok: false,
+      errorMessage: MANAGEMENT_JOURNAL_MESSAGES.NETWORK,
+      errorCode: 'network',
+    }
+  }
+
+  const contentType = response.headers.get('Content-Type') ?? ''
+  if (response.ok && contentType.includes('application/pdf')) {
+    const buffer = await response.arrayBuffer()
+    const bytes = new Uint8Array(buffer)
+    if (bytes.byteLength < 5) {
+      return {
+        ok: false,
+        errorMessage: MANAGEMENT_JOURNAL_DAILY_SUMMARY_PDF_ERROR,
+        errorCode: 'invalid_pdf',
+      }
+    }
+    const filename =
+      parseContentDispositionFilename(response.headers.get('Content-Disposition')) ??
+      'management-journal.pdf'
+    triggerPdfBytesDownload(filename, bytes)
+    return { ok: true, filename }
+  }
+
+  let body: Record<string, unknown>
+  try {
+    body = (await response.json()) as Record<string, unknown>
+  } catch {
+    body = {}
+  }
+
+  const code = typeof body.error === 'string' ? body.error : ''
+  if (code === 'unauthorized' || response.status === 401) {
+    return {
+      ok: false,
+      errorMessage: MANAGEMENT_JOURNAL_MESSAGES.PERMISSION_DENIED,
+      errorCode: code || 'unauthorized',
+    }
+  }
+  if (code === 'forbidden' || code === 'inactive' || response.status === 403) {
+    return {
+      ok: false,
+      errorMessage: MANAGEMENT_JOURNAL_MESSAGES.PERMISSION_DENIED,
+      errorCode: code || 'forbidden',
+    }
+  }
+  if (code.startsWith('pdf_')) {
+    return {
+      ok: false,
+      errorMessage: MANAGEMENT_JOURNAL_DAILY_SUMMARY_PDF_ERROR,
+      errorCode: code,
+    }
+  }
+  return {
+    ok: false,
+    errorMessage: MANAGEMENT_JOURNAL_DAILY_SUMMARY_PDF_ERROR,
+    errorCode: code || undefined,
+  }
 }

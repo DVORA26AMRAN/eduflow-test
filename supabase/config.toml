@@ -433,3 +433,7 @@ verify_jwt = false
 # Meeting reminder worker — service_role Authorization required (app gate).
 [functions.meeting-reminder-dispatcher]
 verify_jwt = true
+
+# Management Journal daily-summary PDF — user JWT + J1 RLS (no service_role).
+[functions.management-journal-daily-summary-pdf]
+verify_jwt = true

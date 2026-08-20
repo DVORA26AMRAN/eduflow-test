@@ -1,4 +1,6 @@
+import { useState } from 'react'
 import { Modal } from '../ui/Modal'
+import { downloadManagementJournalDailySummaryPdf } from '../../services/managementJournal'
 import type {
   ManagementJournalPage,
   ManagementJournalParticipant,
@@ -6,6 +8,8 @@ import type {
 } from '../../types/managementJournal'
 import {
   MANAGEMENT_JOURNAL_DAILY_SUMMARY_EMPTY_LABEL,
+  MANAGEMENT_JOURNAL_DAILY_SUMMARY_PDF_ERROR,
+  MANAGEMENT_JOURNAL_DAILY_SUMMARY_PDF_GENERATING_LABEL,
   MANAGEMENT_JOURNAL_DAILY_SUMMARY_PDF_HINT,
   MANAGEMENT_JOURNAL_DAILY_SUMMARY_PDF_LABEL,
   MANAGEMENT_JOURNAL_DAILY_SUMMARY_STATUS_COLUMN,
@@ -36,6 +40,23 @@ export function ManagementJournalDailySummary({
   const orderedTasks = sortManagementJournalTasks(tasks)
   const hebrewDate = formatManagementJournalHebrewDate(page.journalDate)
   const pageTypeLabel = translateManagementJournalPageType(page.pageType)
+  const [isGeneratingPdf, setIsGeneratingPdf] = useState(false)
+  const [pdfError, setPdfError] = useState('')
+
+  async function handleGeneratePdf() {
+    if (isGeneratingPdf) {
+      return
+    }
+
+    setIsGeneratingPdf(true)
+    setPdfError('')
+    const result = await downloadManagementJournalDailySummaryPdf(page.id)
+    setIsGeneratingPdf(false)
+
+    if (!result.ok) {
+      setPdfError(result.errorMessage || MANAGEMENT_JOURNAL_DAILY_SUMMARY_PDF_ERROR)
+    }
+  }
 
   return (
     <Modal
@@ -112,13 +133,23 @@ export function ManagementJournalDailySummary({
             type="button"
             className="journal-daily-summary__pdf"
             data-testid="journal-daily-summary-pdf"
-            disabled
+            disabled={isGeneratingPdf}
+            aria-busy={isGeneratingPdf}
             title={MANAGEMENT_JOURNAL_DAILY_SUMMARY_PDF_HINT}
-            aria-disabled="true"
+            onClick={() => {
+              void handleGeneratePdf()
+            }}
           >
-            {MANAGEMENT_JOURNAL_DAILY_SUMMARY_PDF_LABEL}
+            {isGeneratingPdf
+              ? MANAGEMENT_JOURNAL_DAILY_SUMMARY_PDF_GENERATING_LABEL
+              : MANAGEMENT_JOURNAL_DAILY_SUMMARY_PDF_LABEL}
           </button>
           <p className="journal-daily-summary__pdf-hint">{MANAGEMENT_JOURNAL_DAILY_SUMMARY_PDF_HINT}</p>
+          {pdfError ? (
+            <p className="journal-daily-summary__pdf-error" role="alert" data-testid="journal-daily-summary-pdf-error">
+              {pdfError}
+            </p>
+          ) : null}
         </div>
       </div>
     </Modal>

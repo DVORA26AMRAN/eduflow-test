@@ -25,7 +25,10 @@ export const MANAGEMENT_JOURNAL_DAILY_SUMMARY_EMPTY_LABEL = 'אין משימות
 export const MANAGEMENT_JOURNAL_DAILY_SUMMARY_TASK_COLUMN = 'משימה'
 export const MANAGEMENT_JOURNAL_DAILY_SUMMARY_STATUS_COLUMN = 'סטטוס'
 export const MANAGEMENT_JOURNAL_DAILY_SUMMARY_PDF_LABEL = 'הפקת PDF'
-export const MANAGEMENT_JOURNAL_DAILY_SUMMARY_PDF_HINT = 'הפקת PDF תתווסף בהמשך'
+export const MANAGEMENT_JOURNAL_DAILY_SUMMARY_PDF_GENERATING_LABEL = 'מפיק PDF…'
+export const MANAGEMENT_JOURNAL_DAILY_SUMMARY_PDF_HINT = 'הורדת סיכום יומי כ־PDF'
+export const MANAGEMENT_JOURNAL_DAILY_SUMMARY_PDF_ERROR =
+  'לא ניתן להפיק את קובץ ה־PDF כרגע.'
 export const MANAGEMENT_JOURNAL_DAILY_SUMMARY_REFRESH_ERROR =
   'לא ניתן לרענן את נתוני הדוח. הדוח לא הוצג.'
 
