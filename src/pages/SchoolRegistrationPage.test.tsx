@@ -2,7 +2,10 @@ import { cleanup, render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { SchoolRegistrationPage } from './SchoolRegistrationPage'
-import { SCHOOL_REGISTRATION_SUCCESS_MESSAGE } from '../types/schoolRegistration'
+import {
+  SCHOOL_REGISTRATION_MARKETING_CONSENT_LABEL,
+  SCHOOL_REGISTRATION_SUCCESS_MESSAGE,
+} from '../types/schoolRegistration'
 
 const submitMock = vi.hoisted(() => vi.fn())
 
@@ -29,6 +32,56 @@ describe('SchoolRegistrationPage', () => {
     await user.click(screen.getByRole('button', { name: 'שליחת הרשמה' }))
     expect(submitMock).not.toHaveBeenCalled()
     expect(screen.getByRole('alert')).toBeInTheDocument()
+  })
+
+  it('shows optional marketing consent checkbox unchecked by default', () => {
+    render(<SchoolRegistrationPage />)
+    const checkbox = screen.getByRole('checkbox', {
+      name: SCHOOL_REGISTRATION_MARKETING_CONSENT_LABEL,
+    })
+    expect(checkbox).not.toBeChecked()
+    expect(checkbox).not.toBeRequired()
+  })
+
+  it('allows checking marketing consent and submits true', async () => {
+    submitMock.mockResolvedValue({ ok: true })
+    const user = userEvent.setup()
+    render(<SchoolRegistrationPage />)
+
+    await user.type(screen.getByLabelText('שם בית הספר'), 'בית ספר בדיקה')
+    await user.type(screen.getByLabelText('סמל מוסד'), '998877')
+    await user.type(screen.getByLabelText('עיר'), 'תל אביב')
+    await user.selectOptions(screen.getByLabelText('תפקיד הפונה'), 'principal')
+    await user.type(screen.getByLabelText('שם מלא'), 'תמר בדיקה')
+    await user.type(screen.getByLabelText('אימייל'), 'tamar@example.com')
+    await user.type(screen.getByLabelText('טלפון'), '050-1112233')
+    await user.click(
+      screen.getByRole('checkbox', { name: SCHOOL_REGISTRATION_MARKETING_CONSENT_LABEL }),
+    )
+    await user.click(screen.getByRole('button', { name: 'שליחת הרשמה' }))
+
+    expect(submitMock).toHaveBeenCalledWith(
+      expect.objectContaining({ marketingConsent: true }),
+    )
+  })
+
+  it('submits marketing consent false when checkbox remains unchecked', async () => {
+    submitMock.mockResolvedValue({ ok: true })
+    const user = userEvent.setup()
+    render(<SchoolRegistrationPage />)
+
+    await user.type(screen.getByLabelText('שם בית הספר'), 'בית ספר בדיקה')
+    await user.type(screen.getByLabelText('סמל מוסד'), '998877')
+    await user.type(screen.getByLabelText('עיר'), 'תל אביב')
+    await user.selectOptions(screen.getByLabelText('תפקיד הפונה'), 'principal')
+    await user.type(screen.getByLabelText('שם מלא'), 'תמר בדיקה')
+    await user.type(screen.getByLabelText('אימייל'), 'tamar@example.com')
+    await user.type(screen.getByLabelText('טלפון'), '050-1112233')
+    await user.click(screen.getByRole('button', { name: 'שליחת הרשמה' }))
+
+    expect(submitMock).toHaveBeenCalledWith(
+      expect.objectContaining({ marketingConsent: false }),
+    )
   })
 
   it('shows confirmation after successful submit and does not navigate away', async () => {

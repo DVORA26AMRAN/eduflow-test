@@ -1,11 +1,13 @@
 import { useCallback, useEffect, useState } from 'react'
 import {
   APPLICANT_ROLE_LABELS,
+  MARKETING_CONSENT_COLUMN_LABEL,
   REGISTRATION_ACTIVITY_LABELS,
   REGISTRATION_STATUS_LABELS,
   SCHOOL_REGISTRATION_NOTE_MAX_LENGTH,
   SCHOOL_REGISTRATION_PATH,
   SCHOOL_REGISTRATION_STATUSES,
+  marketingConsentDisplayLabel,
   type SchoolRegistrationActivity,
   type SchoolRegistrationNote,
   type SchoolRegistrationRecord,
@@ -298,6 +300,7 @@ export function PlatformAdminRegistrationsSection() {
                   <th scope="col">איש קשר</th>
                   <th scope="col">טלפון</th>
                   <th scope="col">סטטוס</th>
+                  <th scope="col">{MARKETING_CONSENT_COLUMN_LABEL}</th>
                   <th scope="col">מעקב</th>
                   <th scope="col">נשלח ב־</th>
                 </tr>
@@ -336,6 +339,7 @@ export function PlatformAdminRegistrationsSection() {
                           {REGISTRATION_STATUS_LABELS[row.status]}
                         </span>
                       </td>
+                      <td>{marketingConsentDisplayLabel(row.marketingConsent)}</td>
                       <td>
                         {row.followUpAt ? (
                           <span

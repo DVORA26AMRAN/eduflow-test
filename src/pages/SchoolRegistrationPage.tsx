@@ -2,6 +2,7 @@ import { useState, type FormEvent } from 'react'
 import organizationLogo from '../assets/images/logo.png.png'
 import {
   APPLICANT_ROLE_LABELS,
+  SCHOOL_REGISTRATION_MARKETING_CONSENT_LABEL,
   SCHOOL_REGISTRATION_SUCCESS_MESSAGE,
   type SchoolRegistrationFormFields,
 } from '../types/schoolRegistration'
@@ -17,6 +18,7 @@ const EMPTY_FORM: SchoolRegistrationFormFields = {
   contactFullName: '',
   email: '',
   phone: '',
+  marketingConsent: false,
 }
 
 export function SchoolRegistrationPage() {
@@ -195,6 +197,22 @@ export function SchoolRegistrationPage() {
                   onChange={(e) => updateField('phone', e.target.value)}
                   required
                 />
+              </label>
+
+              <label
+                className="school-registration-page__consent"
+                htmlFor="reg-marketing-consent"
+              >
+                <span className="school-registration-page__consent-checkbox">
+                  <input
+                    id="reg-marketing-consent"
+                    type="checkbox"
+                    name="marketing_consent"
+                    checked={fields.marketingConsent}
+                    onChange={(e) => updateField('marketingConsent', e.target.checked)}
+                  />
+                  <span>{SCHOOL_REGISTRATION_MARKETING_CONSENT_LABEL}</span>
+                </span>
               </label>
 
               {message ? (

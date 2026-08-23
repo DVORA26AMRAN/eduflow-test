@@ -15,6 +15,7 @@ export type SchoolRegistrationValidationResult =
         contact_full_name: string
         email: string
         phone: string
+        marketing_consent: boolean
       }
     }
   | { ok: false; errorMessage: string }
@@ -99,6 +100,7 @@ export function validateSchoolRegistrationForm(
       contact_full_name: contactFullName.value,
       email: normalizeRegistrationEmail(emailRaw.value),
       phone: phone.value.trim(),
+      marketing_consent: fields.marketingConsent === true,
     },
   }
 }

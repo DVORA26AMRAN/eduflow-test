@@ -83,6 +83,28 @@ function parseRegistrationRow(row: Record<string, unknown>): SchoolRegistrationR
         ? null
         : null
 
+  const marketingConsent =
+    row.marketing_consent === true || row.marketing_consent === false
+      ? row.marketing_consent
+      : null
+  if (marketingConsent === null) {
+    return null
+  }
+
+  const marketingConsentAt =
+    typeof row.marketing_consent_at === 'string'
+      ? row.marketing_consent_at
+      : row.marketing_consent_at === null || row.marketing_consent_at === undefined
+        ? null
+        : null
+
+  if (
+    (marketingConsent && marketingConsentAt === null) ||
+    (!marketingConsent && marketingConsentAt !== null)
+  ) {
+    return null
+  }
+
   return {
     id: row.id,
     schoolName: row.school_name,
@@ -94,6 +116,8 @@ function parseRegistrationRow(row: Record<string, unknown>): SchoolRegistrationR
     phone: row.phone,
     status,
     followUpAt,
+    marketingConsent,
+    marketingConsentAt,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
     convertedInstitutionId:

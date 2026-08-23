@@ -42,6 +42,8 @@ const baseRegistration = {
   phone: '04-1111111',
   status: 'new' as const,
   followUpAt: null,
+  marketingConsent: false,
+  marketingConsentAt: null,
   createdAt: '2026-08-16T10:00:00.000Z',
   updatedAt: '2026-08-16T10:00:00.000Z',
 }
@@ -101,6 +103,27 @@ describe('PlatformAdminRegistrationsSection', () => {
     expect(screen.getByRole('button', { name: 'העתקת קישור' })).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'תצוגה מקדימה' })).toBeInTheDocument()
     await user.click(screen.getByRole('button', { name: 'העתקת קישור' }))
+  })
+
+  it('shows marketing consent column in the registration table', async () => {
+    listMock.mockResolvedValueOnce({
+      ok: true,
+      registrations: [
+        { ...baseRegistration, marketingConsent: true, marketingConsentAt: '2026-08-16T10:00:00.000Z' },
+        {
+          ...baseRegistration,
+          id: 'reg-2',
+          schoolName: 'בית ספר שקד',
+          marketingConsent: false,
+          marketingConsentAt: null,
+        },
+      ],
+    })
+    render(<PlatformAdminRegistrationsSection />)
+
+    expect(await screen.findByRole('columnheader', { name: 'הסכמה לדיוור' })).toBeInTheDocument()
+    expect(screen.getByText('כן')).toBeInTheDocument()
+    expect(screen.getByText('לא')).toBeInTheDocument()
   })
 
   it('opens registration details with sales controls and timeline', async () => {

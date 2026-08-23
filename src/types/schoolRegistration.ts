@@ -28,6 +28,7 @@ export type SchoolRegistrationFormFields = {
   contactFullName: string
   email: string
   phone: string
+  marketingConsent: boolean
 }
 
 export type SchoolRegistrationRecord = {
@@ -41,6 +42,8 @@ export type SchoolRegistrationRecord = {
   phone: string
   status: SchoolRegistrationStatus
   followUpAt: string | null
+  marketingConsent: boolean
+  marketingConsentAt: string | null
   createdAt: string
   updatedAt: string
   convertedInstitutionId?: string | null
@@ -79,6 +82,15 @@ export const PLATFORM_ADMIN_REGISTRATIONS_NAV_LABEL = 'הרשמות'
 
 export const SCHOOL_REGISTRATION_SUCCESS_MESSAGE =
   'ההרשמה התקבלה בהצלחה. ניצור איתך קשר בהקדם.'
+
+export const SCHOOL_REGISTRATION_MARKETING_CONSENT_LABEL =
+  'אני מסכים/ה לקבל עדכונים ודיוור שיווקי'
+
+export const MARKETING_CONSENT_COLUMN_LABEL = 'הסכמה לדיוור'
+
+export function marketingConsentDisplayLabel(consent: boolean): string {
+  return consent ? 'כן' : 'לא'
+}
 
 export const SCHOOL_REGISTRATION_NOTE_MAX_LENGTH = 2000
 

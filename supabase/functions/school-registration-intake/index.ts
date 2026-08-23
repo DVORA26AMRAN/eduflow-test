@@ -151,6 +151,7 @@ Deno.serve(async (req) => {
     'updated_at',
     'primary_role',
     'role',
+    'marketing_consent_at',
   ]) {
     if (Object.prototype.hasOwnProperty.call(body, forbidden)) {
       return jsonResponse({ ok: false, error: 'invalid_fields' }, 400)
@@ -164,6 +165,11 @@ Deno.serve(async (req) => {
   const contactFullName = asNonEmptyString(body.contact_full_name, 200)
   const emailRaw = asNonEmptyString(body.email, 254)
   const phoneRaw = asNonEmptyString(body.phone, 32)
+  const marketingConsent =
+    body.marketing_consent === true ||
+    body.marketing_consent === false
+      ? body.marketing_consent
+      : false
 
   if (
     !schoolName ||
@@ -257,6 +263,7 @@ Deno.serve(async (req) => {
         p_contact_full_name: contactFullName,
         p_email: email,
         p_phone: phone,
+        p_marketing_consent: marketingConsent,
       },
     )
 
