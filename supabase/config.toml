@@ -437,3 +437,8 @@ verify_jwt = true
 # Management Journal daily-summary PDF — user JWT + J1 RLS (no service_role).
 [functions.management-journal-daily-summary-pdf]
 verify_jwt = true
+
+# Substitute Board email outbox worker (N1) — service_role Authorization required.
+# Cron/backend only; app gate rejects anon/authenticated JWTs.
+[functions.substitute-board-email-dispatcher]
+verify_jwt = true
