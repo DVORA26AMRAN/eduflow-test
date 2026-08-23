@@ -8,9 +8,7 @@
   align-items: stretch;
   justify-content: center;
   padding: 1.25rem 1rem 2rem;
-  background:
-    radial-gradient(ellipse at 20% 0%, rgba(20, 90, 120, 0.18), transparent 55%),
-    linear-gradient(165deg, #0f2a36 0%, #163a48 45%, #0d222c 100%);
+  background: var(--ds-color-background);
 }
 
 .school-registration-page__shell {

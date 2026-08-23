@@ -1,3 +1,5 @@
+import { readFileSync } from 'node:fs'
+import { resolve } from 'node:path'
 import { cleanup, render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { afterEach, describe, expect, it, vi } from 'vitest'
@@ -13,10 +15,28 @@ vi.mock('../services/schoolRegistration', () => ({
   submitSchoolRegistration: submitMock,
 }))
 
+const registrationPageCss = readFileSync(
+  resolve(process.cwd(), 'src/pages/SchoolRegistrationPage.css'),
+  'utf8',
+)
+const loginPageCss = readFileSync(
+  resolve(process.cwd(), 'src/pages/LoginPage.css'),
+  'utf8',
+)
+
 describe('SchoolRegistrationPage', () => {
   afterEach(() => {
     cleanup()
     submitMock.mockReset()
+  })
+
+  it('uses a light page background without dark full-page styling', () => {
+    expect(registrationPageCss).toMatch(
+      /\.school-registration-page\s*\{[\s\S]*?background:\s*var\(--ds-color-background\)/,
+    )
+    expect(registrationPageCss).not.toMatch(/#0f2a36|#163a48|#0d222c/)
+    expect(registrationPageCss).not.toMatch(/linear-gradient\(165deg/)
+    expect(loginPageCss).toContain('background-color: #f7fafd')
   })
 
   it('renders standalone intake without dashboard chrome', () => {
