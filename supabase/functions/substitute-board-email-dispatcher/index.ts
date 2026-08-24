@@ -20,6 +20,7 @@ import {
   SUBSTITUTE_BOARD_EMAIL_JOB_CLAIM_LIMIT,
   SUBSTITUTE_BOARD_EMAIL_MAX_DELIVERY_ATTEMPTS,
   buildSubstituteBoardEmailCtaUrl,
+  buildSubstituteBoardEmailHtmlBody,
   buildSubstituteBoardEmailIdempotencyKey,
   buildSubstituteBoardEmailSubject,
   buildSubstituteBoardEmailTextBody,
@@ -42,6 +43,7 @@ type DeliveryRow = {
   post_id: string
   recipient_user_id: string
   recipient_email: string
+  recipient_full_name: string | null
   status: string
   attempt_count: number
 }
@@ -86,6 +88,7 @@ async function sendResendEmail(input: {
   to: string
   subject: string
   text: string
+  html: string
   idempotencyKey: string
 }): Promise<{ ok: true; messageId: string | null } | { ok: false; error: string }> {
   const response = await fetch('https://api.resend.com/emails', {
@@ -100,6 +103,7 @@ async function sendResendEmail(input: {
       to: [input.to],
       subject: input.subject,
       text: input.text,
+      html: input.html,
     }),
   })
 
@@ -236,22 +240,18 @@ Deno.serve(async (request) => {
         createdAt: postRow.created_at,
       })
 
-      const textBody = buildSubstituteBoardEmailTextBody({
+      const publisherFullName =
+        typeof publisher?.full_name === 'string' ? publisher.full_name : null
+
+      const summaryBase = {
         postType,
         date: postRow.date,
         startTime: postRow.start_time,
         endTime: postRow.end_time,
         className: postRow.class_name,
         subject: postRow.subject,
-        publisherFullName:
-          typeof publisher?.full_name === 'string' ? publisher.full_name : null,
+        publisherFullName,
         ctaUrl,
-      })
-
-      // Guard: description must never appear in the email body.
-      if (textBody.includes('description') || /תיאור\s*:/.test(textBody)) {
-        await failJob('content_contract_violation')
-        continue
       }
 
       // Atomic claim — never SELECT-then-UPDATE deliveries from the client.
@@ -280,6 +280,31 @@ Deno.serve(async (request) => {
           delivery.recipient_user_id,
         )
 
+        const recipientFullName =
+          typeof delivery.recipient_full_name === 'string'
+            ? delivery.recipient_full_name
+            : null
+
+        const textBody = buildSubstituteBoardEmailTextBody({
+          ...summaryBase,
+          recipientFullName,
+        })
+        const htmlBody = buildSubstituteBoardEmailHtmlBody({
+          ...summaryBase,
+          recipientFullName,
+        })
+
+        // Guard: description must never appear in the email body.
+        if (
+          textBody.includes('description') ||
+          htmlBody.includes('description') ||
+          /תיאור\s*:/.test(textBody) ||
+          /תיאור\s*:/.test(htmlBody)
+        ) {
+          await failJob('content_contract_violation')
+          continue
+        }
+
         // At-least-once: provider success + crash before DB mark may retry after
         // lease expiry; deterministic Idempotency-Key suppresses duplicate Resend sends.
         const sendResult = await sendResendEmail({
@@ -288,6 +313,7 @@ Deno.serve(async (request) => {
           to: delivery.recipient_email,
           subject: emailSubject,
           text: textBody,
+          html: htmlBody,
           idempotencyKey,
         })
 

@@ -15,6 +15,8 @@ import {
   buildSubstituteBoardEmailCtaUrl,
   buildSubstituteBoardEmailIdempotencyKey,
   buildSubstituteBoardEmailSubject,
+  buildSubstituteBoardEmailHtmlBody,
+  buildSubstituteBoardEmailGreeting,
   buildSubstituteBoardEmailTextBody,
   translateSubstituteBoardEmailPostType,
 } from '../../supabase/functions/substitute-board-email-dispatcher/emailContent'
@@ -278,11 +280,89 @@ describe('Substitute Board email N1 — content + CTA', () => {
     expect(body).toContain('ישראל ישראלי')
     expect(body).toContain('צפייה בבקשה ומענה')
     expect(body).toContain('https://mpex.school/?section=substituteBoard')
+    expect(body).toContain('mpex')
+    expect(body).not.toContain('EduFlow')
     expect(body.toLowerCase()).not.toContain('description')
     expect(body).not.toMatch(/תיאור\s*:/)
     expect(body).not.toMatch(
       /[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/i,
     )
+  })
+
+  it('builds RTL centered mpex HTML email with CTA and escaped user values', () => {
+    const html = buildSubstituteBoardEmailHtmlBody({
+      postType: 'looking_for_substitute',
+      date: '2026-08-20',
+      startTime: '08:00:00',
+      endTime: '09:00:00',
+      className: 'ג1',
+      subject: 'מתמטיקה <b>רשע</b>',
+      publisherFullName: 'ישראל ישראלי "הנה" <script>alert(1)</script>',
+      recipientFullName: 'דוד <script>alert(1)</script>',
+      ctaUrl: 'https://mpex.school/?section=substituteBoard',
+    })
+
+    // Design contract
+    expect(html).toContain('dir="rtl"')
+    expect(html).toContain('max-width:600px')
+    expect(html).toContain('align="center"')
+    expect(html).toContain('background-color:#faf9fc')
+    expect(html).toContain('border:1px solid #ebe3ff')
+    expect(html).toContain('background-color:#ffffff')
+    expect(html).toContain('mpex')
+    expect(html).not.toContain('EduFlow')
+    expect(html).toContain(SUBSTITUTE_BOARD_EMAIL_CTA_LABEL)
+
+    // CTA contract (href from trusted ctaUrl, unchanged)
+    expect(html).toContain(
+      'href="https://mpex.school/?section=substituteBoard"',
+    )
+    expect(html).toContain('background-color:#7658d4')
+
+    // Content contract (post-type heading and approved fields)
+    expect(html).toContain('מילוי מקום חדש')
+    expect(html).toContain('2026-08-20')
+    expect(html).toContain('08:00–09:00')
+    expect(html).toContain('ג1')
+    expect(html).toContain('מתמטיקה')
+    expect(html).toContain('פורסם על ידי')
+
+    // Optional-field omission safety is covered by other tests; ensure description absent.
+    expect(html.toLowerCase()).not.toContain('description')
+    expect(html).not.toMatch(/<script/i)
+
+    // Security escaping: raw user tags must not appear; escaped entities must.
+    expect(html).toContain('&lt;script&gt;')
+    expect(html).toContain('&lt;b&gt;')
+    expect(html).toContain('&quot;הנה&quot;')
+  })
+
+  it('uses greeting with name when recipientFullName exists and falls back without name', () => {
+    expect(buildSubstituteBoardEmailGreeting('דוד')).toBe('שלום דוד,')
+    expect(buildSubstituteBoardEmailGreeting(null)).toBe('שלום,')
+    expect(buildSubstituteBoardEmailGreeting(undefined)).toBe('שלום,')
+  })
+
+  it('omits optional info rows (class/subject/publisher/time) when values are absent', () => {
+    const html = buildSubstituteBoardEmailHtmlBody({
+      postType: 'available_for_substitute',
+      date: '2026-08-20',
+      startTime: null,
+      endTime: null,
+      className: null,
+      subject: null,
+      publisherFullName: null,
+      recipientFullName: null,
+      ctaUrl: 'https://mpex.school/?section=substituteBoard',
+    })
+
+    expect(html).toContain('פנויה למילוי מקום')
+    expect(html).toContain('2026-08-20')
+
+    expect(html).not.toContain('כיתה')
+    expect(html).not.toContain('שעה')
+    expect(html).not.toContain('מקצוע')
+    expect(html).not.toContain('פורסם על ידי')
   })
 
   it('uses deterministic provider idempotency keys', () => {
@@ -336,6 +416,12 @@ describe('Substitute Board email N1A — dispatcher isolation', () => {
     expect(dispatcher).toMatch(
       /\.from\('substitute_board_email_deliveries'\)\s*\n\s*\.update\(/,
     )
+  })
+
+  it('sends Resend payload with both text and html, preserving the narrow contract', () => {
+    expect(dispatcher).toContain('text: input.text')
+    expect(dispatcher).toContain('html: input.html')
+    expect(dispatcher).toContain('JSON.stringify({')
   })
 
   it('does not import Phase 3 quotation sender', () => {
