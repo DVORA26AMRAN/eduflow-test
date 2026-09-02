@@ -30,6 +30,7 @@ import {
 import { canCallerInviteRole, getAllowedTenantInviteRoles } from './security/tenantInviteRoles'
 import { validateCreateUserForm } from './utils/createUserForm'
 import { buildSignInCredentials } from './services/authCredentials'
+import { requestPasswordRecoveryEmail } from './services/passwordRecovery'
 import {
   consumeInstalledAppLoginEntry,
   shouldHoldInstalledAppLoginEntry,
@@ -63,6 +64,7 @@ function App() {
   const [confirmPassword, setConfirmPassword] = useState('')
   const [passwordSetupMessage, setPasswordSetupMessage] = useState('')
   const [isSavingPassword, setIsSavingPassword] = useState(false)
+  const [isRequestingPasswordReset, setIsRequestingPasswordReset] = useState(false)
 
   const [newUserName, setNewUserName] = useState('')
   const [newUserEmail, setNewUserEmail] = useState('')
@@ -439,6 +441,17 @@ function App() {
     await syncAuthenticatedSession(data.session, 'login')
   }
 
+  async function requestPasswordReset() {
+    setProfileLoadError('')
+    setProfileLoadDebug(null)
+    setIsRequestingPasswordReset(true)
+
+    const result = await requestPasswordRecoveryEmail(email)
+
+    setIsRequestingPasswordReset(false)
+    setMessage(result.message)
+  }
+
   async function savePassword() {
     setPasswordSetupMessage('')
 
@@ -700,10 +713,14 @@ function App() {
         password={password}
         rememberMe={rememberMe}
         message={message}
+        isRequestingPasswordReset={isRequestingPasswordReset}
         onEmailChange={setEmail}
         onPasswordChange={setPassword}
         onRememberMeChange={setRememberMe}
         onLogin={login}
+        onRequestPasswordReset={() => {
+          void requestPasswordReset()
+        }}
       />
     )
   }

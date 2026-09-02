@@ -418,6 +418,32 @@
   box-shadow: 0 8px 20px rgba(62, 78, 180, 0.24);
 }
 
+.login-page__forgot-link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  margin-top: var(--ds-label-gap);
+  padding: 0.35rem 0;
+  border: none;
+  background: transparent;
+  color: var(--ds-color-primary);
+  font: inherit;
+  font-size: var(--ds-font-size-sm);
+  text-decoration: underline;
+  text-underline-offset: 0.18em;
+  cursor: pointer;
+}
+
+.login-page__forgot-link:hover {
+  color: var(--ds-color-primary-dark, var(--ds-color-primary));
+}
+
+.login-page__forgot-link:focus-visible {
+  outline: 2px solid var(--ds-color-primary-light);
+  outline-offset: 2px;
+}
+
 .login-page__message {
   margin-top: var(--ds-control-gap);
   padding: var(--ds-label-gap) var(--ds-control-gap);

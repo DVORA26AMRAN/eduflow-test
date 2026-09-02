@@ -28,10 +28,12 @@ function renderLoginPage(overrides: Partial<Parameters<typeof LoginPage>[0]> = {
     password: '',
     rememberMe: false,
     message: '',
+    isRequestingPasswordReset: false,
     onEmailChange: vi.fn(),
     onPasswordChange: vi.fn(),
     onRememberMeChange: vi.fn(),
     onLogin: vi.fn(),
+    onRequestPasswordReset: vi.fn(),
     ...overrides,
   }
 
@@ -166,5 +168,83 @@ describe('LoginPage remembered email', () => {
     expect(app).toContain('<LoginPage')
     expect(passwordSetup).not.toContain('שימוש במחשב משותף')
     expect(passwordSetup).not.toContain('הבנתי')
+  })
+})
+
+describe('LoginPage forgot password', () => {
+  it('exposes the Hebrew forgot-password action on the login form', () => {
+    renderLoginPage()
+
+    expect(screen.getByTestId('forgot-password-link')).toHaveTextContent('שכחת סיסמה?')
+    expect(screen.getByRole('button', { name: 'שכחת סיסמה?' })).toBeInTheDocument()
+  })
+
+  it('opens the email-only recovery request form', async () => {
+    const user = userEvent.setup()
+    renderLoginPage({ email: 'teacher@school.edu' })
+
+    await user.click(screen.getByRole('button', { name: 'שכחת סיסמה?' }))
+
+    expect(screen.getByTestId('forgot-password-form')).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: 'שחזור סיסמה' })).toBeInTheDocument()
+    expect(screen.getByLabelText('אימייל')).toHaveValue('teacher@school.edu')
+    expect(screen.queryByLabelText('סיסמה')).not.toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'שליחת קישור' })).toBeInTheDocument()
+  })
+
+  it('requests password reset from the forgot form', async () => {
+    const user = userEvent.setup()
+    const props = renderLoginPage({ email: 'teacher@school.edu' })
+
+    await user.click(screen.getByRole('button', { name: 'שכחת סיסמה?' }))
+    await user.click(screen.getByRole('button', { name: 'שליחת קישור' }))
+
+    expect(props.onRequestPasswordReset).toHaveBeenCalledTimes(1)
+    expect(props.onLogin).not.toHaveBeenCalled()
+  })
+
+  it('returns to the login form from forgot mode', async () => {
+    const user = userEvent.setup()
+    renderLoginPage()
+
+    await user.click(screen.getByRole('button', { name: 'שכחת סיסמה?' }))
+    await user.click(screen.getByTestId('forgot-password-back'))
+
+    expect(screen.queryByTestId('forgot-password-form')).not.toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'התחברות' })).toBeInTheDocument()
+  })
+
+  it('shows the generic recovery confirmation without account-existence wording', () => {
+    renderLoginPage({
+      message: 'אם קיימת כתובת אימייל זו במערכת, נשלח אליה קישור להגדרת סיסמה חדשה.',
+    })
+
+    expect(
+      screen.getByText('אם קיימת כתובת אימייל זו במערכת, נשלח אליה קישור להגדרת סיסמה חדשה.'),
+    ).toBeInTheDocument()
+    expect(screen.queryByText(/לא נמצא|לא קיים|user not found/i)).not.toBeInTheDocument()
+  })
+})
+
+describe('password recovery architecture contracts', () => {
+  it('reuses existing PasswordSetupPage and recovery session flags in App', () => {
+    const app = readFileSync(resolve(process.cwd(), 'src/App.tsx'), 'utf8')
+
+    expect(app).toContain('requestPasswordRecoveryEmail')
+    expect(app).toContain('PENDING_RECOVERY_KEY')
+    expect(app).toContain('PASSWORD_RECOVERY')
+    expect(app).toContain('<PasswordSetupPage')
+    expect(app).toContain('isRecovery={isRecovery}')
+    expect(app).toContain("newPassword.length < 8")
+    expect(app).toContain("currentProfile.status !== 'active'")
+    expect(app).not.toContain('force re-login')
+  })
+
+  it('keeps recovery completion on the existing updateUser password path', () => {
+    const app = readFileSync(resolve(process.cwd(), 'src/App.tsx'), 'utf8')
+
+    expect(app).toContain('supabase.auth.updateUser')
+    expect(app).toContain("password: newPassword")
+    expect(app).toContain("await syncAuthenticatedSession(data.session, 'savePassword')")
   })
 })
