@@ -10,6 +10,60 @@ const commandsSql = readFileSync(
   resolve(process.cwd(), 'supabase/migrations/20250804120100_printing_requests_phase1_commands.sql'),
   'utf8',
 )
+const grantHardeningSql = readFileSync(
+  resolve(
+    process.cwd(),
+    'supabase/migrations/20250902120000_printing_rpc_execute_grant_hardening.sql',
+  ),
+  'utf8',
+)
+
+/** Application RPCs: authenticated only after hardening. */
+const printingAuthenticatedRpcSignatures = [
+  'public.printing_resolve_actor_institution()',
+  'public.printing_create_request(TIMESTAMPTZ, JSONB)',
+  'public.printing_update_request(UUID, TIMESTAMPTZ, JSONB)',
+  'public.printing_cancel_request(UUID, TEXT)',
+  'public.printing_claim_request(UUID)',
+  'public.printing_release_request(UUID)',
+  'public.printing_transfer_request(UUID, UUID)',
+  'public.printing_return_item_for_correction(UUID, TEXT)',
+  'public.printing_resubmit_item(UUID, JSONB)',
+  'public.printing_reject_item(UUID, TEXT)',
+  'public.printing_mark_item_printed(UUID)',
+  'public.printing_update_institution_settings(INTEGER, INTEGER, INTEGER)',
+  'public.printing_validate_required_by(UUID, TIMESTAMPTZ)',
+  'public.printing_derive_parent_status(UUID)',
+  'public.printing_institution_id_from_storage_path(TEXT)',
+  'public.printing_request_id_from_storage_path(TEXT)',
+] as const
+
+/** Worker RPCs: service_role only. */
+const printingServiceRoleRpcSignatures = [
+  'public.printing_dispatch_overdue_notifications(INTEGER)',
+  'public.printing_list_retention_purge_candidates(INTEGER)',
+  'public.printing_mark_item_file_purged(UUID)',
+] as const
+
+/** Internal helpers: revoke client roles; no GRANT EXECUTE. */
+const printingInternalHelperSignatures = [
+  'public.printing_allocate_request_number(UUID)',
+  'public.printing_write_audit(UUID, UUID, UUID, UUID, TEXT, TEXT, TEXT, TEXT, JSONB)',
+  'public.printing_sync_parent_status(UUID)',
+  'public.printing_emit_notification(UUID, UUID, TEXT, TEXT, TEXT, JSONB)',
+  'public.printing_notify_teacher_item_returned(printing_requests, print_items, TEXT)',
+  'public.printing_notify_teacher_item_rejected(printing_requests, print_items, TEXT)',
+  'public.printing_notify_teacher_request_completed(printing_requests)',
+  'public.printing_require_assigned_processor(printing_requests)',
+  'public.printing_fail(TEXT)',
+  'public.printing_validate_item_payload(JSONB)',
+  'public.printing_allowed_file_types()',
+  'public.printing_is_allowed_file_type(TEXT)',
+  'public.printing_is_valid_page_selection(TEXT, TEXT)',
+  'public.printing_item_transition_allowed(TEXT, TEXT)',
+  'public.printing_is_overdue(TIMESTAMPTZ, TEXT, TIMESTAMPTZ)',
+  'public.printing_audit_reject_mutation()',
+] as const
 
 describe('printing requests Phase 1 — schema migration', () => {
   it('creates printing request, items, audit, and number counters', () => {
@@ -194,5 +248,56 @@ describe('printing requests Phase 1 — command RPCs', () => {
     expect(body).toContain('auth_user_is_active_secretary_for_institution')
     expect(body).toContain('auth_user_is_active_institution_manager_for_institution')
     expect(body).toContain('SECRETARY_NOT_AUTHORIZED')
+  })
+})
+
+describe('printing RPC EXECUTE grant hardening', () => {
+  it('is grant-only and does not rewrite function bodies', () => {
+    expect(grantHardeningSql).not.toContain('CREATE OR REPLACE FUNCTION')
+    expect(grantHardeningSql).not.toContain('ALTER TABLE')
+    expect(grantHardeningSql).toContain('RPC EXECUTE grant hardening')
+  })
+
+  it('revokes PUBLIC and anon for every authenticated application RPC and grants authenticated', () => {
+    for (const fn of printingAuthenticatedRpcSignatures) {
+      expect(grantHardeningSql).toContain(`REVOKE ALL ON FUNCTION ${fn} FROM PUBLIC`)
+      expect(grantHardeningSql).toContain(`REVOKE ALL ON FUNCTION ${fn} FROM anon`)
+      expect(grantHardeningSql).toContain(`GRANT EXECUTE ON FUNCTION ${fn} TO authenticated`)
+    }
+  })
+
+  it('revokes PUBLIC, anon, and authenticated for worker RPCs and grants service_role only', () => {
+    for (const fn of printingServiceRoleRpcSignatures) {
+      expect(grantHardeningSql).toContain(`REVOKE ALL ON FUNCTION ${fn} FROM PUBLIC`)
+      expect(grantHardeningSql).toContain(`REVOKE ALL ON FUNCTION ${fn} FROM anon`)
+      expect(grantHardeningSql).toContain(`REVOKE ALL ON FUNCTION ${fn} FROM authenticated`)
+      expect(grantHardeningSql).toContain(`GRANT EXECUTE ON FUNCTION ${fn} TO service_role`)
+      expect(grantHardeningSql).not.toContain(`GRANT EXECUTE ON FUNCTION ${fn} TO authenticated`)
+    }
+  })
+
+  it('revokes PUBLIC, anon, authenticated, and service_role for internal helpers without client grants', () => {
+    for (const fn of printingInternalHelperSignatures) {
+      expect(grantHardeningSql).toContain(`REVOKE ALL ON FUNCTION ${fn} FROM PUBLIC`)
+      expect(grantHardeningSql).toContain(`REVOKE ALL ON FUNCTION ${fn} FROM anon`)
+      expect(grantHardeningSql).toContain(`REVOKE ALL ON FUNCTION ${fn} FROM authenticated`)
+      expect(grantHardeningSql).toContain(`REVOKE ALL ON FUNCTION ${fn} FROM service_role`)
+      expect(grantHardeningSql).not.toContain(`GRANT EXECUTE ON FUNCTION ${fn} TO authenticated`)
+      expect(grantHardeningSql).not.toContain(`GRANT EXECUTE ON FUNCTION ${fn} TO anon`)
+      expect(grantHardeningSql).not.toContain(`GRANT EXECUTE ON FUNCTION ${fn} TO service_role`)
+    }
+  })
+
+  it('covers the Phase 1 reported defect surface including settings and validate helpers', () => {
+    for (const fn of [
+      'public.printing_create_request(TIMESTAMPTZ, JSONB)',
+      'public.printing_update_request(UUID, TIMESTAMPTZ, JSONB)',
+      'public.printing_resubmit_item(UUID, JSONB)',
+      'public.printing_update_institution_settings(INTEGER, INTEGER, INTEGER)',
+      'public.printing_validate_required_by(UUID, TIMESTAMPTZ)',
+    ]) {
+      expect(grantHardeningSql).toContain(`REVOKE ALL ON FUNCTION ${fn} FROM anon`)
+      expect(grantHardeningSql).toContain(`GRANT EXECUTE ON FUNCTION ${fn} TO authenticated`)
+    }
   })
 })
