@@ -1,4 +1,8 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.49.1'
+import {
+  pickConfiguredAppUrl,
+  resolveMpexAppOrigin,
+} from '../_shared/mpexAppUrl.ts'
 
 /**
  * clever-processor — privileged Auth invite + public.users provisioning.
@@ -131,42 +135,14 @@ function parseOptionalPositiveNumber(value: unknown): number | null | 'invalid' 
 /**
  * Public app origin for Auth email redirects.
  * Source (Edge secrets, first match): APP_URL | EDUFLOW_APP_URL | SITE_URL
- * Must be configured per environment (local + production). Never hardcode Vite ports.
+ * Production vs local is decided from SUPABASE_URL host (not from APP_URL).
+ * Production must be exactly https://mpex.school — fail closed otherwise.
  */
 function resolveAppRedirectUrl(): string {
-  const raw = (
-    Deno.env.get('APP_URL') ??
-    Deno.env.get('EDUFLOW_APP_URL') ??
-    Deno.env.get('SITE_URL') ??
-    ''
-  )
-    .trim()
-    .replace(/\/+$/, '')
-
-  if (!raw) {
-    throw new Error('Missing env: APP_URL (or EDUFLOW_APP_URL / SITE_URL)')
-  }
-
-  let parsed: URL
-  try {
-    parsed = new URL(raw)
-  } catch {
-    throw new Error('Invalid APP_URL: must be an absolute URL')
-  }
-
-  if (parsed.protocol !== 'https:' && parsed.protocol !== 'http:') {
-    throw new Error('APP_URL must use http or https')
-  }
-
-  if (
-    parsed.protocol === 'http:' &&
-    parsed.hostname !== 'localhost' &&
-    parsed.hostname !== '127.0.0.1'
-  ) {
-    throw new Error('APP_URL may use http only for localhost / 127.0.0.1')
-  }
-
-  return `${parsed.protocol}//${parsed.host}`
+  return resolveMpexAppOrigin({
+    configuredAppUrl: pickConfiguredAppUrl((name) => Deno.env.get(name) ?? undefined),
+    supabaseUrl: Deno.env.get('SUPABASE_URL'),
+  })
 }
 
 Deno.serve(async (request) => {

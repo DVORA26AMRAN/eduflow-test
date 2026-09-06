@@ -13,6 +13,7 @@
  */
 
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.49.1'
+import { resolveMpexAppOrigin } from '../_shared/mpexAppUrl.ts'
 import { requireServiceRoleJwt } from '../_shared/requireServiceRole.ts'
 import {
   SUBSTITUTE_BOARD_EMAIL_CTA_LABEL,
@@ -167,8 +168,11 @@ Deno.serve(async (request) => {
     const serviceRoleKey = requireEnv('SUPABASE_SERVICE_ROLE_KEY')
     const resendApiKey = requireEnv('RESEND_API_KEY')
     const senderEmail = requireEnv('SUBSTITUTE_BOARD_SENDER_EMAIL')
-    const appUrl = requireEnv('APP_URL')
-    const ctaUrl = buildSubstituteBoardEmailCtaUrl(appUrl)
+    const appOrigin = resolveMpexAppOrigin({
+      configuredAppUrl: requireEnv('APP_URL'),
+      supabaseUrl,
+    })
+    const ctaUrl = buildSubstituteBoardEmailCtaUrl(appOrigin)
 
     const supabase = createClient(supabaseUrl, serviceRoleKey, {
       auth: { persistSession: false, autoRefreshToken: false },

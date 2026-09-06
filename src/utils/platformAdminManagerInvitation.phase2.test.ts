@@ -106,9 +106,17 @@ describe('platform admin manager invitation phase 2', () => {
   it('initial manager invite uses inviteUserByEmail with APP_URL redirect only', () => {
     expect(edge).toContain('inviteUserByEmail')
     expect(edge).toContain('resolveAppRedirectUrl')
-    expect(edge).toContain("Deno.env.get('APP_URL')")
-    expect(edge).toContain("Deno.env.get('EDUFLOW_APP_URL')")
-    expect(edge).toContain("Deno.env.get('SITE_URL')")
+    expect(edge).toContain('resolveMpexAppOrigin')
+    expect(edge).toContain('pickConfiguredAppUrl')
+    expect(edge).toContain("from '../_shared/mpexAppUrl.ts'")
+    const shared = readFileSync(
+      resolve(process.cwd(), 'supabase/functions/_shared/mpexAppUrl.ts'),
+      'utf8',
+    )
+    expect(shared).toContain("envGet('APP_URL')")
+    expect(shared).toContain("envGet('EDUFLOW_APP_URL')")
+    expect(shared).toContain("envGet('SITE_URL')")
+    expect(shared).toContain('https://mpex.school')
     expect(edge).not.toContain('5173')
     expect(edge).not.toContain('5174')
 
