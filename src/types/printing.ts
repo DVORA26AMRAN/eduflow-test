@@ -47,8 +47,11 @@ export type PagesPerSheet = 1 | 2 | 4 | 6 | 9
 export type ScaleMode = 'fit_to_page' | 'original_100' | 'custom'
 export type PaperSize = 'a4' | 'a3' | 'letter' | 'legal'
 
+export type PrintSubmissionPolicyMode = 'relative_notice' | 'daily_cutoff'
+
 export type PrintingErrorCode =
   | 'PRINT_REQUEST_TOO_LATE'
+  | 'PRINT_REQUEST_SAME_DAY_CLOSED'
   | 'PRINT_REQUEST_LOCKED'
   | 'PRINT_REQUEST_NOT_FOUND'
   | 'PRINT_REQUEST_FORBIDDEN'
@@ -73,6 +76,7 @@ export type PrintingErrorCode =
 
 export const PRINTING_ERROR_CODES: readonly PrintingErrorCode[] = [
   'PRINT_REQUEST_TOO_LATE',
+  'PRINT_REQUEST_SAME_DAY_CLOSED',
   'PRINT_REQUEST_LOCKED',
   'PRINT_REQUEST_NOT_FOUND',
   'PRINT_REQUEST_FORBIDDEN',
@@ -179,6 +183,8 @@ export type InstitutionPrintingSettings = {
   deadline_warning_minutes: number
   file_retention_days: number
   timezone: string
+  print_submission_policy_mode: PrintSubmissionPolicyMode
+  print_daily_cutoff_local_time: string | null
 }
 
 export type PrintingRpcResult<T extends Record<string, unknown> = Record<string, unknown>> =

@@ -42,6 +42,8 @@ import {
 } from '../../../utils/secretaryPrinting'
 import { isPrintingRequestOverdue } from '../../../domain/printing/validation'
 import type { PrintItemStatus, PrintingRequestStatus } from '../../../types/printing'
+import type { PrintingSubmissionPolicySavedState } from '../../../utils/printingSubmissionPolicy'
+import { PrintingSubmissionPolicySettings } from './PrintingSubmissionPolicySettings'
 import './secretaryPrinting.css'
 
 type SecretaryPrintingWorkspaceProps = {
@@ -70,6 +72,10 @@ export function SecretaryPrintingWorkspace({
   const [actionIsError, setActionIsError] = useState(false)
   const [deadlineWarningMinutes, setDeadlineWarningMinutes] = useState(120)
   const [timeZone, setTimeZone] = useState(institutionTimeZone || 'UTC')
+  const [policySettings, setPolicySettings] = useState<PrintingSubmissionPolicySavedState | null>(
+    null,
+  )
+  const [policySettingsEpoch, setPolicySettingsEpoch] = useState(0)
   const [details, setDetails] = useState<InstitutionPrintingRequestRow | null>(null)
   const [detailsLoading, setDetailsLoading] = useState(false)
   const [busyAction, setBusyAction] = useState<string | null>(null)
@@ -106,6 +112,13 @@ export function SecretaryPrintingWorkspace({
     if (settingsResult.ok) {
       setDeadlineWarningMinutes(settingsResult.deadlineWarningMinutes)
       setTimeZone(settingsResult.timeZone || institutionTimeZone || 'UTC')
+      setPolicySettings({
+        mode: settingsResult.printSubmissionPolicyMode,
+        noticeMinutes: settingsResult.minimumPrintNoticeMinutes,
+        cutoffLocalTime: settingsResult.printDailyCutoffLocalTime,
+        timeZone: settingsResult.timeZone || institutionTimeZone || 'UTC',
+      })
+      setPolicySettingsEpoch((value) => value + 1)
     }
 
     setIsLoading(false)
@@ -488,6 +501,15 @@ export function SecretaryPrintingWorkspace({
     <section className="ds-card secretary-printing">
       <DashboardSection title="הדפסות" icon={<NavPrintIcon />}>
         <p className="ds-helper-text">תור בקשות ההדפסה של המוסד — לפי מועד נדרש.</p>
+
+        {policySettings ? (
+          <PrintingSubmissionPolicySettings
+            key={policySettingsEpoch}
+            saved={policySettings}
+            onSaved={setPolicySettings}
+          />
+        ) : null}
+
         <div className="secretary-printing__tabs" role="tablist" aria-label="תצוגת הדפסות">
           <button
             type="button"

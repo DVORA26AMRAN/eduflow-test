@@ -58,6 +58,8 @@ export const PRINTING_GENERIC_ERROR_MESSAGE = 'אירעה שגיאה. נסו ש�
 const PRINTING_ERROR_MESSAGES: Partial<Record<PrintingErrorCode, string>> = {
   PRINT_REQUEST_TOO_LATE:
     'בקשות הדפסה יש לשלוח לפחות לפי מדיניות המוסד מראש. יש לבחור מועד מאוחר יותר.',
+  PRINT_REQUEST_SAME_DAY_CLOSED:
+    'חלון השליחה להדפסה היום נסגר. יש לבחור מועד להדפסה מחר או מאוחר יותר.',
   PRINT_REQUEST_LOCKED: 'הטיפול בבקשה כבר התחיל ולכן לא ניתן לערוך אותה.',
   PRINT_REQUEST_FORBIDDEN: 'אין הרשאה לבצע פעולה זו.',
   PRINT_REQUEST_UNKNOWN_ERROR: PRINTING_GENERIC_ERROR_MESSAGE,

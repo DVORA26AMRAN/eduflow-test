@@ -17,6 +17,13 @@ const grantHardeningSql = readFileSync(
   ),
   'utf8',
 )
+const phase2aSql = readFileSync(
+  resolve(
+    process.cwd(),
+    'supabase/migrations/20250906120000_printing_submission_policy_phase2a.sql',
+  ),
+  'utf8',
+)
 
 /** Application RPCs: authenticated only after hardening. */
 const printingAuthenticatedRpcSignatures = [
@@ -299,5 +306,96 @@ describe('printing RPC EXECUTE grant hardening', () => {
       expect(grantHardeningSql).toContain(`REVOKE ALL ON FUNCTION ${fn} FROM anon`)
       expect(grantHardeningSql).toContain(`GRANT EXECUTE ON FUNCTION ${fn} TO authenticated`)
     }
+  })
+})
+
+describe('printing submission policy Phase 2A', () => {
+  it('adds exclusive mode columns with safe relative defaults and no request rewrites', () => {
+    expect(phase2aSql).toContain('print_submission_policy_mode')
+    expect(phase2aSql).toContain("DEFAULT 'relative_notice'")
+    expect(phase2aSql).toContain('print_daily_cutoff_local_time TIME NULL')
+    expect(phase2aSql).toContain('institutions_print_submission_policy_mode_valid')
+    expect(phase2aSql).toContain('institutions_print_submission_policy_consistency')
+    expect(phase2aSql).toContain("print_submission_policy_mode = 'relative_notice'")
+    expect(phase2aSql).toContain('print_daily_cutoff_local_time IS NULL')
+    expect(phase2aSql).toContain("print_submission_policy_mode = 'daily_cutoff'")
+    expect(phase2aSql).toContain('print_daily_cutoff_local_time IS NOT NULL')
+    expect(phase2aSql).not.toMatch(/UPDATE\s+public\.printing_requests/i)
+    expect(phase2aSql).not.toMatch(/UPDATE\s+printing_requests/i)
+    expect(phase2aSql).not.toMatch(
+      /UPDATE\s+public\.institutions[\s\S]{0,80}minimum_print_notice_minutes\s*=\s*\d+/i,
+    )
+  })
+
+  it('extends validate_required_by for relative and daily modes with SAME_DAY_CLOSED', () => {
+    expect(phase2aSql).toContain('CREATE OR REPLACE FUNCTION public.printing_validate_required_by')
+    expect(phase2aSql).toContain("v_mode = 'relative_notice'")
+    expect(phase2aSql).toContain("v_mode = 'daily_cutoff'")
+    expect(phase2aSql).toContain('PRINT_REQUEST_TOO_LATE')
+    expect(phase2aSql).toContain('PRINT_REQUEST_SAME_DAY_CLOSED')
+    expect(phase2aSql).toContain('AT TIME ZONE v_timezone')
+    expect(phase2aSql).toContain('v_local_time > v_cutoff')
+    expect(phase2aSql).toContain('v_req_local_date = v_local_date')
+    expect(phase2aSql).not.toContain('Asia/Jerusalem')
+    expect(phase2aSql).toContain('SECURITY DEFINER')
+    expect(phase2aSql).toContain('SET search_path = public')
+  })
+
+  it('keeps create/update wired to validate_required_by for required_by changes', () => {
+    expect(commandsSql).toContain(
+      'v_deadline_error := public.printing_validate_required_by(v_institution_id, p_required_by)',
+    )
+    expect(commandsSql).toContain(
+      'v_deadline_error := public.printing_validate_required_by(v_req.institution_id, p_required_by)',
+    )
+  })
+
+  it('replaces settings RPC with mode/cutoff args and preserves secretary/manager auth', () => {
+    expect(phase2aSql).toContain(
+      'DROP FUNCTION IF EXISTS public.printing_update_institution_settings(INTEGER, INTEGER, INTEGER)',
+    )
+    expect(phase2aSql).toContain(
+      'CREATE OR REPLACE FUNCTION public.printing_update_institution_settings',
+    )
+    expect(phase2aSql).toContain('p_print_submission_policy_mode TEXT DEFAULT NULL')
+    expect(phase2aSql).toContain('p_print_daily_cutoff_local_time TIME DEFAULT NULL')
+    expect(phase2aSql).toContain('auth_user_is_active_secretary_for_institution')
+    expect(phase2aSql).toContain('auth_user_is_active_institution_manager_for_institution')
+    expect(phase2aSql).toContain('SECRETARY_NOT_AUTHORIZED')
+    expect(phase2aSql).toContain('printing_resolve_actor_institution')
+    expect(phase2aSql).not.toContain('auth_user_is_active_teacher_for_institution')
+    expect(phase2aSql).not.toContain('auth_user_is_active_deputy_for_institution')
+    expect(phase2aSql).toContain('INVALID_PRINT_SETTINGS')
+  })
+
+  it('rejects invalid mode/cutoff combinations in settings RPC body', () => {
+    const idx = phase2aSql.indexOf(
+      'CREATE OR REPLACE FUNCTION public.printing_update_institution_settings',
+    )
+    const body = phase2aSql.slice(idx, idx + 7000)
+    expect(body).toContain("NOT IN ('relative_notice', 'daily_cutoff')")
+    expect(body).toContain("v_new_mode = 'relative_notice'")
+    expect(body).toContain('p_print_daily_cutoff_local_time IS NOT NULL')
+    expect(body).toContain('v_new_cutoff := NULL')
+    expect(body).toContain("v_new_mode = 'daily_cutoff'")
+    expect(body).toContain('v_new_cutoff IS NULL')
+  })
+
+  it('revokes PUBLIC and anon on replaced settings/validate signatures and grants authenticated only', () => {
+    for (const fn of [
+      'public.printing_validate_required_by(UUID, TIMESTAMPTZ)',
+      'public.printing_update_institution_settings(INTEGER, INTEGER, INTEGER, TEXT, TIME)',
+    ]) {
+      expect(phase2aSql).toContain(`REVOKE ALL ON FUNCTION ${fn} FROM PUBLIC`)
+      expect(phase2aSql).toContain(`REVOKE ALL ON FUNCTION ${fn} FROM anon`)
+      expect(phase2aSql).toContain(`REVOKE ALL ON FUNCTION ${fn} FROM service_role`)
+      expect(phase2aSql).toContain(`GRANT EXECUTE ON FUNCTION ${fn} TO authenticated`)
+    }
+    expect(phase2aSql).not.toContain(
+      'GRANT EXECUTE ON FUNCTION public.printing_update_institution_settings(INTEGER, INTEGER, INTEGER, TEXT, TIME) TO anon',
+    )
+    expect(phase2aSql).not.toContain(
+      'GRANT EXECUTE ON FUNCTION public.printing_update_institution_settings(INTEGER, INTEGER, INTEGER, TEXT, TIME) TO PUBLIC',
+    )
   })
 })

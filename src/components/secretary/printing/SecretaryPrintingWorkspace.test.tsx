@@ -24,6 +24,7 @@ vi.mock('../../../services/printingRequests', () => ({
   returnPrintItemForCorrection: (...args: unknown[]) => returnPrintItemForCorrection(...args),
   rejectPrintItem: vi.fn(),
   accessPrintingFile: (...args: unknown[]) => accessPrintingFile(...args),
+  updateInstitutionPrintingSettings: vi.fn(),
 }))
 
 vi.mock('../../ui/Modal', () => ({
@@ -132,6 +133,8 @@ function mockDefaults(requests: InstitutionPrintingRequestRow[]) {
     deadlineWarningMinutes: 30,
     fileRetentionDays: 90,
     timeZone: 'UTC',
+    printSubmissionPolicyMode: 'relative_notice',
+    printDailyCutoffLocalTime: null,
   })
   listInstitutionSecretariesForTransfer.mockResolvedValue({
     ok: true,
@@ -144,6 +147,29 @@ function mockDefaults(requests: InstitutionPrintingRequestRow[]) {
 }
 
 describe('SecretaryPrintingWorkspace', () => {
+  it('shows printing submission policy settings after settings load', async () => {
+    mockDefaults([])
+    render(
+      <div dir="rtl">
+        <SecretaryPrintingWorkspace
+          actorUserId="sec-1"
+          institutionId="inst-1"
+          institutionTimeZone="UTC"
+        />
+      </div>,
+    )
+
+    expect(
+      await screen.findByTestId('printing-submission-policy-settings'),
+    ).toBeInTheDocument()
+    expect(
+      screen.getByRole('heading', {
+        name: 'כמה זמן מראש מורות צריכות לשלוח להדפסה?',
+      }),
+    ).toBeInTheDocument()
+    expect(screen.getByRole('radio', { name: 'שעה מראש' })).toBeChecked()
+  })
+
   it(
     'opens without claiming, claims via Start Processing, Print does not mark printed, Mark as Printed completes into History',
     async () => {

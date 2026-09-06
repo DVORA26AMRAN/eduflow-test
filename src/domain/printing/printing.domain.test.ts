@@ -13,7 +13,9 @@ import {
   isAllowedPrintingMimeType,
   isPrintingRequestOverdue,
   isPrintingRequestTooLate,
+  isPrintingSameDayClosed,
   isValidPageSelection,
+  evaluatePrintingSubmissionPolicy,
   requiredByFromInstitutionLocal,
   validatePrintItemCount,
   validatePrintItemInput,
@@ -203,6 +205,271 @@ describe('printing advance-notice cutoff (institution timezone)', () => {
         now: new Date('2026-08-01T11:00:00.000Z'),
       }),
     ).toBe(false)
+  })
+
+  it('accepts custom relative notice values via evaluatePrintingSubmissionPolicy', () => {
+    const requiredBy = new Date('2026-08-04T12:00:00.000Z')
+    expect(
+      evaluatePrintingSubmissionPolicy({
+        mode: 'relative_notice',
+        requiredBy,
+        now: new Date('2026-08-04T09:30:00.000Z'),
+        minimumPrintNoticeMinutes: 150,
+        timeZone: 'UTC',
+        dailyCutoffLocalTime: null,
+      }),
+    ).toBeNull()
+    expect(
+      evaluatePrintingSubmissionPolicy({
+        mode: 'relative_notice',
+        requiredBy,
+        now: new Date('2026-08-04T09:30:00.001Z'),
+        minimumPrintNoticeMinutes: 150,
+        timeZone: 'UTC',
+        dailyCutoffLocalTime: null,
+      }),
+    ).toBe('PRINT_REQUEST_TOO_LATE')
+  })
+})
+
+describe('printing daily cutoff policy (institution timezone)', () => {
+  const timeZone = 'Asia/Jerusalem'
+  const cutoff = '08:00:00'
+
+  it('accepts same-day required_by before and exactly at cutoff; rejects strictly after', () => {
+    const requiredBy = requiredByFromInstitutionLocal({
+      year: 2026,
+      month: 8,
+      day: 4,
+      hour: 14,
+      minute: 0,
+      timeZone,
+    })
+
+    const before = requiredByFromInstitutionLocal({
+      year: 2026,
+      month: 8,
+      day: 4,
+      hour: 7,
+      minute: 45,
+      timeZone,
+    })
+    const exact = requiredByFromInstitutionLocal({
+      year: 2026,
+      month: 8,
+      day: 4,
+      hour: 8,
+      minute: 0,
+      timeZone,
+    })
+    const after = requiredByFromInstitutionLocal({
+      year: 2026,
+      month: 8,
+      day: 4,
+      hour: 10,
+      minute: 0,
+      timeZone,
+    })
+
+    expect(
+      evaluatePrintingSubmissionPolicy({
+        mode: 'daily_cutoff',
+        requiredBy,
+        now: before,
+        minimumPrintNoticeMinutes: 60,
+        timeZone,
+        dailyCutoffLocalTime: cutoff,
+      }),
+    ).toBeNull()
+    expect(
+      evaluatePrintingSubmissionPolicy({
+        mode: 'daily_cutoff',
+        requiredBy,
+        now: exact,
+        minimumPrintNoticeMinutes: 60,
+        timeZone,
+        dailyCutoffLocalTime: cutoff,
+      }),
+    ).toBeNull()
+    expect(
+      evaluatePrintingSubmissionPolicy({
+        mode: 'daily_cutoff',
+        requiredBy,
+        now: after,
+        minimumPrintNoticeMinutes: 60,
+        timeZone,
+        dailyCutoffLocalTime: cutoff,
+      }),
+    ).toBe('PRINT_REQUEST_SAME_DAY_CLOSED')
+    expect(
+      isPrintingSameDayClosed({
+        requiredBy,
+        now: after,
+        timeZone,
+        dailyCutoffLocalTime: cutoff,
+      }),
+    ).toBe(true)
+  })
+
+  it('allows tomorrow after cutoff while rejecting today', () => {
+    const nowAfter = requiredByFromInstitutionLocal({
+      year: 2026,
+      month: 8,
+      day: 4,
+      hour: 10,
+      minute: 0,
+      timeZone,
+    })
+    const todayRequired = requiredByFromInstitutionLocal({
+      year: 2026,
+      month: 8,
+      day: 4,
+      hour: 15,
+      minute: 0,
+      timeZone,
+    })
+    const tomorrowRequired = requiredByFromInstitutionLocal({
+      year: 2026,
+      month: 8,
+      day: 5,
+      hour: 9,
+      minute: 0,
+      timeZone,
+    })
+
+    expect(
+      evaluatePrintingSubmissionPolicy({
+        mode: 'daily_cutoff',
+        requiredBy: todayRequired,
+        now: nowAfter,
+        minimumPrintNoticeMinutes: 60,
+        timeZone,
+        dailyCutoffLocalTime: cutoff,
+      }),
+    ).toBe('PRINT_REQUEST_SAME_DAY_CLOSED')
+    expect(
+      evaluatePrintingSubmissionPolicy({
+        mode: 'daily_cutoff',
+        requiredBy: tomorrowRequired,
+        now: nowAfter,
+        minimumPrintNoticeMinutes: 60,
+        timeZone,
+        dailyCutoffLocalTime: cutoff,
+      }),
+    ).toBeNull()
+  })
+
+  it('treats required_by by institution-local date when UTC date differs', () => {
+    // America/New_York (EDT, UTC-4): local evening May 1 maps across UTC midnight.
+    const ny = 'America/New_York'
+    const nowLocalEvening = requiredByFromInstitutionLocal({
+      year: 2026,
+      month: 5,
+      day: 1,
+      hour: 16,
+      minute: 0,
+      timeZone: ny,
+    })
+    const requiredByLocalSameEvening = requiredByFromInstitutionLocal({
+      year: 2026,
+      month: 5,
+      day: 1,
+      hour: 22,
+      minute: 0,
+      timeZone: ny,
+    })
+    expect(nowLocalEvening.toISOString()).toBe('2026-05-01T20:00:00.000Z')
+    expect(requiredByLocalSameEvening.toISOString()).toBe('2026-05-02T02:00:00.000Z')
+    expect(nowLocalEvening.toISOString().slice(0, 10)).not.toBe(
+      requiredByLocalSameEvening.toISOString().slice(0, 10),
+    )
+
+    expect(
+      evaluatePrintingSubmissionPolicy({
+        mode: 'daily_cutoff',
+        requiredBy: requiredByLocalSameEvening,
+        now: nowLocalEvening,
+        minimumPrintNoticeMinutes: 60,
+        timeZone: ny,
+        dailyCutoffLocalTime: cutoff,
+      }),
+    ).toBe('PRINT_REQUEST_SAME_DAY_CLOSED')
+  })
+
+  it('respects timezone (UTC vs Asia/Jerusalem) without hardcoding Jerusalem as authority', () => {
+    const requiredBy = new Date('2026-08-04T12:00:00.000Z')
+    const now = new Date('2026-08-04T09:00:00.000Z') // 09:00 UTC; 12:00 Jerusalem summer
+
+    expect(
+      evaluatePrintingSubmissionPolicy({
+        mode: 'daily_cutoff',
+        requiredBy,
+        now,
+        minimumPrintNoticeMinutes: 60,
+        timeZone: 'UTC',
+        dailyCutoffLocalTime: '08:00:00',
+      }),
+    ).toBe('PRINT_REQUEST_SAME_DAY_CLOSED')
+
+    expect(
+      evaluatePrintingSubmissionPolicy({
+        mode: 'daily_cutoff',
+        requiredBy,
+        now,
+        minimumPrintNoticeMinutes: 60,
+        timeZone: 'Asia/Jerusalem',
+        dailyCutoffLocalTime: '13:00:00',
+      }),
+    ).toBeNull()
+  })
+
+  it('remains DST-safe around Asia/Jerusalem spring-forward using institution timezone conversion', () => {
+    // After spring-forward 2026-03-27, 10:00 local is after 08:00 cutoff.
+    const nowAfter = requiredByFromInstitutionLocal({
+      year: 2026,
+      month: 3,
+      day: 27,
+      hour: 10,
+      minute: 0,
+      timeZone,
+    })
+    const todayRequired = requiredByFromInstitutionLocal({
+      year: 2026,
+      month: 3,
+      day: 27,
+      hour: 15,
+      minute: 0,
+      timeZone,
+    })
+    const tomorrowRequired = requiredByFromInstitutionLocal({
+      year: 2026,
+      month: 3,
+      day: 28,
+      hour: 9,
+      minute: 0,
+      timeZone,
+    })
+
+    expect(
+      evaluatePrintingSubmissionPolicy({
+        mode: 'daily_cutoff',
+        requiredBy: todayRequired,
+        now: nowAfter,
+        minimumPrintNoticeMinutes: 60,
+        timeZone,
+        dailyCutoffLocalTime: cutoff,
+      }),
+    ).toBe('PRINT_REQUEST_SAME_DAY_CLOSED')
+    expect(
+      evaluatePrintingSubmissionPolicy({
+        mode: 'daily_cutoff',
+        requiredBy: tomorrowRequired,
+        now: nowAfter,
+        minimumPrintNoticeMinutes: 60,
+        timeZone,
+        dailyCutoffLocalTime: cutoff,
+      }),
+    ).toBeNull()
   })
 })
 

@@ -22,6 +22,8 @@ vi.mock('../../services/printingRequests', () => ({
     deadlineWarningMinutes: 120,
     fileRetentionDays: 90,
     timeZone: 'Asia/Jerusalem',
+    printSubmissionPolicyMode: 'relative_notice',
+    printDailyCutoffLocalTime: null,
   })),
   createPrintingRequest: vi.fn(),
   updatePrintingRequest: vi.fn(),

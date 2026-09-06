@@ -28,6 +28,7 @@ function makeFile(name: string, type: string, size: number): File {
 describe('printingUi Phase 2 contracts', () => {
   it('maps backend error codes to Hebrew and keeps defaults centralized', () => {
     expect(mapPrintingErrorCode('PRINT_REQUEST_TOO_LATE')).toMatch(/מראש/)
+    expect(mapPrintingErrorCode('PRINT_REQUEST_SAME_DAY_CLOSED')).toMatch(/היום/)
     expect(mapPrintingErrorCode('PRINT_REQUEST_LOCKED')).toMatch(/הטיפול בבקשה כבר התחיל/)
     expect(mapPrintingErrorCode('PRINT_REQUEST_ALREADY_CLAIMED')).toMatch(/נלקחה לטיפול/)
     expect(mapPrintingErrorCode('SECRETARY_NOT_AUTHORIZED')).toMatch(/מזכירה/)

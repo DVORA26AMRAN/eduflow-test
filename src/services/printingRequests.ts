@@ -150,11 +150,15 @@ export async function updateInstitutionPrintingSettings(params: {
   minimumPrintNoticeMinutes?: number | null
   deadlineWarningMinutes?: number | null
   fileRetentionDays?: number | null
+  printSubmissionPolicyMode?: 'relative_notice' | 'daily_cutoff' | null
+  printDailyCutoffLocalTime?: string | null
 }): Promise<PrintingRpcResult<PrintingInstitutionSettingsResult>> {
   const { data, error } = await supabase.rpc(PRINTING_RPC.updateInstitutionSettings, {
     p_minimum_print_notice_minutes: params.minimumPrintNoticeMinutes ?? null,
     p_deadline_warning_minutes: params.deadlineWarningMinutes ?? null,
     p_file_retention_days: params.fileRetentionDays ?? null,
+    p_print_submission_policy_mode: params.printSubmissionPolicyMode ?? null,
+    p_print_daily_cutoff_local_time: params.printDailyCutoffLocalTime ?? null,
   })
   if (error) return { ok: false, error_code: 'PRINT_REQUEST_UNKNOWN_ERROR' }
   return parsePrintingRpcResult(data, parseInstitutionSettingsResult)
@@ -229,13 +233,15 @@ export async function loadInstitutionPrintingSettings(institutionId: string): Pr
       deadlineWarningMinutes: number
       fileRetentionDays: number
       timeZone: string
+      printSubmissionPolicyMode: 'relative_notice' | 'daily_cutoff'
+      printDailyCutoffLocalTime: string | null
     }
   | { ok: false; errorMessage: string }
 > {
   const { data, error } = await supabase
     .from('institutions')
     .select(
-      'minimum_print_notice_minutes, deadline_warning_minutes, file_retention_days, timezone',
+      'minimum_print_notice_minutes, deadline_warning_minutes, file_retention_days, timezone, print_submission_policy_mode, print_daily_cutoff_local_time',
     )
     .eq('id', institutionId)
     .maybeSingle()
@@ -244,12 +250,21 @@ export async function loadInstitutionPrintingSettings(institutionId: string): Pr
     return { ok: false, errorMessage: 'טעינת הגדרות ההדפסה נכשלה.' }
   }
 
+  const modeRaw = String(data.print_submission_policy_mode ?? 'relative_notice')
+  const printSubmissionPolicyMode =
+    modeRaw === 'daily_cutoff' ? 'daily_cutoff' : 'relative_notice'
+
   return {
     ok: true,
     minimumPrintNoticeMinutes: Number(data.minimum_print_notice_minutes ?? 60),
     deadlineWarningMinutes: Number(data.deadline_warning_minutes ?? 120),
     fileRetentionDays: Number(data.file_retention_days ?? 90),
     timeZone: String(data.timezone || 'UTC'),
+    printSubmissionPolicyMode,
+    printDailyCutoffLocalTime:
+      data.print_daily_cutoff_local_time == null
+        ? null
+        : String(data.print_daily_cutoff_local_time),
   }
 }
 

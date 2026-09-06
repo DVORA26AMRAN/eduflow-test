@@ -10,6 +10,7 @@ import {
   type PagesPerSheet,
   type PaperSize,
   type PrintItemInput,
+  type PrintSubmissionPolicyMode,
   type PrintingErrorCode,
   type ScaleMode,
   type Sides,
@@ -190,4 +191,124 @@ export function isPrintingRequestOverdue(params: {
 }): boolean {
   if (['printed', 'rejected', 'cancelled'].includes(params.status)) return false
   return params.now.getTime() > params.requiredBy.getTime()
+}
+
+/** Parse HH:MM or HH:MM:SS into seconds since local midnight. */
+export function parseLocalTimeToSeconds(localTime: string): number | null {
+  const trimmed = localTime.trim()
+  const match = /^(\d{1,2}):(\d{2})(?::(\d{2}))?$/.exec(trimmed)
+  if (!match) return null
+  const hour = Number(match[1])
+  const minute = Number(match[2])
+  const second = match[3] != null ? Number(match[3]) : 0
+  if (
+    !Number.isInteger(hour) ||
+    !Number.isInteger(minute) ||
+    !Number.isInteger(second) ||
+    hour < 0 ||
+    hour > 23 ||
+    minute < 0 ||
+    minute > 59 ||
+    second < 0 ||
+    second > 59
+  ) {
+    return null
+  }
+  return hour * 3600 + minute * 60 + second
+}
+
+export function getInstitutionLocalDateTimeParts(
+  instant: Date,
+  timeZone: string,
+): { year: number; month: number; day: number; hour: number; minute: number; second: number } {
+  const dtf = new Intl.DateTimeFormat('en-US', {
+    timeZone,
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
+    hourCycle: 'h23',
+  })
+  const parts = Object.fromEntries(dtf.formatToParts(instant).map((p) => [p.type, p.value])) as Record<
+    string,
+    string
+  >
+  return {
+    year: Number(parts.year),
+    month: Number(parts.month),
+    day: Number(parts.day),
+    hour: Number(parts.hour),
+    minute: Number(parts.minute),
+    second: Number(parts.second),
+  }
+}
+
+function localDateKey(parts: { year: number; month: number; day: number }): string {
+  return `${parts.year}-${String(parts.month).padStart(2, '0')}-${String(parts.day).padStart(2, '0')}`
+}
+
+/**
+ * Daily-cutoff same-day gate (UX/domain mirror of SQL).
+ * Exact local cutoff time is allowed; strictly after closes today's local date.
+ */
+export function isPrintingSameDayClosed(params: {
+  requiredBy: Date
+  now: Date
+  timeZone: string
+  dailyCutoffLocalTime: string
+}): boolean {
+  const cutoffSeconds = parseLocalTimeToSeconds(params.dailyCutoffLocalTime)
+  if (cutoffSeconds == null) return true
+
+  const nowLocal = getInstitutionLocalDateTimeParts(params.now, params.timeZone)
+  const requiredLocal = getInstitutionLocalDateTimeParts(params.requiredBy, params.timeZone)
+  const nowSeconds = nowLocal.hour * 3600 + nowLocal.minute * 60 + nowLocal.second
+
+  if (nowSeconds <= cutoffSeconds) return false
+  return localDateKey(requiredLocal) === localDateKey(nowLocal)
+}
+
+/**
+ * Mirrors printing_validate_required_by policy branching (relative XOR daily).
+ * Client UX only — PostgreSQL remains authoritative.
+ */
+export function evaluatePrintingSubmissionPolicy(params: {
+  mode: PrintSubmissionPolicyMode
+  requiredBy: Date
+  now: Date
+  minimumPrintNoticeMinutes: number
+  timeZone: string
+  dailyCutoffLocalTime: string | null
+}): PrintingErrorCode | null {
+  if (params.mode === 'relative_notice') {
+    return isPrintingRequestTooLate({
+      requiredBy: params.requiredBy,
+      now: params.now,
+      minimumPrintNoticeMinutes: params.minimumPrintNoticeMinutes,
+    })
+      ? 'PRINT_REQUEST_TOO_LATE'
+      : null
+  }
+
+  if (params.mode === 'daily_cutoff') {
+    if (!params.dailyCutoffLocalTime) return 'INVALID_PRINT_SETTINGS'
+    if (params.requiredBy.getTime() < params.now.getTime()) {
+      return 'PRINT_REQUEST_TOO_LATE'
+    }
+    if (
+      isPrintingSameDayClosed({
+        requiredBy: params.requiredBy,
+        now: params.now,
+        timeZone: params.timeZone,
+        dailyCutoffLocalTime: params.dailyCutoffLocalTime,
+      })
+    ) {
+      return 'PRINT_REQUEST_SAME_DAY_CLOSED'
+    }
+    return null
+  }
+
+  return 'INVALID_PRINT_SETTINGS'
 }

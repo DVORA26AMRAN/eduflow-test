@@ -20,6 +20,10 @@ describe('Printing workspace navigation gating', () => {
       resolve(__dirname, '../../../pages/TeacherDashboardPage.tsx'),
       'utf8',
     )
+    const deputy = readFileSync(
+      resolve(__dirname, '../../../pages/DeputyDashboardPlaceholderPage.tsx'),
+      'utf8',
+    )
 
     expect(PRINTING_WORKSPACE_NAV_LABEL).toBe('הדפסות')
     expect(PRINTING_WORKSPACE_SECTION_ID).toBe('printingWorkspace')
@@ -32,5 +36,18 @@ describe('Printing workspace navigation gating', () => {
     expect(teacher).not.toContain('PRINTING_WORKSPACE_SECTION_ID')
     expect(teacher).not.toContain('SecretaryPrintingWorkspace')
     expect(teacher).not.toContain('listInstitutionPrintingRequests')
+
+    expect(deputy).not.toContain('PRINTING_WORKSPACE_SECTION_ID')
+    expect(deputy).not.toContain('SecretaryPrintingWorkspace')
+    expect(deputy).not.toContain('PrintingSubmissionPolicySettings')
+    expect(deputy).not.toContain('updateInstitutionPrintingSettings')
+  })
+
+  it('embeds submission-policy settings panel inside the shared printing workspace', () => {
+    const workspace = readFileSync(
+      resolve(__dirname, './SecretaryPrintingWorkspace.tsx'),
+      'utf8',
+    )
+    expect(workspace).toContain('PrintingSubmissionPolicySettings')
   })
 })
